@@ -220,8 +220,7 @@ body.holo::before {
 body.holo .card, body.holo .stat-mini, body.holo .mini-card,
 body.holo .dur-panel, body.holo .ai-kpi-card,
 body.holo .home-card, body.holo .ai-chat-wrap,
-body.holo .ai-date-controls, body.holo .ai-kpi-front,
-body.holo .ai-kpi-back {
+body.holo .ai-date-controls {
   position: relative;
   background: rgba(0,6,20,0.82) !important;
   border: 1px solid rgba(0,234,255,0.14) !important;
@@ -234,6 +233,21 @@ body.holo .ai-kpi-back {
   overflow: visible !important;
   transition: box-shadow 0.4s, border-color 0.4s, transform 0.6s cubic-bezier(0.25,0.46,0.45,0.94) !important;
 }
+body.holo .ai-kpi-front, body.holo .ai-kpi-back {
+  position: absolute;
+  background: rgba(0,6,20,0.82) !important;
+  border: 1px solid rgba(0,234,255,0.14) !important;
+  border-radius: 3px !important;
+  box-shadow:
+    0 0 0 1px rgba(0,234,255,0.06),
+    0 4px 32px rgba(0,0,0,0.6),
+    inset 0 0 60px rgba(0,15,40,0.5) !important;
+  backdrop-filter: blur(20px) saturate(1.5) !important;
+  overflow: hidden !important;
+  transition: box-shadow 0.4s, border-color 0.4s, transform 0.6s cubic-bezier(0.25,0.46,0.45,0.94) !important;
+}
+body.holo .ai-kpi-grid { display: grid !important; grid-template-columns: repeat(5,1fr) !important; gap: 14px !important; }
+body.holo .ai-kpi-card { height: 320px !important; }
 
 /* Corner bracket pseudo-elements on cards */
 body.holo .card::before, body.holo .stat-mini::before,
@@ -531,7 +545,7 @@ body.holo .home-notice {
   border-radius: 2px !important;
   text-shadow: 0 0 8px rgba(255,215,0,0.4) !important;
 }
-body.holo .home-cards { gap: 16px !important; }
+body.holo .home-cards { gap: 16px !important; grid-template-columns: repeat(5,1fr) !important; max-width: 1400px !important; }
 body.holo .home-logo {
   box-shadow: 0 0 60px rgba(0,234,255,0.4), 0 0 120px rgba(0,234,255,0.2) !important;
   border-color: rgba(0,234,255,0.5) !important;
@@ -1392,8 +1406,8 @@ body.dark .home-logo{box-shadow:0 0 60px rgba(56,189,248,0.4),0 0 120px rgba(56,
 .home-desc{font-size:0.95rem;color:var(--text2);max-width:480px;margin:0 auto 36px;line-height:1.7;animation:fadeUp 0.6s 0.7s both;}
 @keyframes fadeUp{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:translateY(0)}}
 .home-notice{display:inline-flex;align-items:center;gap:8px;background:rgba(245,158,11,0.1);border:1px solid rgba(245,158,11,0.3);border-radius:40px;padding:7px 16px;font-size:0.76rem;color:var(--warning);font-weight:600;margin-bottom:40px;animation:fadeUp 0.6s 0.9s both;}
-.home-cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:20px;max-width:1100px;width:100%;animation:fadeUp 0.6s 1s both;}
-.home-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:28px 24px;cursor:pointer !important;text-align:left;position:relative;overflow:hidden;transition:transform 0.4s cubic-bezier(.34,1.56,.64,1),box-shadow 0.4s,border-color 0.3s,background 0.45s,backdrop-filter 0.45s;box-shadow:var(--shadow-sm);touch-action:manipulation;-webkit-tap-highlight-color:rgba(0,0,0,0.08);user-select:none;-webkit-user-select:none;pointer-events:auto !important;}
+.home-cards{display:grid;grid-template-columns:repeat(5,1fr);gap:20px;max-width:1400px;width:100%;animation:fadeUp 0.6s 1s both;}
+.home-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:28px 24px 44px;cursor:pointer !important;text-align:left;position:relative;overflow:hidden;transition:transform 0.4s cubic-bezier(.34,1.56,.64,1),box-shadow 0.4s,border-color 0.3s,background 0.45s,backdrop-filter 0.45s;box-shadow:var(--shadow-sm);touch-action:manipulation;-webkit-tap-highlight-color:rgba(0,0,0,0.08);user-select:none;-webkit-user-select:none;pointer-events:auto !important;min-height:200px;}
 .home-card::before{content:'';position:absolute;top:0;left:0;right:0;height:4px;background:var(--card-clr,var(--accent-grad));transform:scaleX(0.3);transform-origin:left;transition:transform 0.4s cubic-bezier(.34,1.56,.64,1);}
 .home-card:hover{transform:translateY(-8px);box-shadow:var(--shadow-md);border-color:var(--border2);}
 .home-card:hover::before{transform:scaleX(1);}
@@ -1818,8 +1832,8 @@ body.dark #meteor-canvas{opacity:1;}
 
 /* ── AI Analyst Section ─────────────────────── */
 .ai-section-title{font-size:1.05rem;font-weight:700;color:var(--text);margin-bottom:14px;display:flex;align-items:center;gap:8px;}
-.ai-kpi-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:14px;margin-bottom:24px;}
-.ai-kpi-card{position:relative;height:210px;perspective:900px;}
+.ai-kpi-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:14px;margin-bottom:24px;}
+.ai-kpi-card{position:relative;height:320px;perspective:900px;}
 .ai-kpi-inner{position:relative;width:100%;height:100%;transition:transform 0.6s cubic-bezier(0.4,0,0.2,1);transform-style:preserve-3d;pointer-events:auto;}
 .ai-kpi-card.flipped .ai-kpi-inner{transform:rotateY(180deg);}
 .ai-kpi-front,.ai-kpi-back{position:absolute;width:100%;height:100%;backface-visibility:hidden;-webkit-backface-visibility:hidden;border-radius:var(--radius);border:1px solid var(--border);background:var(--surface);overflow:hidden;pointer-events:auto;}
@@ -1832,7 +1846,7 @@ body:not(.dark) .ai-kpi-back{background:linear-gradient(135deg,#1e1b4b 0%,#312e8
 .ai-kpi-generate-btn:hover{opacity:0.85;transform:translateY(-1px);}
 .ai-kpi-refresh-btn{position:absolute;top:10px;right:10px;width:28px;height:28px;border-radius:50%;border:1px solid rgba(255,255,255,0.25);background:rgba(255,255,255,0.12);color:#a5b4fc;cursor:pointer!important;display:flex;align-items:center;justify-content:center;font-size:15px;transition:all 0.25s;z-index:10;pointer-events:auto!important;}
 .ai-kpi-refresh-btn:hover{background:rgba(255,255,255,0.22);transform:rotate(180deg);}
-.ai-kpi-back-content{padding:16px;height:100%;display:flex;flex-direction:column;justify-content:center;}
+.ai-kpi-back-content{padding:16px;height:100%;display:flex;flex-direction:column;overflow-y:auto;}
 .ai-kpi-back-label{font-size:0.6rem;font-weight:700;letter-spacing:0.12em;text-transform:uppercase;color:#818cf8;margin-bottom:10px;}
 .ai-kpi-back-text{font-size:0.77rem;color:#c7d2fe;line-height:1.6;font-family:'JetBrains Mono',monospace;}
 .ai-kpi-back-loading{display:flex;align-items:center;gap:8px;color:#818cf8;font-size:0.77rem;}
@@ -2301,7 +2315,7 @@ body.holo2 #holo2-ticker{opacity:1;}
 body.holo2 .card, body.holo2 .stat-mini, body.holo2 .mini-card,
 body.holo2 .dur-panel, body.holo2 .ai-kpi-card,
 body.holo2 .home-card, body.holo2 .ai-chat-wrap,
-body.holo2 .ai-date-controls, body.holo2 .ai-kpi-front, body.holo2 .ai-kpi-back {
+body.holo2 .ai-date-controls {
   position:relative;
   background:linear-gradient(135deg,rgba(2,22,50,0.92) 0%,rgba(3,15,35,0.95) 100%) !important;
   border:1px solid rgba(0,200,255,0.22) !important; border-radius:2px !important;
@@ -2310,6 +2324,17 @@ body.holo2 .ai-date-controls, body.holo2 .ai-kpi-front, body.holo2 .ai-kpi-back 
   overflow:visible !important;
   transition:box-shadow 0.35s,border-color 0.35s,transform 0.5s cubic-bezier(0.25,0.46,0.45,0.94) !important;
 }
+body.holo2 .ai-kpi-front, body.holo2 .ai-kpi-back {
+  position:absolute;
+  background:linear-gradient(135deg,rgba(2,22,50,0.92) 0%,rgba(3,15,35,0.95) 100%) !important;
+  border:1px solid rgba(0,200,255,0.22) !important; border-radius:2px !important;
+  box-shadow:0 0 0 1px rgba(0,100,180,0.15),inset 0 0 40px rgba(0,50,100,0.3),0 4px 24px rgba(0,0,0,0.7) !important;
+  backdrop-filter:blur(16px) saturate(1.4) !important;
+  overflow:hidden !important;
+  transition:box-shadow 0.35s,border-color 0.35s,transform 0.5s cubic-bezier(0.25,0.46,0.45,0.94) !important;
+}
+body.holo2 .ai-kpi-grid { display: grid !important; grid-template-columns: repeat(5,1fr) !important; gap: 14px !important; }
+body.holo2 .ai-kpi-card { height: 320px !important; }
 body.holo2 .card::before,body.holo2 .stat-mini::before,body.holo2 .home-card::before {
   content:''; position:absolute; top:0; left:8%; right:8%; height:1px;
   background:linear-gradient(90deg,transparent,rgba(0,200,255,0.7),transparent);
@@ -6749,7 +6774,32 @@ window.addEventListener('DOMContentLoaded',()=>{
 /* ═══════════════════════════════════════════════════
    AI ANALYST — Groq-powered insights & chat
 ═══════════════════════════════════════════════════ */
-const GROQ_APIS = [
+// Groq API keys are loaded dynamically from Google Sheet at startup
+let GROQ_APIS = [];
+
+const GROQ_KEYS_SHEET_ID = '1hE3T_pRoqRauIzwzGbhUw4ixADHn22LxcTbB_rsuUto';
+
+async function loadGroqKeys() {
+  try {
+    const url = GAS_URL + '?action=readSheet&sheetId=' + encodeURIComponent(GROQ_KEYS_SHEET_ID) + '&tab=Sheet1';
+    const res = await fetch(url);
+    const json = await res.json();
+    if (json.rows && json.rows.length > 1) {
+      // Skip header row (index 0), extract first column values
+      GROQ_APIS = json.rows.slice(1)
+        .map(row => (row[0] || '').toString().trim())
+        .filter(k => k.startsWith('gsk_'));
+      console.log('Groq keys loaded:', GROQ_APIS.length);
+    } else {
+      console.warn('No Groq keys found in sheet.');
+    }
+  } catch(e) {
+    console.warn('Failed to load Groq keys:', e);
+  }
+}
+
+// Load keys immediately; AI calls will wait via aiCallGroq guard
+loadGroqKeys();
 
 
 
@@ -6766,10 +6816,6 @@ const GROQ_APIS = [
 
 
 
-
-
-
-];
 // section -> api indices (primary 3, can fall back to others)
 const AI_SECTION_API = {
   resin:[0,1,2], prepress:[3,4,5], dryer:[6,7,8], solar:[9,10,11], ems:[12,13,14]
@@ -6779,6 +6825,11 @@ const aiInsightCache = {}; // section -> [insight texts]
 const aiChatHistory = [];
 
 async function aiCallGroq(prompt, sectionKey){
+  // Wait for keys to load if not yet available
+  if(GROQ_APIS.length === 0) {
+    await loadGroqKeys();
+    if(GROQ_APIS.length === 0) return 'No Groq API keys available. Please check the keys sheet.';
+  }
   // Build candidate API list: section's 3 first, then rest
   const primary = AI_SECTION_API[sectionKey] || [];
   const all = [...primary, ...GROQ_APIS.map((_,i)=>i).filter(i=>!primary.includes(i))];
@@ -8236,7 +8287,7 @@ function holo2ScheduleGlitch() {
 
 
 <div class="page" id="page-ai">
-  <div style="max-width:1100px;margin:0 auto;padding:0 4px;">
+  <div style="max-width:1400px;margin:0 auto;padding:0 4px;">
     <div class="section-header" style="margin-bottom:16px;">
       <div class="section-title">🤖 AI Analyst</div>
       <div class="section-sub">Powered by Groq — insights across all plant sections</div>
