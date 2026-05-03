@@ -1735,6 +1735,8 @@ body.dark .mob-nav{background:rgba(5,11,24,0.98) !important;border-top-color:var
 .ems-kpi-pill.warn{background:rgba(245,158,11,0.1);color:#f59e0b;border:1px solid rgba(245,158,11,0.25);}
 .ems-kpi-pill.bad{background:rgba(239,68,68,0.1);color:#ef4444;border:1px solid rgba(239,68,68,0.25);}
 .ems-heatmap-wrap{overflow-x:auto;}
+.ems-daily-preset{background:var(--surface2);color:var(--text2);border:1px solid var(--border);transition:all 0.2s;}
+.ems-daily-preset:hover{border-color:var(--ems);color:var(--ems);}
 .ems-heatmap{border-collapse:collapse;font-size:0.62rem;min-width:100%;}
 .ems-heatmap th{padding:3px 5px;text-align:center;color:var(--text3);font-weight:600;font-size:0.6rem;}
 .ems-heatmap td{padding:4px 3px;text-align:center;border-radius:3px;font-size:0.6rem;color:#fff;font-weight:600;min-width:22px;}
@@ -1742,6 +1744,22 @@ body.dark .mob-nav{background:rgba(5,11,24,0.98) !important;border-top-color:var
 .ems-section-toggle-icon{transition:transform 0.2s;font-size:0.75rem;color:var(--text3);}
 .ems-section-collapsed .ems-section-toggle-icon{transform:rotate(-90deg);}
 .ems-section-collapsed .ems-machine-section-body{display:none;}
+.ems-drop-zone.drag-over{background:rgba(14,165,233,0.08);outline:2px dashed var(--ems);outline-offset:-4px;}
+.ems-v2-btn.drag-insert-before{box-shadow:-3px 0 0 2px var(--ems) !important;margin-left:3px;}
+.ems-v2-btn.drag-insert-after{box-shadow:3px 0 0 2px var(--ems) !important;margin-right:3px;}
+.ems-v2-btn[draggable]{cursor:grab;}.ems-v2-btn[draggable]:active{cursor:grabbing;}
+.ems-reorder-locked .ems-v2-btn { cursor:pointer !important; }
+.ems-reorder-locked .ems-drop-zone { pointer-events:none; }
+.ems-reorder-locked .ems-drop-zone .ems-v2-btn { pointer-events:auto; }
+#ems-drag-lock-btn.locked { background:rgba(239,68,68,0.15) !important; color:#ef4444 !important; border-color:rgba(239,68,68,0.4) !important; }
+#ems-touch-drag-ghost {
+  position:fixed; z-index:99999; pointer-events:none;
+  padding:5px 10px; border-radius:8px; font-size:0.75rem; font-weight:700;
+  background:var(--ems); color:#fff; box-shadow:0 4px 20px rgba(0,0,0,0.4);
+  transform:translate(-50%,-50%) scale(1.1);
+  transition:transform 0.1s; opacity:0.92;
+  display:none;
+}
 /* EMS consumption table */
 .ems-table{width:100%;border-collapse:collapse;font-size:0.8rem;}
 .ems-table th{background:var(--surface2);padding:8px 10px;text-align:left;font-size:0.65rem;text-transform:uppercase;letter-spacing:0.5px;color:var(--text3);font-weight:700;border-bottom:2px solid var(--border);}
@@ -2725,7 +2743,7 @@ body.holo2 .holo-reveal-progress-fill{background:linear-gradient(90deg,transpare
 <!-- TOP NAV -->
 <nav class="topnav">
   <div class="topnav-left">
-    <img id="navLogo" src="https://raw.githubusercontent.com/Subhranil12385/Sublynq/main/logo-light.png" alt="SUBLYNQ" class="nav-logo-img" onclick="showPage('home')">
+    <img id="navLogo" src="https://raw.githubusercontent.com/Subhranil12385/Sublynq/main/logo-light.png" alt="SUBLYNQ" class="nav-logo-img" title="Tap: Home · Double-tap: AI Insights">
     <div>
       <div class="nav-brand">SUBLYNQ</div>
       <div class="nav-tagline">Unified Monitoring Platform</div>
@@ -2738,11 +2756,11 @@ body.holo2 .holo-reveal-progress-fill{background:linear-gradient(90deg,transpare
     <button class="nav-tab" id="tab-dryer" onclick="showPage('dryer')"><span style="pointer-events:none">🏜️ Dryer</span></button>
     <button class="nav-tab" id="tab-solar" onclick="showPage('solar')"><span style="pointer-events:none">☀️ Solar</span></button>
     <button class="nav-tab" id="tab-ems" onclick="showPage('ems')"><span style="pointer-events:none">⚡ EMS</span></button>
-    <button class="nav-tab" id="tab-ai" onclick="showPage('ai')"><span style="pointer-events:none">🤖 AI Analyst</span></button>
+    <button class="nav-tab" id="tab-ai" onclick="showPage('ai')" style="display:none"><span style="pointer-events:none">🤖 AI Analyst</span></button>
   </div>
   
   <div class="nav-right">
-    <button class="theme-btn" id="themeBtn" onclick="toggleTheme()" title="Toggle theme">🌙</button>
+    <button class="theme-btn" id="themeBtn" title="Tap: light/dark · Hold: Holo mode">🌙</button>
     <div class="holo-mode-btns" id="holoModeBtns">
       <button class="holo-mode-btn active-mode" id="holoTheme1Btn" onclick="holoSwitchMode('theme1')" title="2D Theme 1">2D·1</button>
       <button class="holo-mode-btn" id="holoTheme2Btn" onclick="holoSwitchMode('theme2')" title="2D Theme 2">2D·2</button>
@@ -3536,10 +3554,28 @@ body.holo2 .holo-reveal-progress-fill{background:linear-gradient(90deg,transpare
 
   <!-- ── GSHEET LOAD STATUS ── -->
   <div id="ems-gsheet-status-bar" style="margin-bottom:14px;padding:10px 14px;border-radius:10px;background:linear-gradient(135deg,rgba(14,165,233,0.08),rgba(99,102,241,0.06));border:1px solid rgba(14,165,233,0.2);display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
-    <span style="font-size:0.82rem;color:var(--text2);">📡 Data Source:</span>
-    <span id="ems-gs-status-text" style="font-size:0.82rem;font-weight:600;color:var(--ems);">Loading from GSheet…</span>
+    <span style="font-size:0.82rem;color:var(--text2);">📡 Months:</span>
+    <!-- Multi-month selector dropdown -->
+    <div id="ems-month-multiselect-wrap" style="position:relative;">
+      <button id="ems-month-multiselect-btn" onclick="emsV2ToggleMonthDropdown(event)" style="padding:4px 10px;border:1px solid var(--border);border-radius:8px;background:var(--surface2);color:var(--text);font-size:0.8rem;font-family:'Space Grotesk',sans-serif;cursor:pointer;min-width:160px;max-width:260px;text-align:left;display:flex;align-items:center;justify-content:space-between;gap:6px;">
+        <span id="ems-month-multiselect-label">Loading…</span>
+        <span style="font-size:0.65rem;opacity:0.6;">▾</span>
+      </button>
+      <div id="ems-month-multiselect-panel" style="display:none;position:absolute;top:calc(100% + 4px);left:0;z-index:999;background:var(--surface);border:1.5px solid var(--border2);border-radius:10px;box-shadow:var(--shadow-md);min-width:200px;max-height:280px;overflow-y:auto;padding:6px;">
+        <div style="display:flex;align-items:center;justify-content:space-between;padding:4px 8px 6px;border-bottom:1px solid var(--border);margin-bottom:4px;">
+          <button onclick="emsV2SelectAllMonths()" style="font-size:0.68rem;padding:2px 8px;border:1px solid rgba(14,165,233,0.4);border-radius:5px;background:rgba(14,165,233,0.1);color:var(--ems);cursor:pointer;font-weight:700;">All</button>
+          <button onclick="emsV2ClearAllMonths()" style="font-size:0.68rem;padding:2px 8px;border:1px solid var(--border);border-radius:5px;background:var(--surface2);color:var(--text3);cursor:pointer;font-weight:700;">None</button>
+          <button onclick="emsV2ApplyMonthFilter();emsV2CloseMonthDropdown()" style="font-size:0.68rem;padding:2px 8px;border:1px solid rgba(16,185,129,0.4);border-radius:5px;background:rgba(16,185,129,0.12);color:#10b981;cursor:pointer;font-weight:700;">Apply ✓</button>
+        </div>
+        <div id="ems-month-checkboxes"><!-- Populated by JS --></div>
+      </div>
+    </div>
+    <!-- Hidden legacy select for compatibility -->
+    <select id="ems-month-select" style="display:none;">
+      <option value="">Loading…</option>
+    </select>
+    <span id="ems-gs-status-text" style="font-size:0.82rem;font-weight:600;color:var(--ems);"></span>
     <button class="btn btn-sm btn-ems" onclick="emsV2LoadGSheet()" style="margin-left:auto;font-size:0.72rem;padding:4px 12px;">↻ Reload</button>
-    <button class="btn btn-sm" style="font-size:0.72rem;padding:4px 12px;background:var(--surface2);color:var(--text2);border:1px solid var(--border);" onclick="emsV2ChangeSheet()">Change Sheet</button>
   </div>
 
   <!-- ── UPLOAD SECTION: 3 files together → GSheet ── -->
@@ -3573,7 +3609,10 @@ body.holo2 .holo-reveal-progress-fill{background:linear-gradient(90deg,transpare
   <div id="ems-machine-selector-section" style="margin-bottom:20px;">
     <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px;flex-wrap:wrap;">
       <h3 style="margin:0;font-size:0.95rem;font-weight:800;color:var(--text);">⚙️ Machine Selector</h3>
-      <span style="font-size:0.75rem;color:var(--text3);">Select machines to analyze • Fuzzy search highlights matches</span>
+      <span style="font-size:0.75rem;color:var(--text3);">Select machines to analyze • Fuzzy search highlights matches • <span style="color:var(--ems);">↕ Drag buttons to reorder or move between sections</span></span>
+      <button onclick="emsV2SaveMeterConfig()" style="margin-left:auto;font-size:0.7rem;padding:4px 10px;border:1px solid var(--ems);border-radius:6px;background:transparent;color:var(--ems);cursor:pointer;font-weight:700;" title="Save meter assignments to GSheet">💾 Save Layout</button>
+      <button id="ems-drag-lock-btn" onclick="emsV2ToggleReorderLock()" style="font-size:0.7rem;padding:4px 10px;border:1px solid rgba(239,68,68,0.4);border-radius:6px;background:rgba(239,68,68,0.15);color:#ef4444;cursor:pointer;font-weight:700;" title="Lock/unlock drag reordering to prevent accidental changes">🔒 Locked</button>
+      <span id="ems-config-save-status" style="font-size:0.7rem;color:var(--text3);"></span>
     </div>
 
     <!-- Unified search bar -->
@@ -3586,7 +3625,7 @@ body.holo2 .holo-reveal-progress-fill{background:linear-gradient(90deg,transpare
     </div>
 
     <!-- Two-column layout for Production + Utility -->
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;" class="ems-selector-grid">
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;" class="ems-selector-grid ems-reorder-locked">
       
       <!-- PRODUCTION PANEL -->
       <div style="background:var(--surface);border:1.5px solid rgba(16,185,129,0.25);border-radius:14px;overflow:hidden;">
@@ -3601,7 +3640,7 @@ body.holo2 .holo-reveal-progress-fill{background:linear-gradient(90deg,transpare
             <button class="btn btn-sm" onclick="emsV2ClearAll('prod')" style="font-size:0.68rem;padding:3px 9px;background:var(--surface2);color:var(--text3);border:1px solid var(--border);">None</button>
           </div>
         </div>
-        <div id="ems-prod-buttons" style="padding:10px;display:flex;flex-wrap:wrap;gap:5px;min-height:60px;"></div>
+        <div id="ems-prod-buttons" class="ems-drop-zone" data-zone="prod" style="padding:10px;display:flex;flex-wrap:wrap;gap:5px;min-height:60px;" ondragover="emsV2DragOver(event)" ondrop="emsV2Drop(event,'prod')" ondragleave="emsV2DragLeave(event)"></div>
       </div>
 
       <!-- UTILITY PANEL -->
@@ -3617,7 +3656,7 @@ body.holo2 .holo-reveal-progress-fill{background:linear-gradient(90deg,transpare
             <button class="btn btn-sm" onclick="emsV2ClearAll('util')" style="font-size:0.68rem;padding:3px 9px;background:var(--surface2);color:var(--text3);border:1px solid var(--border);">None</button>
           </div>
         </div>
-        <div id="ems-util-buttons" style="padding:10px;display:flex;flex-wrap:wrap;gap:5px;min-height:60px;"></div>
+        <div id="ems-util-buttons" class="ems-drop-zone" data-zone="util" style="padding:10px;display:flex;flex-wrap:wrap;gap:5px;min-height:60px;" ondragover="emsV2DragOver(event)" ondrop="emsV2Drop(event,'util')" ondragleave="emsV2DragLeave(event)"></div>
       </div>
     </div>
 
@@ -3636,17 +3675,21 @@ body.holo2 .holo-reveal-progress-fill{background:linear-gradient(90deg,transpare
         <span style="font-size:1rem;font-weight:800;color:var(--ems);">📈 Daily Consumption Trend</span>
         <span style="font-size:0.72rem;color:var(--text3);background:var(--surface2);padding:3px 8px;border-radius:6px;">kWh / Day</span>
       </div>
-      <!-- Chart type toggle -->
-      <div style="display:flex;align-items:center;gap:6px;">
+      <!-- Chart type toggle + separate/combined mode -->
+      <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
         <div style="display:flex;border:1px solid var(--border);border-radius:8px;overflow:hidden;">
           <button id="daily-chart-line" class="ems-chart-type-btn active" onclick="emsV2SetDailyChart('line')" title="Line View">📈 Line</button>
           <button id="daily-chart-bar" class="ems-chart-type-btn" onclick="emsV2SetDailyChart('bar')" title="Bar View">📊 Bar</button>
+        </div>
+        <div style="display:flex;border:1px solid var(--border);border-radius:8px;overflow:hidden;">
+          <button id="daily-mode-combined" class="ems-chart-type-btn active" onclick="emsV2SetDailyMode('combined')" title="Sum all selected machines">∑ Combined</button>
+          <button id="daily-mode-separate" class="ems-chart-type-btn" onclick="emsV2SetDailyMode('separate')" title="One line/bar per machine">⊞ Separate</button>
         </div>
       </div>
     </div>
 
     <!-- Controls row -->
-    <div style="display:flex;flex-wrap:wrap;gap:10px;align-items:flex-end;margin-bottom:14px;">
+    <div style="display:flex;flex-wrap:wrap;gap:10px;align-items:flex-end;margin-bottom:10px;">
       <!-- Date range -->
       <div style="display:flex;flex-direction:column;gap:4px;">
         <label style="font-size:0.7rem;color:var(--text3);font-weight:600;">FROM</label>
@@ -3656,7 +3699,16 @@ body.holo2 .holo-reveal-progress-fill{background:linear-gradient(90deg,transpare
         <label style="font-size:0.7rem;color:var(--text3);font-weight:600;">TO</label>
         <input type="date" id="daily-date-to" style="padding:6px 10px;border:1px solid var(--border);border-radius:8px;background:var(--surface2);color:var(--text);font-size:0.8rem;font-family:inherit;" onchange="emsV2RenderDaily()">
       </div>
-      <button class="btn btn-sm" onclick="emsV2ResetDailyDates()" style="font-size:0.75rem;padding:6px 12px;background:var(--surface2);color:var(--text2);border:1px solid var(--border);">This Month</button>
+      <!-- Quick presets -->
+      <div style="display:flex;flex-wrap:wrap;gap:5px;align-items:center;">
+        <button class="btn btn-sm ems-daily-preset" id="dp-thismonth" onclick="emsDailyPreset('thismonth')" style="font-size:0.72rem;padding:5px 10px;">This Month</button>
+        <button class="btn btn-sm ems-daily-preset" id="dp-lastmonth" onclick="emsDailyPreset('lastmonth')" style="font-size:0.72rem;padding:5px 10px;">Last Month</button>
+        <button class="btn btn-sm ems-daily-preset" id="dp-3m" onclick="emsDailyPreset('3m')" style="font-size:0.72rem;padding:5px 10px;">Last 3M</button>
+        <button class="btn btn-sm ems-daily-preset" id="dp-6m" onclick="emsDailyPreset('6m')" style="font-size:0.72rem;padding:5px 10px;">Last 6M</button>
+        <button class="btn btn-sm ems-daily-preset" id="dp-thisyear" onclick="emsDailyPreset('thisyear')" style="font-size:0.72rem;padding:5px 10px;">This Year</button>
+        <button class="btn btn-sm ems-daily-preset" id="dp-lastyear" onclick="emsDailyPreset('lastyear')" style="font-size:0.72rem;padding:5px 10px;">Last Year</button>
+        <button class="btn btn-sm ems-daily-preset" id="dp-all" onclick="emsDailyPreset('all')" style="font-size:0.72rem;padding:5px 10px;">All Data</button>
+      </div>
 
       <!-- Shift checkboxes -->
       <div style="display:flex;align-items:center;gap:14px;flex-wrap:wrap;margin-left:6px;">
@@ -3721,6 +3773,9 @@ body.holo2 .holo-reveal-progress-fill{background:linear-gradient(90deg,transpare
         <select id="hourly-time-to" style="padding:6px 10px;border:1px solid var(--border);border-radius:8px;background:var(--surface2);color:var(--text);font-size:0.8rem;" onchange="emsV2RenderHourly()">
         </select>
       </div>
+      <button class="btn btn-sm" onclick="emsV2HourlyPreset('yesterday')" style="font-size:0.75rem;padding:6px 12px;background:var(--surface2);color:var(--text2);border:1px solid var(--border);">Yesterday</button>
+      <button class="btn btn-sm" onclick="emsV2HourlyPreset('last3')" style="font-size:0.75rem;padding:6px 12px;background:var(--surface2);color:var(--text2);border:1px solid var(--border);">Last 3 Days</button>
+      <button class="btn btn-sm" onclick="emsV2HourlyPreset('last7')" style="font-size:0.75rem;padding:6px 12px;background:var(--surface2);color:var(--text2);border:1px solid var(--border);">Last 7 Days</button>
       <button class="btn btn-sm" onclick="emsV2ResetHourlyRange()" style="font-size:0.75rem;padding:6px 12px;background:var(--surface2);color:var(--text2);border:1px solid var(--border);">Today</button>
     </div>
 
@@ -3740,12 +3795,15 @@ body.holo2 .holo-reveal-progress-fill{background:linear-gradient(90deg,transpare
         <a href="#ems-machine-selector-section" id="ems-heatmap-selector-link" style="font-size:0.72rem;color:var(--ems);background:rgba(14,165,233,0.1);padding:3px 10px;border-radius:6px;text-decoration:none;border:1px solid rgba(14,165,233,0.3);cursor:pointer;" onclick="document.getElementById('ems-machine-selector-section').scrollIntoView({behavior:'smooth'});return false;">⚙️ Machine Selector ↑</a>
       </div>
       <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
-        <label style="font-size:0.72rem;color:var(--text3);font-weight:600;">MONTH:</label>
-        <select id="heatmap-month-sel" style="padding:5px 10px;border:1px solid var(--border);border-radius:8px;background:var(--surface2);color:var(--text);font-size:0.8rem;" onchange="emsV2RenderHeatmap()">
-          <option value="4">April 2026</option>
-          <option value="3">March 2026</option>
-          <option value="5">May 2026</option>
-        </select>
+        <label style="font-size:0.72rem;color:var(--text3);font-weight:600;">FROM:</label>
+        <input type="date" id="heatmap-date-from" style="padding:4px 8px;border:1px solid var(--border);border-radius:8px;background:var(--surface2);color:var(--text);font-size:0.78rem;" onchange="emsV2RenderHeatmap()">
+        <label style="font-size:0.72rem;color:var(--text3);font-weight:600;">TO:</label>
+        <input type="date" id="heatmap-date-to" style="padding:4px 8px;border:1px solid var(--border);border-radius:8px;background:var(--surface2);color:var(--text);font-size:0.78rem;" onchange="emsV2RenderHeatmap()">
+        <button class="btn btn-sm" onclick="emsHeatmapPreset('yesterday')" style="font-size:0.68rem;padding:4px 8px;background:var(--surface2);color:var(--text2);border:1px solid var(--border);">Yesterday</button>
+        <button class="btn btn-sm" onclick="emsHeatmapPreset('last3')" style="font-size:0.68rem;padding:4px 8px;background:var(--surface2);color:var(--text2);border:1px solid var(--border);">Last 3 Days</button>
+        <button class="btn btn-sm" onclick="emsHeatmapPreset('last7')" style="font-size:0.68rem;padding:4px 8px;background:var(--surface2);color:var(--text2);border:1px solid var(--border);">Last 7 Days</button>
+        <button class="btn btn-sm" onclick="emsHeatmapPreset('thismonth')" style="font-size:0.68rem;padding:4px 8px;background:var(--surface2);color:var(--text2);border:1px solid var(--border);">This Month</button>
+        <button class="btn btn-sm" onclick="emsHeatmapPreset('lastmonth')" style="font-size:0.68rem;padding:4px 8px;background:var(--surface2);color:var(--text2);border:1px solid var(--border);">Last Month</button>
         <div id="ems-heatmap-legend" style="display:flex;align-items:center;gap:6px;">
           <span style="font-size:0.7rem;color:var(--text3);">Low</span>
           <div style="width:80px;height:10px;border-radius:4px;background:linear-gradient(90deg,#1e3a5f,#0ea5e9,#f59e0b,#ef4444);"></div>
@@ -3755,7 +3813,7 @@ body.holo2 .holo-reveal-progress-fill{background:linear-gradient(90deg,transpare
     </div>
 
     <div style="font-size:0.73rem;color:var(--text3);margin-bottom:8px;">
-      <strong style="color:var(--text2);">Desktop:</strong> Drag to select multiple cells (add to total) &nbsp;|&nbsp; <strong style="color:var(--text2);">Mobile:</strong> Tap once to add, tap again to remove from selection
+      <strong style="color:var(--text2);">Desktop:</strong> Click to toggle · Click &amp; drag to multi-select &nbsp;|&nbsp; <strong style="color:var(--text2);">Mobile:</strong> Hold (long-press) a cell to select/deselect · Swipe freely to scroll
     </div>
     
     <div id="ems-heatmap-selection-bar" style="display:none;margin-bottom:10px;padding:8px 12px;background:rgba(14,165,233,0.1);border:1px solid rgba(14,165,233,0.3);border-radius:8px;font-size:0.8rem;align-items:center;gap:12px;flex-wrap:wrap;">
@@ -3765,7 +3823,7 @@ body.holo2 .holo-reveal-progress-fill{background:linear-gradient(90deg,transpare
       <button onclick="emsV2ClearHeatmapSel()" style="margin-left:auto;background:none;border:1px solid rgba(14,165,233,0.3);border-radius:5px;padding:2px 8px;color:var(--ems);cursor:pointer;font-size:0.72rem;">Clear</button>
     </div>
 
-    <div style="overflow-x:auto;-webkit-overflow-scrolling:touch;">
+    <div style="overflow-x:auto;-webkit-overflow-scrolling:touch;touch-action:pan-y pan-x;" id="ems-heatmap-scroll-outer">
       <div id="ems-heatmap-wrap" style="min-width:700px;user-select:none;-webkit-user-select:none;">
         <!-- Built by JS -->
       </div>
@@ -3776,31 +3834,90 @@ body.holo2 .holo-reveal-progress-fill{background:linear-gradient(90deg,transpare
   <!-- ══════════════════════════════════════════════════
        4. PIE CHARTS — TOP / BOTTOM CONSUMERS
        ══════════════════════════════════════════════════ -->
+  <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;margin-bottom:10px;">
+    <h3 style="margin:0;font-size:0.9rem;font-weight:800;color:var(--text);">🥧 Consumer Distribution</h3>
+    <div style="display:flex;align-items:center;gap:6px;">
+      <span style="font-size:0.75rem;color:var(--text3);">Filter months:</span>
+      <div id="ems-pie-month-wrap" style="position:relative;">
+        <button id="ems-pie-month-btn" onclick="emsV2ToggleSectionMonthDropdown('pie',event)" style="padding:3px 10px;border:1px solid var(--border);border-radius:8px;background:var(--surface2);color:var(--text);font-size:0.75rem;cursor:pointer;display:flex;align-items:center;gap:5px;">
+          <span id="ems-pie-month-label">All months</span><span style="font-size:0.6rem;opacity:0.6;">▾</span>
+        </button>
+        <div id="ems-pie-month-panel" style="display:none;position:absolute;top:calc(100% + 4px);right:0;z-index:999;background:var(--surface);border:1.5px solid var(--border2);border-radius:10px;box-shadow:var(--shadow-md);min-width:180px;max-height:240px;overflow-y:auto;padding:6px;">
+          <div style="display:flex;gap:4px;padding:2px 4px 6px;border-bottom:1px solid var(--border);margin-bottom:4px;">
+            <button onclick="emsV2SectionSelectAll('pie')" style="font-size:0.65rem;padding:2px 7px;border:1px solid rgba(14,165,233,0.4);border-radius:5px;background:rgba(14,165,233,0.1);color:var(--ems);cursor:pointer;font-weight:700;">All</button>
+            <button onclick="emsV2SectionClearAll('pie')" style="font-size:0.65rem;padding:2px 7px;border:1px solid var(--border);border-radius:5px;background:var(--surface2);color:var(--text3);cursor:pointer;font-weight:700;">None</button>
+            <button onclick="emsV2SectionApply('pie');emsV2CloseSectionDropdown('pie')" style="font-size:0.65rem;padding:2px 7px;border:1px solid rgba(16,185,129,0.4);border-radius:5px;background:rgba(16,185,129,0.12);color:#10b981;cursor:pointer;font-weight:700;">Apply ✓</button>
+          </div>
+          <div id="ems-pie-month-checkboxes"></div>
+        </div>
+      </div>
+    </div>
+  </div>
   <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:18px;" class="ems-pie-grid">
     
     <div class="card" style="border-left:3px solid #10b981;">
-      <div style="font-size:0.85rem;font-weight:800;color:#10b981;margin-bottom:12px;">🏆 Top 10 Production Consumers</div>
-      <div style="position:relative;height:240px;"><canvas id="ems-pie-prod-top"></canvas></div>
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">
+        <div style="font-size:0.85rem;font-weight:800;color:#10b981;">🏆 Top 10 Production Consumers</div>
+        <button class="ems-pie-legend-btn" onclick="emsV2TogglePieLegend('prod-top',this)" title="Toggle legend style" style="font-size:0.68rem;padding:3px 8px;border:1px solid var(--border);border-radius:6px;background:var(--surface2);color:var(--ems);cursor:pointer;white-space:nowrap;border-color:var(--ems);">≡ Bottom</button>
+      </div>
+      <div class="ems-pie-wrap" id="ems-pie-wrap-prod-top">
+        <canvas id="ems-pie-prod-top"></canvas>
+        <div class="ems-pie-labels" id="ems-pie-labels-prod-top"></div>
+      </div>
     </div>
     <div class="card" style="border-left:3px solid #f59e0b;">
-      <div style="font-size:0.85rem;font-weight:800;color:#f59e0b;margin-bottom:12px;">🏆 Top 10 Utility Consumers</div>
-      <div style="position:relative;height:240px;"><canvas id="ems-pie-util-top"></canvas></div>
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">
+        <div style="font-size:0.85rem;font-weight:800;color:#f59e0b;">🏆 Top 10 Utility Consumers</div>
+        <button class="ems-pie-legend-btn" onclick="emsV2TogglePieLegend('util-top',this)" title="Toggle legend style" style="font-size:0.68rem;padding:3px 8px;border:1px solid var(--border);border-radius:6px;background:var(--surface2);color:var(--ems);cursor:pointer;white-space:nowrap;border-color:var(--ems);">≡ Bottom</button>
+      </div>
+      <div class="ems-pie-wrap" id="ems-pie-wrap-util-top">
+        <canvas id="ems-pie-util-top"></canvas>
+        <div class="ems-pie-labels" id="ems-pie-labels-util-top"></div>
+      </div>
     </div>
     <div class="card" style="border-left:3px solid #3b82f6;">
-      <div style="font-size:0.85rem;font-weight:800;color:#3b82f6;margin-bottom:12px;">📉 Bottom 10 Production (Low Usage)</div>
-      <div style="position:relative;height:240px;"><canvas id="ems-pie-prod-bot"></canvas></div>
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">
+        <div style="font-size:0.85rem;font-weight:800;color:#3b82f6;">📉 Bottom 10 Production (Low Usage)</div>
+        <button class="ems-pie-legend-btn" onclick="emsV2TogglePieLegend('prod-bot',this)" title="Toggle legend style" style="font-size:0.68rem;padding:3px 8px;border:1px solid var(--border);border-radius:6px;background:var(--surface2);color:var(--ems);cursor:pointer;white-space:nowrap;border-color:var(--ems);">≡ Bottom</button>
+      </div>
+      <div class="ems-pie-wrap" id="ems-pie-wrap-prod-bot">
+        <canvas id="ems-pie-prod-bot"></canvas>
+        <div class="ems-pie-labels" id="ems-pie-labels-prod-bot"></div>
+      </div>
     </div>
     <div class="card" style="border-left:3px solid #6366f1;">
-      <div style="font-size:0.85rem;font-weight:800;color:#6366f1;margin-bottom:12px;">📉 Bottom 10 Utility (Low Usage)</div>
-      <div style="position:relative;height:240px;"><canvas id="ems-pie-util-bot"></canvas></div>
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">
+        <div style="font-size:0.85rem;font-weight:800;color:#6366f1;">📉 Bottom 10 Utility (Low Usage)</div>
+        <button class="ems-pie-legend-btn" onclick="emsV2TogglePieLegend('util-bot',this)" title="Toggle legend style" style="font-size:0.68rem;padding:3px 8px;border:1px solid var(--border);border-radius:6px;background:var(--surface2);color:var(--ems);cursor:pointer;white-space:nowrap;border-color:var(--ems);">≡ Bottom</button>
+      </div>
+      <div class="ems-pie-wrap" id="ems-pie-wrap-util-bot">
+        <canvas id="ems-pie-util-bot"></canvas>
+        <div class="ems-pie-labels" id="ems-pie-labels-util-bot"></div>
+      </div>
     </div>
   </div>
 
   <!-- ══════════════════════════════════════════════════
        5. KPI CARDS
        ══════════════════════════════════════════════════ -->
-  <div style="margin-bottom:8px;">
-    <h3 style="font-size:0.9rem;font-weight:800;color:var(--text);margin-bottom:12px;">📊 Key Performance Indicators</h3>
+  <div style="margin-bottom:8px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;">
+    <h3 style="font-size:0.9rem;font-weight:800;color:var(--text);margin:0;">📊 Key Performance Indicators</h3>
+    <div style="display:flex;align-items:center;gap:6px;">
+      <span style="font-size:0.75rem;color:var(--text3);">Filter months:</span>
+      <div id="ems-kpi-month-wrap" style="position:relative;">
+        <button id="ems-kpi-month-btn" onclick="emsV2ToggleSectionMonthDropdown('kpi',event)" style="padding:3px 10px;border:1px solid var(--border);border-radius:8px;background:var(--surface2);color:var(--text);font-size:0.75rem;cursor:pointer;display:flex;align-items:center;gap:5px;">
+          <span id="ems-kpi-month-label">All months</span><span style="font-size:0.6rem;opacity:0.6;">▾</span>
+        </button>
+        <div id="ems-kpi-month-panel" style="display:none;position:absolute;top:calc(100% + 4px);right:0;z-index:999;background:var(--surface);border:1.5px solid var(--border2);border-radius:10px;box-shadow:var(--shadow-md);min-width:180px;max-height:240px;overflow-y:auto;padding:6px;">
+          <div style="display:flex;gap:4px;padding:2px 4px 6px;border-bottom:1px solid var(--border);margin-bottom:4px;">
+            <button onclick="emsV2SectionSelectAll('kpi')" style="font-size:0.65rem;padding:2px 7px;border:1px solid rgba(14,165,233,0.4);border-radius:5px;background:rgba(14,165,233,0.1);color:var(--ems);cursor:pointer;font-weight:700;">All</button>
+            <button onclick="emsV2SectionClearAll('kpi')" style="font-size:0.65rem;padding:2px 7px;border:1px solid var(--border);border-radius:5px;background:var(--surface2);color:var(--text3);cursor:pointer;font-weight:700;">None</button>
+            <button onclick="emsV2SectionApply('kpi');emsV2CloseSectionDropdown('kpi')" style="font-size:0.65rem;padding:2px 7px;border:1px solid rgba(16,185,129,0.4);border-radius:5px;background:rgba(16,185,129,0.12);color:#10b981;cursor:pointer;font-weight:700;">Apply ✓</button>
+          </div>
+          <div id="ems-kpi-month-checkboxes"></div>
+        </div>
+      </div>
+    </div>
   </div>
   
   <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:10px;margin-bottom:18px;" id="ems-kpi-grid">
@@ -3810,6 +3927,25 @@ body.holo2 .holo-reveal-progress-fill{background:linear-gradient(90deg,transpare
   <!-- ══════════════════════════════════════════════════
        6. MINI TABLES
        ══════════════════════════════════════════════════ -->
+  <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;margin-bottom:10px;">
+    <h3 style="margin:0;font-size:0.9rem;font-weight:800;color:var(--text);">📋 Summary Tables</h3>
+    <div style="display:flex;align-items:center;gap:6px;">
+      <span style="font-size:0.75rem;color:var(--text3);">Filter months:</span>
+      <div id="ems-table-month-wrap" style="position:relative;">
+        <button id="ems-table-month-btn" onclick="emsV2ToggleSectionMonthDropdown('table',event)" style="padding:3px 10px;border:1px solid var(--border);border-radius:8px;background:var(--surface2);color:var(--text);font-size:0.75rem;cursor:pointer;display:flex;align-items:center;gap:5px;">
+          <span id="ems-table-month-label">All months</span><span style="font-size:0.6rem;opacity:0.6;">▾</span>
+        </button>
+        <div id="ems-table-month-panel" style="display:none;position:absolute;top:calc(100% + 4px);right:0;z-index:999;background:var(--surface);border:1.5px solid var(--border2);border-radius:10px;box-shadow:var(--shadow-md);min-width:180px;max-height:240px;overflow-y:auto;padding:6px;">
+          <div style="display:flex;gap:4px;padding:2px 4px 6px;border-bottom:1px solid var(--border);margin-bottom:4px;">
+            <button onclick="emsV2SectionSelectAll('table')" style="font-size:0.65rem;padding:2px 7px;border:1px solid rgba(14,165,233,0.4);border-radius:5px;background:rgba(14,165,233,0.1);color:var(--ems);cursor:pointer;font-weight:700;">All</button>
+            <button onclick="emsV2SectionClearAll('table')" style="font-size:0.65rem;padding:2px 7px;border:1px solid var(--border);border-radius:5px;background:var(--surface2);color:var(--text3);cursor:pointer;font-weight:700;">None</button>
+            <button onclick="emsV2SectionApply('table');emsV2CloseSectionDropdown('table')" style="font-size:0.65rem;padding:2px 7px;border:1px solid rgba(16,185,129,0.4);border-radius:5px;background:rgba(16,185,129,0.12);color:#10b981;cursor:pointer;font-weight:700;">Apply ✓</button>
+          </div>
+          <div id="ems-table-month-checkboxes"></div>
+        </div>
+      </div>
+    </div>
+  </div>
   <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:18px;" class="ems-table-grid">
     <div class="card" style="border-left:3px solid var(--ems);">
       <div style="font-size:0.85rem;font-weight:800;color:var(--ems);margin-bottom:10px;">📋 Shift Summary — All Machines</div>
@@ -3829,13 +3965,26 @@ body.holo2 .holo-reveal-progress-fill{background:linear-gradient(90deg,transpare
      EMS V2 STYLES
      ══════════════════════════════════════════════════ -->
 <style>
+/* Pie chart layout */
+.ems-pie-wrap {
+  position:relative;
+  width:100%;
+  height:380px;
+}
+.ems-pie-wrap canvas {
+  width:100% !important;
+  height:100% !important;
+}
+.ems-pie-labels { display:none; }
 .ems-v2-btn {
   display:inline-flex;align-items:center;justify-content:center;
-  padding:5px 12px;border-radius:8px;border:1.5px solid var(--border2);
+  padding:6px 10px;border-radius:8px;border:1.5px solid var(--border2);
   background:var(--surface2);color:var(--text2);
-  font-size:0.75rem;font-weight:600;font-family:'Space Grotesk',sans-serif;
-  cursor:pointer;transition:all 0.18s;white-space:nowrap;
-  flex:1 1 auto;min-width:0;text-align:center;
+  font-size:0.72rem;font-weight:600;font-family:'Space Grotesk',sans-serif;
+  cursor:pointer;transition:all 0.18s;
+  white-space:normal;word-break:break-word;
+  text-align:center;line-height:1.3;
+  flex:1 1 auto;min-width:0;
 }
 .ems-v2-btn:hover { border-color:var(--ems); color:var(--ems); background:rgba(14,165,233,0.07); }
 .ems-v2-btn.active-prod {
@@ -3878,9 +4027,33 @@ body.holo2 .holo-reveal-progress-fill{background:linear-gradient(90deg,transpare
 /* Heatmap cell */
 .ems-hm-cell {
   cursor:pointer;transition:opacity 0.1s;
-  touch-action:none;
+  touch-action:auto; /* let scroll work freely — selection via long-press (mobile) or click (desktop) */
 }
-.ems-hm-cell.selected { outline:2px solid #fff;outline-offset:-2px;opacity:0.85; }
+.ems-hm-cell.selected {
+  outline: none;
+  opacity: 1 !important;
+  position: relative;
+  z-index: 2;
+  box-shadow:
+    0 0 0 2px rgba(0,0,0,0.15),
+    0 0 0 3px var(--hm-rainbow, #fff);
+  animation: hm-rainbow-border 1.2s linear infinite;
+}
+@property --hm-rainbow-angle {
+  syntax: '<angle>';
+  initial-value: 0deg;
+  inherits: false;
+}
+@keyframes hm-rainbow-border {
+  0%   { box-shadow: 0 0 0 2px rgba(0,0,0,0.2), 0 0 0 3.5px hsl(0,100%,60%),   0 0 6px 1px hsla(0,100%,60%,0.5); }
+  14%  { box-shadow: 0 0 0 2px rgba(0,0,0,0.2), 0 0 0 3.5px hsl(50,100%,55%),  0 0 6px 1px hsla(50,100%,55%,0.5); }
+  28%  { box-shadow: 0 0 0 2px rgba(0,0,0,0.2), 0 0 0 3.5px hsl(100,100%,50%), 0 0 6px 1px hsla(100,100%,50%,0.5); }
+  42%  { box-shadow: 0 0 0 2px rgba(0,0,0,0.2), 0 0 0 3.5px hsl(160,100%,45%), 0 0 6px 1px hsla(160,100%,45%,0.5); }
+  57%  { box-shadow: 0 0 0 2px rgba(0,0,0,0.2), 0 0 0 3.5px hsl(210,100%,60%), 0 0 6px 1px hsla(210,100%,60%,0.5); }
+  71%  { box-shadow: 0 0 0 2px rgba(0,0,0,0.2), 0 0 0 3.5px hsl(270,100%,65%), 0 0 6px 1px hsla(270,100%,65%,0.5); }
+  85%  { box-shadow: 0 0 0 2px rgba(0,0,0,0.2), 0 0 0 3.5px hsl(320,100%,60%), 0 0 6px 1px hsla(320,100%,60%,0.5); }
+  100% { box-shadow: 0 0 0 2px rgba(0,0,0,0.2), 0 0 0 3.5px hsl(360,100%,60%), 0 0 6px 1px hsla(360,100%,60%,0.5); }
+}
 .ems-hm-cell:hover { opacity:0.8; }
 
 /* Responsive */
@@ -3901,23 +4074,47 @@ body.holo2 .holo-reveal-progress-fill{background:linear-gradient(90deg,transpare
 }
 #ems-prod-buttons .ems-v2-btn,
 #ems-util-buttons .ems-v2-btn {
-  flex: 1 1 calc(25% - 5px);
+  flex: 1 1 calc(20% - 5px);
   min-width:80px;
-  max-width:calc(33% - 5px);
+  max-width:none;
   box-sizing:border-box;
 }
 @media(max-width:900px){
   #ems-prod-buttons .ems-v2-btn,
   #ems-util-buttons .ems-v2-btn {
-    flex: 1 1 calc(33% - 5px);
-    max-width:calc(50% - 5px);
+    flex: 1 1 calc(25% - 5px);
+    max-width:none;
+    width:auto;
   }
 }
 @media(max-width:600px){
-  #ems-prod-buttons .ems-v2-btn,
-  #ems-util-buttons .ems-v2-btn {
-    flex: 1 1 calc(50% - 5px);
-    max-width:calc(50% - 5px);
+  #ems-prod-buttons,
+  #ems-util-buttons {
+    display:grid !important;
+    grid-template-columns: 1fr 1fr;
+    gap:5px;
+  }
+  /* span wrapper = grid item, must stretch to full cell */
+  #ems-prod-buttons > span,
+  #ems-util-buttons > span {
+    display:flex !important;
+    width:100%;
+    min-width:0;
+  }
+  #ems-prod-buttons > span > .ems-v2-btn,
+  #ems-util-buttons > span > .ems-v2-btn {
+    flex:1 1 100%;
+    min-width:0;
+    max-width:none;
+    width:100%;
+  }
+  /* bare button (no span wrapper, locked mode) */
+  #ems-prod-buttons > .ems-v2-btn,
+  #ems-util-buttons > .ems-v2-btn {
+    flex:unset;
+    min-width:0;
+    max-width:none;
+    width:100%;
   }
 }
 </style>
@@ -3952,62 +4149,13 @@ body.holo2 .holo-reveal-progress-fill{background:linear-gradient(90deg,transpare
    ────────────────────────────────────────────────── */
 
 const EMS2 = {
-  SHEET_ID: '1ZmEx3u8Sk1lDyvCmhdmyIOMIohiIbAGLJntcNXUvoaU',
+  SHEET_ID: '1BU16QT-Qef5yFy1jm2Do0z8LFs8enHV4xZDcVego5cQ',
+  SELECTED_MONTH: '', // currently displayed month label e.g. "May 2026"
+  FOLDER_SHEETS: [], // [{name, id}] populated on init
 
-  // Machine lists from GSheet (Apr 2026)
-  PRODUCTION: [
-    'EMSG004 Unit 1','EMSG005 Unit 3','EMSG006 Unit 2',
-    'EMSG066 Lighting Board','EMSG062 Energy Plant 14 MW',
-    'EMSG082 Dryer-08','EMSG083 Feeding Section',
-    'EMSG008 Dryer-07','EMSG009 Dryer-01','EMSG010 Dryer-02',
-    'EMSG011 Dryer-03','EMSG012 DRYER-04',
-    'EMSG013 FINGER JOINTER-02','EMSG014 FINGER JOINTER-01','EMSG015 FINGER JOINTER-03',
-    'EMSG016 CORE COMPOSER-10','EMSG017 CORE COMPOSER-09','EMSG018 CORE COMPOSER-06',
-    'EMSG021 STEEL WOOL MACHINE',
-    'EMSG074 Peeling-03','EMSG073 Debarker-03',
-    'EMSG072 Peeling-02','EMSG071 Debarker-02',
-    'EMSG070 Peeling-01','EMSG069 Debarker-01',
-    'EMSG022 SQUEEZER MACHINE',
-    'EMSG023 WBS NO-02','EMSG024 WBS NO-01',
-    'EMSG025 D.D.SAW',
-    'EMSG026 HOT PRESS NO-05','EMSG027 CALIBRATOR',
-    'EMSG028 PRE PRESS NO-06','EMSG029 PRE PRESS NO-07',
-    'EMSG030 GLUE SPREADER NO-09',
-    'EMSG031 STAMPING MACHINE-01','EMSG032 STAMPING MACHINE-02',
-    'EMSG033 HOT PRESS NO-06','EMSG034 HOT PRESS NO-04',
-    'EMSG035 HOT PRESS NO-01','EMSG036 HOT PRESS NO-02',
-    'EMSG037 PRE PRESS NO-04','EMSG038 PRE PRESS NO-03',
-    'EMSG039 PRE PRESS NO-02','EMSG040 PRE PRESS NO-01',
-    'EMSG041 COOLING TOWER',
-    'EMSG042 CALIBRATOR-02','EMSG043 CALIBRATOR-03',
-    'EMSG044 CORE COMPOSER-07','EMSG045 CORE COMPOSER-02',
-    'EMSG046 CORE COMPOSER-03','EMSG047 CORE COMPOSER-04',
-    'EMSG048 CORE COMPOSER-08','EMSG049 CORE COMPOSER-05',
-    'EMSG050 RESIN KETTLE',
-    'EMSG051 PRE PRESS NO-05',
-    'EMSG052 GLUE SPREADER NO-06','EMSG053 GLUE SPREADER NO-05',
-    'EMSG054 GLUE SPREADER NO-04','EMSG055 GLUE SPREADER NO-03',
-    'EMSG056 GLUE SPREADER NO-02','EMSG057 GLUE SPREADER NO-01',
-    'EMSG058 HOT PRESS NO-03',
-    'EMSG059 GLUE SPREADER NO-08','EMSG060 GLUE SPREADER NO-07',
-    'EMSG020 GLUE SPREADER NO-10',
-    'EMSG075 Debarker-04','EMSG076 Peeling-04',
-    'EMSG080 Dryer-05','EMSG081 Dryer-06',
-    'EMSG090 Particle Board Main LT-2','EMSG089 Particle Board Main LT-1',
-    'EMSG079 Stacker 8FT','EMSG078 Peeling 8FT','EMSG077 Debarker 8FT',
-    'EMSG093 TO Energy Plant 5.5 MW','EMSG003 Particle baord'
-  ],
-  UTILITY: [
-    'EMSG002 EB Incomer 11KV','EMSG001 Main Incomer 33KV',
-    'EMSG007 Unit-1 Main LT Panel','EMSG061 Unit-3 Main LT Panel',
-    'EMSG088 UPS ROOM','EMSG019 Unit-2 Main LT Panel',
-    'EMSG095 I.D FAN DUST COLLECTOR',
-    'EMSG063 TO SSB-D','EMSG084 AIR COMPRESSOR GA55',
-    'EMSG064 TO SSB-P','EMSG067 TO SSB-4','EMSG065 TO SSB-5',
-    'EMSG068 AIR COMPRESSOR GA22P','EMSG087 AIR COMPRESSOR GA26 EP',
-    'EMSG085 EP Panel-1','EMSG086 EP Panel-2',
-    'EMSG091 TO Fire Hydrant Pump','EMSG094 TO Pre Lam','EMSG092 TO SSB 2'
-  ],
+  // Machine lists — populated dynamically from GSheet col A (DailyShift tab) + config tab
+  PRODUCTION: [],
+  UTILITY: [],
 
   // State
   selectedProd: new Set(),
@@ -4017,6 +4165,7 @@ const EMS2 = {
   dailyChartInst: null,
   hourlyChartInst: null,
   dailyChartType: 'line',
+  dailyMode: 'combined',   // 'combined' = sum, 'separate' = per-machine
   hourlyChartType: 'line',
   heatmapSelectedCells: new Set(), // "day-hour" keys
   hmDragActive: false,
@@ -4054,49 +4203,669 @@ async function emsV2FetchTab(sheetId, tabName) {
   return json.rows || []; // array of arrays, first row = headers
 }
 
+/* ── FOLDER SCAN: list all EMS_XXX_YYYY GSheets in the EMS folder ── */
+async function emsV2ScanFolder() {
+  const statusEl = document.getElementById('ems-gs-status-text');
+  if(statusEl) { statusEl.textContent = '🔍 Scanning Drive folder…'; statusEl.style.color = 'var(--text2)'; }
+
+  const MONTHS_SHORT = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  const MONTHS_LONG  = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+
+  let parsed = [];
+
+  try {
+    // Try new listFilesInFolder action first
+    const url = GAS_URL + '?action=listFilesInFolder&folderId=' + encodeURIComponent(EMS_INTERVAL_FOLDER);
+    const resp = await fetch(url);
+    const json = await resp.json();
+    if(json.error && json.error.includes('Unknown')) throw new Error('GAS not updated yet');
+    if(json.error) throw new Error(json.error);
+    const files = json.files || [];
+    parsed = files.map(f => {
+      const m = f.name.match(/^EMS_([A-Za-z]+)_(\d{4})$/);
+      if(!m) return null;
+      const mIdx = MONTHS_SHORT.findIndex(s => s.toLowerCase() === m[1].toLowerCase());
+      if(mIdx < 0) return null;
+      return { name: f.name, id: f.fileId, label: MONTHS_LONG[mIdx] + ' ' + m[2], year: parseInt(m[2]), month: mIdx };
+    }).filter(Boolean);
+  } catch(scanErr) {
+    console.warn('listFilesInFolder not available, probing known months:', scanErr.message);
+    // Fallback: probe the last 12 months using findFileInFolder
+    const now = new Date();
+    const probes = [];
+    for(let i = 0; i < 12; i++) {
+      const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+      const label = MONTHS_LONG[d.getMonth()] + ' ' + d.getFullYear();
+      const name  = 'EMS_' + MONTHS_SHORT[d.getMonth()] + '_' + d.getFullYear();
+      probes.push({ label, name, year: d.getFullYear(), month: d.getMonth() });
+    }
+    // Also add EMS_HARDCODED_SHEET_ID for current month as guaranteed entry
+    const curLabel = MONTHS_LONG[now.getMonth()] + ' ' + now.getFullYear();
+    parsed = [{ label: curLabel, id: EMS_HARDCODED_SHEET_ID, year: now.getFullYear(), month: now.getMonth() }];
+    // Probe each month in parallel (limited to avoid rate limits)
+    const probeResults = await Promise.allSettled(probes.map(async p => {
+      const findUrl = GAS_URL + '?action=findFileInFolder&folderId=' + encodeURIComponent(EMS_INTERVAL_FOLDER) + '&fileName=' + encodeURIComponent(p.name);
+      const r = await fetch(findUrl);
+      const j = await r.json();
+      if(j.fileId) return { label: p.label, id: j.fileId, year: p.year, month: p.month, name: p.name };
+      return null;
+    }));
+    const found = probeResults.map(r => r.status === 'fulfilled' ? r.value : null).filter(Boolean);
+    // Merge found with guaranteed current (deduplicate by id)
+    const seen = new Set(parsed.map(p => p.id));
+    for(const f of found) { if(f && !seen.has(f.id)) { parsed.push(f); seen.add(f.id); } }
+  }
+
+  // Sort newest first
+  parsed.sort((a,b) => b.year - a.year || b.month - a.month);
+  EMS2.FOLDER_SHEETS = parsed;
+
+  // Initialize all months as selected (default = all)
+  EMS2.SELECTED_MONTHS = new Set(parsed.map(p => p.label));
+  // Initialize section filters too
+  if(!EMS2.SECTION_MONTHS) EMS2.SECTION_MONTHS = {};
+  ['pie','kpi','table'].forEach(s => {
+    EMS2.SECTION_MONTHS[s] = new Set(parsed.map(p => p.label));
+  });
+
+  // Populate legacy hidden select for compatibility
+  const legacySel = document.getElementById('ems-month-select');
+  if(legacySel) {
+    legacySel.innerHTML = parsed.length === 0
+      ? '<option value="">No EMS sheets found</option>'
+      : parsed.map(p => `<option value="${p.id}">${p.label}</option>`).join('');
+    if(parsed.length > 0) { legacySel.value = parsed[0].id; EMS2.SHEET_ID = parsed[0].id; EMS2.SELECTED_MONTH = parsed[0].label; }
+  }
+
+  // Build multi-month checkboxes
+  emsV2BuildMonthCheckboxes();
+  emsV2UpdateMonthLabel();
+  ['pie','kpi','table'].forEach(s => emsV2UpdateSectionLabel(s));
+
+  // Load all sheets
+  await emsV2LoadGSheet();
+}
+
+// ── MULTI-MONTH SELECTION STATE ──
+// EMS2.SELECTED_MONTHS = Set of month labels currently selected (default: all)
+// EMS2.SECTION_MONTHS = { pie: Set, kpi: Set, table: Set } — per-section overrides
+
+function emsV2OnMonthChange() {
+  // Legacy single-select fallback (hidden select)
+  const sel = document.getElementById('ems-month-select');
+  if(!sel || !sel.value) return;
+  EMS2.SHEET_ID = sel.value;
+  const chosen = EMS2.FOLDER_SHEETS.find(p => p.id === sel.value);
+  EMS2.SELECTED_MONTH = chosen ? chosen.label : '';
+  emsV2LoadGSheet();
+}
+
+// ── Multi-month checkbox dropdown (main) ──
+function emsV2ToggleMonthDropdown(event) {
+  event && event.stopPropagation();
+  const panel = document.getElementById('ems-month-multiselect-panel');
+  if(!panel) return;
+  const isOpen = panel.style.display !== 'none';
+  // Close all other panels first
+  ['pie','kpi','table'].forEach(s => emsV2CloseSectionDropdown(s));
+  panel.style.display = isOpen ? 'none' : 'block';
+}
+function emsV2CloseMonthDropdown() {
+  const panel = document.getElementById('ems-month-multiselect-panel');
+  if(panel) panel.style.display = 'none';
+}
+
+// Build checkboxes in the main multi-month panel
+function emsV2BuildMonthCheckboxes() {
+  const sheets = EMS2.FOLDER_SHEETS || [];
+  const container = document.getElementById('ems-month-checkboxes');
+  if(!container) return;
+
+  if(!EMS2.SELECTED_MONTHS) {
+    EMS2.SELECTED_MONTHS = new Set(sheets.map(s => s.label));
+  }
+
+  container.innerHTML = sheets.map(sh => `
+    <label style="display:flex;align-items:center;gap:7px;padding:5px 8px;border-radius:6px;cursor:pointer;font-size:0.78rem;color:var(--text);">
+      <input type="checkbox" value="${sh.label}" 
+        ${EMS2.SELECTED_MONTHS.has(sh.label) ? 'checked' : ''}
+        onchange="emsV2MonthCheckChange(this)"
+        style="accent-color:var(--ems);width:14px;height:14px;">
+      ${sh.label}
+    </label>
+  `).join('');
+}
+
+function emsV2MonthCheckChange(checkbox) {
+  if(!EMS2.SELECTED_MONTHS) EMS2.SELECTED_MONTHS = new Set();
+  if(checkbox.checked) EMS2.SELECTED_MONTHS.add(checkbox.value);
+  else EMS2.SELECTED_MONTHS.delete(checkbox.value);
+}
+
+function emsV2SelectAllMonths() {
+  EMS2.SELECTED_MONTHS = new Set((EMS2.FOLDER_SHEETS||[]).map(s=>s.label));
+  emsV2BuildMonthCheckboxes();
+}
+function emsV2ClearAllMonths() {
+  EMS2.SELECTED_MONTHS = new Set();
+  emsV2BuildMonthCheckboxes();
+}
+
+function emsV2ApplyMonthFilter() {
+  emsV2UpdateMonthLabel();
+  // Sync section filters to main selection
+  ['pie','kpi','table'].forEach(section => {
+    EMS2.SECTION_MONTHS[section] = new Set(EMS2.SELECTED_MONTHS);
+    emsV2BuildSectionCheckboxes(section);
+    emsV2UpdateSectionLabel(section);
+  });
+  emsV2RenderAll();
+}
+
+function emsV2UpdateMonthLabel() {
+  const btn = document.getElementById('ems-month-multiselect-label');
+  if(!btn) return;
+  const total = (EMS2.FOLDER_SHEETS||[]).length;
+  const sel = EMS2.SELECTED_MONTHS ? EMS2.SELECTED_MONTHS.size : total;
+  if(sel === 0) btn.textContent = 'None selected';
+  else if(sel === total) btn.textContent = 'All months (' + total + ')';
+  else if(sel === 1) btn.textContent = [...EMS2.SELECTED_MONTHS][0];
+  else btn.textContent = sel + ' months selected';
+}
+
+// ── Per-section month dropdowns ──
+if(!window.EMS2) window.EMS2 = {};
+EMS2.SECTION_MONTHS = EMS2.SECTION_MONTHS || { pie: null, kpi: null, table: null };
+
+function emsV2ToggleSectionMonthDropdown(section, event) {
+  event && event.stopPropagation();
+  const panel = document.getElementById('ems-' + section + '-month-panel');
+  if(!panel) return;
+  const isOpen = panel.style.display !== 'none';
+  // Close all
+  emsV2CloseMonthDropdown();
+  ['pie','kpi','table'].forEach(s => { if(s!==section) emsV2CloseSectionDropdown(s); });
+  if(!isOpen) {
+    // Init section months from main if null
+    if(!EMS2.SECTION_MONTHS[section]) {
+      EMS2.SECTION_MONTHS[section] = new Set(EMS2.SELECTED_MONTHS || (EMS2.FOLDER_SHEETS||[]).map(s=>s.label));
+    }
+    emsV2BuildSectionCheckboxes(section);
+    panel.style.display = 'block';
+  }
+}
+function emsV2CloseSectionDropdown(section) {
+  const panel = document.getElementById('ems-' + section + '-month-panel');
+  if(panel) panel.style.display = 'none';
+}
+
+function emsV2BuildSectionCheckboxes(section) {
+  const sheets = EMS2.FOLDER_SHEETS || [];
+  const container = document.getElementById('ems-' + section + '-month-checkboxes');
+  if(!container) return;
+  const sel = EMS2.SECTION_MONTHS[section] || new Set(sheets.map(s=>s.label));
+
+  container.innerHTML = sheets.map(sh => `
+    <label style="display:flex;align-items:center;gap:7px;padding:5px 8px;border-radius:6px;cursor:pointer;font-size:0.78rem;color:var(--text);">
+      <input type="checkbox" value="${sh.label}"
+        ${sel.has(sh.label) ? 'checked' : ''}
+        onchange="emsV2SectionCheckChange('${section}',this)"
+        style="accent-color:var(--ems);width:14px;height:14px;">
+      ${sh.label}
+    </label>
+  `).join('');
+}
+
+function emsV2SectionCheckChange(section, checkbox) {
+  if(!EMS2.SECTION_MONTHS[section]) EMS2.SECTION_MONTHS[section] = new Set();
+  if(checkbox.checked) EMS2.SECTION_MONTHS[section].add(checkbox.value);
+  else EMS2.SECTION_MONTHS[section].delete(checkbox.value);
+}
+
+function emsV2SectionSelectAll(section) {
+  EMS2.SECTION_MONTHS[section] = new Set((EMS2.FOLDER_SHEETS||[]).map(s=>s.label));
+  emsV2BuildSectionCheckboxes(section);
+}
+function emsV2SectionClearAll(section) {
+  EMS2.SECTION_MONTHS[section] = new Set();
+  emsV2BuildSectionCheckboxes(section);
+}
+
+function emsV2SectionApply(section) {
+  emsV2UpdateSectionLabel(section);
+  if(section==='pie') emsV2RenderPieCharts();
+  else if(section==='kpi') emsV2RenderKPIs();
+  else if(section==='table') { emsV2RenderShiftSummaryTable(); emsV2RenderTopMachinesTable(); }
+}
+
+function emsV2UpdateSectionLabel(section) {
+  const btn = document.getElementById('ems-' + section + '-month-label');
+  if(!btn) return;
+  const total = (EMS2.FOLDER_SHEETS||[]).length;
+  const sel = EMS2.SECTION_MONTHS[section] ? EMS2.SECTION_MONTHS[section].size : total;
+  if(sel === 0) btn.textContent = 'None';
+  else if(sel === total) btn.textContent = 'All months';
+  else if(sel === 1) btn.textContent = [...EMS2.SECTION_MONTHS[section]][0];
+  else btn.textContent = sel + ' months';
+}
+
+// Helper: get date keys filtered by a section's month selection
+function emsV2GetFilteredDateKeys(section) {
+  const sheets = EMS2.FOLDER_SHEETS || [];
+  const monthSet = (EMS2.SECTION_MONTHS && EMS2.SECTION_MONTHS[section])
+    ? EMS2.SECTION_MONTHS[section]
+    : new Set(sheets.map(s=>s.label));
+  if(monthSet.size === 0 || sheets.length === 0) return null; // null = use all
+
+  // Build set of YYYY-MM strings from selected month labels
+  const MONTHS_LONG = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+  const allowedYM = new Set();
+  for(const lbl of monthSet) {
+    const parts = lbl.split(' ');
+    if(parts.length === 2) {
+      const mIdx = MONTHS_LONG.indexOf(parts[0]);
+      if(mIdx >= 0) {
+        const ym = parts[1] + '-' + String(mIdx+1).padStart(2,'0');
+        allowedYM.add(ym);
+      }
+    }
+  }
+
+  // Return filter function
+  return (dateKey) => {
+    const ym = dateKey.slice(0,7); // "YYYY-MM"
+    return allowedYM.has(ym);
+  };
+}
+
+// Filtered sum helper
+function emsV2SumSensorFieldFiltered(rows, field, filterFn) {
+  if(!rows) return 0;
+  if(!filterFn) return emsV2SumSensorField(rows, field);
+  return Object.entries(rows).reduce((s,[k,v]) => filterFn(k) ? s + (v[field]||0) : s, 0);
+}
+
+// Close dropdowns when clicking outside
+document.addEventListener('click', function() {
+  emsV2CloseMonthDropdown();
+  ['pie','kpi','table'].forEach(s => emsV2CloseSectionDropdown(s));
+});
+
+// Helper: render all sections
+function emsV2RenderAll() {
+  emsV2RenderKPIs();
+  emsV2RenderPieCharts();
+  emsV2RenderShiftSummaryTable();
+  emsV2RenderTopMachinesTable();
+}
+
 async function emsV2LoadGSheet() {
   const statusEl = document.getElementById('ems-gs-status-text');
-  statusEl.textContent = '⏳ Connecting via GAS proxy…';
-  statusEl.style.color = 'var(--text2)';
+  if(statusEl) { statusEl.textContent = '⏳ Loading all months…'; statusEl.style.color = 'var(--text2)'; }
   try {
-    const sheetId = EMS2.SHEET_ID;
+    const sheets = EMS2.FOLDER_SHEETS.length > 0 ? EMS2.FOLDER_SHEETS : [{ id: EMS2.SHEET_ID, label: EMS2.SELECTED_MONTH || 'Current', year: 2026, month: new Date().getMonth() }];
+    if(statusEl) statusEl.textContent = '📥 Loading ' + sheets.length + ' month(s)…';
 
-    // ── Step 1: DailyShift ──
-    statusEl.textContent = '📥 Reading DailyShift…';
-    const dsRows = await emsV2FetchTab(sheetId, 'DailyShift');
-    EMS2.dailyData = emsV2ParseDailyShiftRows(dsRows);
+    // Load config tab in parallel with data
+    const configPromise = emsV2LoadMeterConfig();
 
-    // ── Step 2: Hourly ──
-    statusEl.textContent = '📥 Reading Hourly…';
+    const results = await Promise.allSettled(sheets.map(async sh => {
+      const dsRows = await emsV2FetchTab(sh.id, 'DailyShift');
+      let hrRows = [];
+      try { hrRows = await emsV2FetchTab(sh.id, 'Hourly'); } catch(e) {}
+      return { sh, dsRows, hrRows };
+    }));
+
+    // Merge all into unified data keyed by full date "YYYY-MM-DD"
+    const mergedDaily = {};   // { sensor: { "2026-04-01": {A,B,C,Total} } }
+    const mergedHourly = {};  // { slotStr: { sensor: val } }
     let hourlyOk = false;
-    try {
-      const hrRows = await emsV2FetchTab(sheetId, 'Hourly');
-      EMS2.hourlyData = emsV2ParseHourlyRows(hrRows);
-      hourlyOk = true;
-    } catch(hErr) {
-      console.warn('Hourly tab issue:', hErr.message);
-      EMS2.hourlyData = {};
+    const allSensorsFromSheet = new Set();
+
+    for(const res of results) {
+      if(res.status !== 'fulfilled') { console.warn('Month load failed:', res.reason); continue; }
+      const { sh, dsRows, hrRows } = res.value;
+      // Extract sensor names from col A (row 1+)
+      if(dsRows && dsRows.length > 1) {
+        for(let r = 1; r < dsRows.length; r++) {
+          const sName = String(dsRows[r][0] || '').trim();
+          if(sName) allSensorsFromSheet.add(sName);
+        }
+      }
+      const parsed = emsV2ParseDailyShiftRowsFull(dsRows, sh.year, sh.month);
+      for(const [sensor, days] of Object.entries(parsed)) {
+        if(!mergedDaily[sensor]) mergedDaily[sensor] = {};
+        Object.assign(mergedDaily[sensor], days);
+      }
+      if(hrRows && hrRows.length > 1) {
+        const parsedHr = emsV2ParseHourlyRows(hrRows);
+        Object.assign(mergedHourly, parsedHr);
+        hourlyOk = true;
+      }
     }
 
-    const numSensors = Object.keys(EMS2.dailyData).length;
-    statusEl.textContent = '✅ Loaded — ' + numSensors + ' sensors' + (hourlyOk ? ' + Hourly' : '') + ' · Apr 2026';
-    statusEl.style.color = '#10b981';
+    EMS2.dailyData = mergedDaily;
+    EMS2.hourlyData = mergedHourly;
 
-    // ── Init all charts/KPIs ──
+    // Apply saved config or default: all sensors → production
+    const savedConfig = await configPromise;
+    emsV2ApplyMeterConfig(savedConfig, allSensorsFromSheet);
+
+    const numSensors = Object.keys(mergedDaily).length;
+    const loaded = results.filter(r=>r.status==='fulfilled').length;
+    if(statusEl) {
+      statusEl.textContent = '✅ ' + numSensors + ' sensors · ' + loaded + ' month' + (loaded>1?'s':'') + (hourlyOk?' + Hourly':'');
+      statusEl.style.color = '#10b981';
+    }
     emsV2InitUI();
   } catch(e) {
     console.error('EMS GSheet load error:', e);
-    statusEl.textContent = '❌ Load failed: ' + e.message;
-    statusEl.style.color = '#ef4444';
+    if(statusEl) { statusEl.textContent = '❌ Load failed: ' + e.message; statusEl.style.color = '#ef4444'; }
   }
 }
 
 function emsV2ChangeSheet() {
-  const input = prompt('Enter Google Sheet ID or URL:', EMS2.SHEET_ID);
-  if(!input) return;
-  const m = input.match(/\/d\/([a-zA-Z0-9_-]+)/);
-  EMS2.SHEET_ID = m ? m[1] : input.trim();
-  emsV2LoadGSheet();
+  // No longer used — month selection is via the dropdown in the status bar
+}
+
+/* ── METER CONFIG: LOAD FROM GSHEET ── */
+const EMS_CONFIG_SHEET_ID = '1EZ5BiWRlTyEYg8Aj_PXmazl95ujbm4LZj6vS3fc3-i4'; // Production_Utility_Meters sheet (shared, persistent)
+async function emsV2LoadMeterConfig() {
+  try {
+    const rows = await emsV2FetchTab(EMS_CONFIG_SHEET_ID, 'MeterConfig');
+    if(!rows || rows.length < 2) return null;
+    // Format: col A = sensor name, col B = "production" | "utility"
+    const config = { production: [], utility: [] };
+    for(let r = 1; r < rows.length; r++) {
+      const name = String(rows[r][0] || '').trim();
+      const zone = String(rows[r][1] || '').trim().toLowerCase();
+      if(!name) continue;
+      if(zone === 'utility') config.utility.push(name);
+      else config.production.push(name);
+    }
+    return config;
+  } catch(e) {
+    console.warn('MeterConfig load failed:', e.message);
+    return null;
+  }
+}
+
+function emsV2ApplyMeterConfig(config, allSensors) {
+  if(config && (config.production.length || config.utility.length)) {
+    // Use saved config
+    const knownProd = new Set(config.production);
+    const knownUtil = new Set(config.utility);
+    const knownAll = new Set([...config.production, ...config.utility]);
+    EMS2.PRODUCTION = config.production.filter(s => allSensors.size === 0 || allSensors.has(s));
+    EMS2.UTILITY = config.utility.filter(s => allSensors.size === 0 || allSensors.has(s));
+    // Any sensors in GSheet but not in config → add to production
+    allSensors.forEach(s => {
+      if(!knownAll.has(s)) EMS2.PRODUCTION.push(s);
+    });
+  } else {
+    // No saved config — all sensors from GSheet go to PRODUCTION; UTILITY stays empty
+    if(allSensors.size > 0) {
+      EMS2.PRODUCTION = [...allSensors].sort();
+      EMS2.UTILITY = [];
+    }
+    // If no GSheet data yet, keep existing hardcoded lists (will be []  since we cleared them)
+  }
+}
+
+async function emsV2SaveMeterConfig() {
+  const statusEl = document.getElementById('ems-config-save-status');
+  if(statusEl) { statusEl.textContent = '💾 Saving…'; statusEl.style.color = 'var(--ems)'; }
+  try {
+    const rows = [['Sensor Name', 'Zone']];
+    EMS2.PRODUCTION.forEach(s => rows.push([s, 'production']));
+    EMS2.UTILITY.forEach(s => rows.push([s, 'utility']));
+    // Use writeSheet action with the dedicated config sheet ID
+    const payload = { sheetId: EMS_CONFIG_SHEET_ID, tab: 'MeterConfig', rows, append: false };
+    const resp = await fetch(GAS_URL + '?action=writeSheet', {
+      method: 'POST', headers: { 'Content-Type': 'text/plain' }, body: JSON.stringify(payload)
+    });
+    const json = await resp.json();
+    if(json.error) throw new Error(json.error);
+    if(statusEl) { statusEl.textContent = '✅ Saved!'; statusEl.style.color = '#10b981'; setTimeout(()=>{ if(statusEl) statusEl.textContent=''; }, 3000); }
+  } catch(e) {
+    if(statusEl) { statusEl.textContent = '❌ ' + e.message; statusEl.style.color = '#ef4444'; }
+  }
+}
+
+/* ── DRAG AND DROP: REASSIGN METER BETWEEN PROD/UTIL + REORDER WITHIN SECTION ── */
+let _emsDragSensor = null, _emsDragFromType = null;
+let _emsDragPlaceholder = null; // invisible placeholder that holds the spot while dragging
+let _emsReorderLocked = true; // 🔒 Locked by default to prevent accidental drag reordering
+
+/* ── MOBILE TOUCH DRAG (long-press to pick up) ── */
+let _touchDragSensor = null, _touchDragType = null;
+let _touchDragLongPressTimer = null, _touchDragActive = false;
+
+function emsV2DragOver(event) {
+  event.preventDefault();
+  event.dataTransfer.dropEffect = 'move';
+  const zone = event.currentTarget;
+  zone.classList.add('drag-over');
+  emsV2UpdateInsertIndicator(zone, event.clientX, event.clientY);
+}
+
+function emsV2DragLeave(event) {
+  if(!event.currentTarget.contains(event.relatedTarget)) {
+    event.currentTarget.classList.remove('drag-over');
+    emsV2ClearInsertIndicators(event.currentTarget);
+  }
+}
+
+function emsV2ClearInsertIndicators(zone) {
+  zone.querySelectorAll('.ems-v2-btn').forEach(b => b.classList.remove('drag-insert-before','drag-insert-after'));
+}
+
+function emsV2UpdateInsertIndicator(zone, clientX, clientY) {
+  emsV2ClearInsertIndicators(zone);
+  const target = emsV2GetDropTarget(zone, clientX, clientY);
+  if(target) {
+    target.classList.add('drag-insert-before');
+  } else {
+    const btns = zone.querySelectorAll('.ems-v2-btn');
+    if(btns.length) btns[btns.length-1].classList.add('drag-insert-after');
+  }
+}
+
+/*
+ * emsV2GetDropTarget — finds button to insert BEFORE, or null (= append at end)
+ *
+ * The dragged button is HIDDEN (opacity:0, pointer-events:none) not removed,
+ * so we skip it in the scan. We group remaining buttons into visual rows by
+ * comparing rect.top values, then pick the insertion slot within the target row.
+ */
+function emsV2GetDropTarget(zone, clientX, clientY) {
+  const btns = [...zone.querySelectorAll('.ems-v2-btn')]
+    .filter(b => b.dataset.sensor !== _emsDragSensor && b.dataset.sensor !== _touchDragSensor);
+  if(!btns.length) return null;
+
+  const items = btns.map(b => ({ btn: b, rect: b.getBoundingClientRect() }));
+
+  // Group into rows — buttons on same visual line have very close rect.top values
+  const rows = [];
+  for(const item of items) {
+    const mid = item.rect.top + item.rect.height / 2;
+    let row = rows.find(r => Math.abs(r.mid - mid) < item.rect.height * 0.6);
+    if(!row) {
+      row = { mid, topY: item.rect.top, bottomY: item.rect.bottom, items: [] };
+      rows.push(row);
+    }
+    row.items.push(item);
+    row.topY    = Math.min(row.topY,    item.rect.top);
+    row.bottomY = Math.max(row.bottomY, item.rect.bottom);
+    // update row mid to be average
+    row.mid = row.items.reduce((s, i) => s + i.rect.top + i.rect.height/2, 0) / row.items.length;
+  }
+  rows.sort((a, b) => a.topY - b.topY);
+
+  // Find first row whose bottom edge is below clientY
+  let targetRow = rows.find(r => clientY < r.bottomY);
+  if(!targetRow) return null; // cursor below all → append
+
+  // Sort items left-to-right within the row
+  targetRow.items.sort((a, b) => a.rect.left - b.rect.left);
+
+  // Return first button whose horizontal midpoint is to the right of cursor
+  for(const { btn, rect } of targetRow.items) {
+    if(clientX < rect.left + rect.width / 2) return btn;
+  }
+
+  // Cursor past all items in row → insert before first item of next row
+  const ri = rows.indexOf(targetRow);
+  if(ri < rows.length - 1) return rows[ri + 1].items[0].btn;
+
+  return null; // append at end
+}
+
+/* ── REORDER LOCK ── */
+function emsV2ToggleReorderLock() {
+  _emsReorderLocked = !_emsReorderLocked;
+  const btn = document.getElementById('ems-drag-lock-btn');
+  const grid = document.querySelector('.ems-selector-grid');
+  if(_emsReorderLocked) {
+    btn.textContent = '🔒 Locked';
+    btn.classList.add('locked');
+    grid && grid.classList.add('ems-reorder-locked');
+  } else {
+    btn.textContent = '🔓 Unlocked';
+    btn.classList.remove('locked');
+    grid && grid.classList.remove('ems-reorder-locked');
+  }
+  // Rebuild so arrow buttons appear/disappear correctly
+  emsV2BuildButtons();
+  document.querySelectorAll('.ems-v2-btn[data-type="prod"]').forEach(b => {
+    if(EMS2.selectedProd.has(b.dataset.sensor)) b.classList.add('active-prod');
+  });
+  document.querySelectorAll('.ems-v2-btn[data-type="util"]').forEach(b => {
+    if(EMS2.selectedUtil.has(b.dataset.sensor)) b.classList.add('active-util');
+  });
+  emsV2UpdateCounts();
+}
+
+/* ── ARROW REORDER (◀ ▶ buttons) ── */
+function emsV2ShiftSensor(sensor, type, dir) {
+  const list = type === 'prod' ? EMS2.PRODUCTION : EMS2.UTILITY;
+  const idx = list.indexOf(sensor);
+  if(idx < 0) return;
+  const newIdx = idx + dir;
+  if(newIdx < 0 || newIdx >= list.length) return;
+  [list[idx], list[newIdx]] = [list[newIdx], list[idx]];
+  emsV2BuildButtons();
+  document.querySelectorAll('.ems-v2-btn[data-type="prod"]').forEach(b => {
+    if(EMS2.selectedProd.has(b.dataset.sensor)) b.classList.add('active-prod');
+  });
+  document.querySelectorAll('.ems-v2-btn[data-type="util"]').forEach(b => {
+    if(EMS2.selectedUtil.has(b.dataset.sensor)) b.classList.add('active-util');
+  });
+  emsV2UpdateCounts();
+}
+
+/* ── MOBILE LONG-PRESS DRAG ── */
+function emsV2InitTouchDrag() {
+  const ghost = document.getElementById('ems-touch-drag-ghost');
+
+  function clearZoneHighlights() {
+    document.querySelectorAll('.ems-drop-zone').forEach(z => {
+      z.classList.remove('drag-over');
+      emsV2ClearInsertIndicators(z);
+    });
+  }
+
+  document.addEventListener('touchmove', e => {
+    if(!_touchDragActive) return;
+    e.preventDefault();
+    const touch = e.touches[0];
+    ghost.style.left = touch.clientX + 'px';
+    ghost.style.top  = touch.clientY + 'px';
+    clearZoneHighlights();
+    const el = document.elementFromPoint(touch.clientX, touch.clientY);
+    const zone = el && el.closest('.ems-drop-zone');
+    if(zone) {
+      zone.classList.add('drag-over');
+      emsV2UpdateInsertIndicator(zone, touch.clientX, touch.clientY);
+    }
+  }, { passive: false });
+
+  document.addEventListener('touchend', e => {
+    if(!_touchDragActive) return;
+    _touchDragActive = false;
+    ghost.style.display = 'none';
+    clearZoneHighlights();
+    const touch = e.changedTouches[0];
+    const el = document.elementFromPoint(touch.clientX, touch.clientY);
+    const zone = el && el.closest('.ems-drop-zone');
+    if(zone) {
+      emsV2CommitDrop(zone.dataset.zone,
+        emsV2GetDropTarget(zone, touch.clientX, touch.clientY),
+        _touchDragSensor, _touchDragType);
+    }
+    _touchDragSensor = null; _touchDragType = null;
+  }, { passive: true });
+}
+document.addEventListener('DOMContentLoaded', emsV2InitTouchDrag);
+
+/* ── SHARED DROP COMMIT ── */
+function emsV2CommitDrop(targetType, insertBeforeBtn, sensor, fromType) {
+  const insertBeforeSensor = insertBeforeBtn ? insertBeforeBtn.dataset.sensor : null;
+  const isCross = fromType !== targetType;
+
+  if(fromType === 'prod') EMS2.PRODUCTION = EMS2.PRODUCTION.filter(s => s !== sensor);
+  else EMS2.UTILITY = EMS2.UTILITY.filter(s => s !== sensor);
+
+  const targetList = targetType === 'prod' ? EMS2.PRODUCTION : EMS2.UTILITY;
+  if(insertBeforeSensor) {
+    const idx = targetList.indexOf(insertBeforeSensor);
+    if(idx >= 0) targetList.splice(idx, 0, sensor);
+    else targetList.push(sensor);
+  } else {
+    targetList.push(sensor);
+  }
+  if(targetType === 'prod') EMS2.PRODUCTION = targetList;
+  else EMS2.UTILITY = targetList;
+
+  if(isCross) {
+    if(EMS2.selectedProd.has(sensor)) { EMS2.selectedProd.delete(sensor); if(targetType==='util') EMS2.selectedUtil.add(sensor); }
+    if(EMS2.selectedUtil.has(sensor)) { EMS2.selectedUtil.delete(sensor); if(targetType==='prod') EMS2.selectedProd.add(sensor); }
+  }
+
+  emsV2BuildButtons();
+  document.querySelectorAll('.ems-v2-btn[data-type="prod"]').forEach(b => {
+    if(EMS2.selectedProd.has(b.dataset.sensor)) b.classList.add('active-prod');
+  });
+  document.querySelectorAll('.ems-v2-btn[data-type="util"]').forEach(b => {
+    if(EMS2.selectedUtil.has(b.dataset.sensor)) b.classList.add('active-util');
+  });
+  emsV2UpdateCounts();
+  emsV2UpdateSelectedSummary();
+  if(isCross) {
+    emsV2RenderDaily(); emsV2RenderHourly(); emsV2RenderHeatmap();
+    emsV2RenderKPIs(); emsV2RenderShiftSummaryTable();
+    emsV2RenderTopMachinesTable(); emsV2RenderPieCharts();
+  }
+}
+
+function emsV2Drop(event, targetType) {
+  event.preventDefault();
+  const zone = event.currentTarget;
+  zone.classList.remove('drag-over');
+  emsV2ClearInsertIndicators(zone);
+  if(!_emsDragSensor) return;
+  const insertBeforeBtn = emsV2GetDropTarget(zone, event.clientX, event.clientY);
+  emsV2CommitDrop(targetType, insertBeforeBtn, _emsDragSensor, _emsDragFromType);
+}
+
+
+
+/* ── DAILY MODE: SEPARATE vs COMBINED ── */
+function emsV2SetDailyMode(mode) {
+  EMS2.dailyMode = mode;
+  document.getElementById('daily-mode-combined').classList.toggle('active', mode === 'combined');
+  document.getElementById('daily-mode-separate').classList.toggle('active', mode === 'separate');
+  emsV2RenderDaily();
 }
 
 /* ── ROW-ARRAY PARSERS (GAS returns array-of-arrays, not CSV text) ── */
@@ -4136,6 +4905,39 @@ function emsV2ParseDailyShiftRows(rows) {
   return data;
 }
 
+// New version: returns { sensor: { "YYYY-MM-DD": {A,B,C,Total} } }
+function emsV2ParseDailyShiftRowsFull(rows, year, month0) {
+  if(!rows || rows.length < 2) return {};
+  const headers = rows[0];
+  const data = {};
+  const pad = n => String(n).padStart(2,'0');
+
+  const colMap = [];
+  for(let c = 1; c < headers.length; c++) {
+    const hdr = String(headers[c] || '');
+    const mShift = hdr.match(/Day\s+(\d+)\s*[–\-]\s*Shift\s+([ABC])/i);
+    const mTotal = hdr.match(/Day\s+(\d+)\s*[–\-]\s*Total/i);
+    if(mShift) colMap[c] = { day: parseInt(mShift[1]), shift: mShift[2].toUpperCase() };
+    else if(mTotal) colMap[c] = { day: parseInt(mTotal[1]), shift: 'Total' };
+  }
+
+  for(let r = 1; r < rows.length; r++) {
+    const row = rows[r];
+    if(!row || !row[0]) continue;
+    const sensor = String(row[0]).trim();
+    if(!sensor) continue;
+    data[sensor] = {};
+    for(let c = 1; c < row.length; c++) {
+      const cm = colMap[c];
+      if(!cm) continue;
+      const dateKey = `${year}-${pad(month0+1)}-${pad(cm.day)}`;
+      if(!data[sensor][dateKey]) data[sensor][dateKey] = { A: 0, B: 0, C: 0, Total: 0 };
+      data[sensor][dateKey][cm.shift] = parseFloat(row[c]) || 0;
+    }
+  }
+  return data;
+}
+
 // Hourly: rows[0] = ["DateTimeStamp", sensor1, sensor2, ...]
 // Returns: { slotStr: { sensorName: value, ... }, ... }
 function emsV2ParseHourlyRows(rows) {
@@ -4161,10 +4963,30 @@ function emsV2ParseHourlyRows(rows) {
 
 /* ── INIT UI ── */
 function emsV2InitUI() {
+  // Apply initial lock state
+  const lockBtn = document.getElementById('ems-drag-lock-btn');
+  const grid = document.querySelector('.ems-selector-grid');
+  if(_emsReorderLocked) {
+    lockBtn && (lockBtn.textContent = '🔒 Locked');
+    lockBtn && lockBtn.classList.add('locked');
+    grid && grid.classList.add('ems-reorder-locked');
+  }
+
+  // Sync section month filters to the current selection (or all if not set yet)
+  if(!EMS2.SECTION_MONTHS) EMS2.SECTION_MONTHS = {};
+  ['pie','kpi','table'].forEach(s => {
+    if(!EMS2.SECTION_MONTHS[s]) {
+      EMS2.SECTION_MONTHS[s] = new Set((EMS2.FOLDER_SHEETS||[]).map(p=>p.label));
+    }
+    emsV2UpdateSectionLabel(s);
+  });
+  emsV2BuildMonthCheckboxes();
+  emsV2UpdateMonthLabel();
+
   emsV2BuildButtons();
   emsV2ResetDailyDates();
-  emsV2ResetHourlyRange();
-  emsV2BuildTimeSelects();
+  emsV2BuildTimeSelects();      // Must build selects FIRST so preset can set values
+  emsV2HourlyPreset('yesterday');
   emsV2RenderKPIs();
   emsV2RenderShiftSummaryTable();
   emsV2RenderTopMachinesTable();
@@ -4191,14 +5013,85 @@ function emsV2BuildButtons() {
 }
 
 function emsV2MakeBtn(sensor, type) {
+  // Wrapper: holds the label btn + optional arrow btns
+  const wrap = document.createElement('span');
+  wrap.style.cssText = 'display:inline-flex;align-items:center;gap:0;';
+
+  // ◀ Left arrow (only when unlocked)
+  if(!_emsReorderLocked) {
+    const lBtn = document.createElement('button');
+    lBtn.textContent = '◀';
+    lBtn.title = 'Move left';
+    lBtn.style.cssText = 'padding:2px 5px;font-size:0.62rem;border:1px solid var(--border2);border-right:none;border-radius:7px 0 0 7px;background:var(--surface2);color:var(--text2);cursor:pointer;line-height:1;';
+    lBtn.onclick = e => { e.stopPropagation(); emsV2ShiftSensor(sensor, type, -1); };
+    wrap.appendChild(lBtn);
+  }
+
+  // Main label button
   const btn = document.createElement('button');
   btn.className = 'ems-v2-btn';
   btn.dataset.sensor = sensor;
   btn.dataset.type = type;
   btn.textContent = EMS2.shortName(sensor);
-  btn.title = sensor;
+  btn.title = sensor + (!_emsReorderLocked ? '\n↕ Drag or use ◀▶ to reorder' : '');
+  if(!_emsReorderLocked) {
+    // Adjust border-radius to merge with arrows
+    btn.style.borderRadius = '0';
+    btn.draggable = true;
+    btn.ondragstart = e => {
+      _emsDragSensor = sensor; _emsDragFromType = type;
+      e.dataTransfer.effectAllowed = 'move';
+      // Hide this btn so its layout slot disappears → stable rects for siblings
+      requestAnimationFrame(() => { btn.style.opacity = '0'; btn.style.pointerEvents = 'none'; });
+    };
+    btn.ondragend = () => {
+      btn.style.opacity = ''; btn.style.pointerEvents = '';
+      _emsDragSensor = null; _emsDragFromType = null;
+      // Clear any lingering indicators
+      document.querySelectorAll('.ems-v2-btn').forEach(b => b.classList.remove('drag-insert-before','drag-insert-after'));
+    };
+    // Mobile long-press
+    btn.addEventListener('touchstart', e => {
+      _touchDragLongPressTimer = setTimeout(() => {
+        _touchDragActive = true;
+        _touchDragSensor = sensor;
+        _touchDragType = type;
+        try { navigator.vibrate && navigator.vibrate(50); } catch(er){}
+        btn.style.opacity = '0.35';
+        const ghost = document.getElementById('ems-touch-drag-ghost');
+        if(ghost) {
+          ghost.textContent = EMS2.shortName(sensor);
+          ghost.style.display = 'block';
+          ghost.style.left = e.touches[0].clientX + 'px';
+          ghost.style.top  = e.touches[0].clientY + 'px';
+        }
+      }, 500);
+    }, { passive: true });
+    btn.addEventListener('touchend', () => {
+      clearTimeout(_touchDragLongPressTimer);
+      if(!_touchDragActive) { /* nothing */ }
+      else { btn.style.opacity = ''; }
+    }, { passive: true });
+    btn.addEventListener('touchmove', () => {
+      if(!_touchDragActive) clearTimeout(_touchDragLongPressTimer);
+    }, { passive: true });
+  } else {
+    btn.draggable = false;
+  }
   btn.onclick = () => emsV2ToggleBtn(sensor, type, btn);
-  return btn;
+  wrap.appendChild(btn);
+
+  // ▶ Right arrow (only when unlocked)
+  if(!_emsReorderLocked) {
+    const rBtn = document.createElement('button');
+    rBtn.textContent = '▶';
+    rBtn.title = 'Move right';
+    rBtn.style.cssText = 'padding:2px 5px;font-size:0.62rem;border:1px solid var(--border2);border-left:none;border-radius:0 7px 7px 0;background:var(--surface2);color:var(--text2);cursor:pointer;line-height:1;';
+    rBtn.onclick = e => { e.stopPropagation(); emsV2ShiftSensor(sensor, type, +1); };
+    wrap.appendChild(rBtn);
+  }
+
+  return wrap;
 }
 
 function emsV2ToggleBtn(sensor, type, btn) {
@@ -4292,16 +5185,81 @@ function emsV2GetMonthBounds() {
 }
 
 function emsV2ResetDailyDates() {
-  const {from, to} = emsV2GetMonthBounds();
-  // Use April 2026 since that's our data
-  document.getElementById('daily-date-from').value = '2026-04-01';
-  document.getElementById('daily-date-to').value = '2026-04-30';
+  emsDailyPreset('thismonth');
+}
+
+/* ── DAILY PRESET BUTTONS ── */
+function emsDailyPreset(preset) {
+  const now = new Date();
+  const pad = n => String(n).padStart(2,'0');
+  const fmt = d => `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`;
+  let from, to;
+
+  if(preset === 'thismonth') {
+    from = new Date(now.getFullYear(), now.getMonth(), 1);
+    to   = new Date(now.getFullYear(), now.getMonth()+1, 0);
+  } else if(preset === 'lastmonth') {
+    from = new Date(now.getFullYear(), now.getMonth()-1, 1);
+    to   = new Date(now.getFullYear(), now.getMonth(), 0);
+  } else if(preset === '3m') {
+    from = new Date(now.getFullYear(), now.getMonth()-2, 1);
+    to   = new Date(now.getFullYear(), now.getMonth()+1, 0);
+  } else if(preset === '6m') {
+    from = new Date(now.getFullYear(), now.getMonth()-5, 1);
+    to   = new Date(now.getFullYear(), now.getMonth()+1, 0);
+  } else if(preset === 'thisyear') {
+    from = new Date(now.getFullYear(), 0, 1);
+    to   = new Date(now.getFullYear(), 11, 31);
+  } else if(preset === 'lastyear') {
+    from = new Date(now.getFullYear()-1, 0, 1);
+    to   = new Date(now.getFullYear()-1, 11, 31);
+  } else if(preset === 'all') {
+    // Use earliest and latest dates from loaded data
+    const allKeys = Object.values(EMS2.dailyData||{}).flatMap(d => Object.keys(d)).sort();
+    from = allKeys.length ? new Date(allKeys[0]) : new Date(now.getFullYear(), now.getMonth(), 1);
+    to   = allKeys.length ? new Date(allKeys[allKeys.length-1]) : new Date(now.getFullYear(), now.getMonth()+1, 0);
+  }
+
+  document.getElementById('daily-date-from').value = fmt(from);
+  document.getElementById('daily-date-to').value   = fmt(to);
+
+  // Highlight active button
+  document.querySelectorAll('.ems-daily-preset').forEach(b => {
+    b.style.background = '';
+    b.style.color = '';
+    b.style.borderColor = '';
+  });
+  const active = document.getElementById('dp-' + preset);
+  if(active) { active.style.background='var(--ems)'; active.style.color='#fff'; active.style.borderColor='var(--ems)'; }
+
   emsV2RenderDaily();
 }
 
+function emsV2HourlyPreset(preset) {
+  const now = new Date();
+  const pad = n => String(n).padStart(2,'0');
+  const fmt = d => `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`;
+  const yest = new Date(now); yest.setDate(now.getDate()-1);
+  let from, to;
+  if(preset === 'yesterday') {
+    from = yest; to = yest;
+  } else if(preset === 'last3') {
+    from = new Date(now); from.setDate(now.getDate()-3); to = yest;
+  } else if(preset === 'last7') {
+    from = new Date(now); from.setDate(now.getDate()-7); to = yest;
+  }
+  document.getElementById('hourly-date-from').value = fmt(from);
+  document.getElementById('hourly-date-to').value   = fmt(to);
+  emsV2RenderHourly();
+}
+
 function emsV2ResetHourlyRange() {
-  document.getElementById('hourly-date-from').value = '2026-04-01';
-  document.getElementById('hourly-date-to').value = '2026-04-01';
+  const now = new Date();
+  const pad = n => String(n).padStart(2,'0');
+  const fmt = d => `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`;
+  // Today button = today's date
+  document.getElementById('hourly-date-from').value = fmt(now);
+  document.getElementById('hourly-date-to').value   = fmt(now);
   emsV2RenderHourly();
 }
 
@@ -4344,26 +5302,34 @@ function emsV2SetDailyChart(type) {
 function emsV2RenderDaily() {
   if(!EMS2.dailyData) return;
   const fromVal = document.getElementById('daily-date-from').value;
-  const toVal = document.getElementById('daily-date-to').value;
-  const from = new Date(fromVal), to = new Date(toVal);
+  const toVal   = document.getElementById('daily-date-to').value;
+  const from = new Date(fromVal + 'T00:00:00');
+  const to   = new Date(toVal   + 'T00:00:00');
   const shifts = emsV2GetSelectedShifts();
   const selectedSensors = [...EMS2.selectedProd, ...EMS2.selectedUtil];
 
-  // Build day labels for April 2026 within range
-  const labels = [];
-  const dayNums = [];
-  for(let d=1; d<=30; d++) {
-    const dt = new Date(2026, 3, d); // April 2026
-    if(dt >= from && dt <= to) {
-      labels.push(`Apr ${String(d).padStart(2,'0')}`);
-      dayNums.push(d);
+  // Build sorted date-key list covering the range
+  const allDateKeys = new Set();
+  for(const sensor of selectedSensors) {
+    const sData = EMS2.dailyData[sensor] || {};
+    for(const dk of Object.keys(sData)) {
+      const d = new Date(dk + 'T00:00:00');
+      if(d >= from && d <= to) allDateKeys.add(dk);
     }
   }
+  const sortedDates = [...allDateKeys].sort();
+
+  // Build readable labels
+  const MSHORT = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  const labels = sortedDates.map(dk => {
+    const d = new Date(dk + 'T00:00:00');
+    return `${MSHORT[d.getMonth()]} ${String(d.getDate()).padStart(2,'0')}`;
+  });
 
   const noData = document.getElementById('ems-daily-no-data');
   const canvas = document.getElementById('ems-daily-chart');
 
-  if(dayNums.length === 0 || selectedSensors.length === 0) {
+  if(sortedDates.length === 0 || selectedSensors.length === 0) {
     canvas.style.display = 'none';
     noData.style.display = 'block';
     return;
@@ -4371,70 +5337,103 @@ function emsV2RenderDaily() {
   canvas.style.display = 'block';
   noData.style.display = 'none';
 
-  // Build datasets — one per sensor+shift combination, or total per shift
   const shiftColors = { A:'#3b82f6', B:'#10b981', C:'#f59e0b', Total:'#6366f1' };
+  // 20 distinct colors for separate-machine mode
+  const machineColors = ['#3b82f6','#10b981','#f59e0b','#ef4444','#8b5cf6','#06b6d4','#f97316','#84cc16','#ec4899','#14b8a6','#f43f5e','#a855f7','#0ea5e9','#22c55e','#eab308','#6366f1','#fb923c','#38bdf8','#4ade80','#c084fc'];
+  const isBar = EMS2.dailyChartType === 'bar';
+  const isSep = EMS2.dailyMode === 'separate';
   const datasets = [];
 
-  if(selectedSensors.length === 1) {
-    // Single sensor: one line/bar per shift
-    const sensor = selectedSensors[0];
-    for(const shift of shifts) {
-      const values = dayNums.map(d => {
-        const row = EMS2.dailyData[sensor];
-        return row && row[d] ? (row[d][shift] || 0) : 0;
-      });
-      datasets.push({
-        label: `${EMS2.shortName(sensor)} — Shift ${shift}`,
-        data: values,
-        backgroundColor: shiftColors[shift] + (EMS2.dailyChartType==='bar'?'cc':'33'),
-        borderColor: shiftColors[shift],
-        borderWidth: 2,
-        fill: EMS2.dailyChartType==='line',
-        tension: 0.3,
-        pointRadius: 3,
-        stack: EMS2.dailyChartType==='bar' ? shift : undefined
-      });
-    }
+  if(isSep) {
+    // One dataset per selected sensor (total only if multiple shifts; per shift if one sensor and multiple shifts selected)
+    selectedSensors.forEach((sensor, si) => {
+      const baseColor = machineColors[si % machineColors.length];
+      if(shifts.length === 1) {
+        const shift = shifts[0];
+        const values = sortedDates.map(dk => {
+          const row = EMS2.dailyData[sensor]; return row && row[dk] ? (row[dk][shift] || 0) : 0;
+        });
+        datasets.push({
+          label: EMS2.shortName(sensor) + (shift !== 'Total' ? ` Sh.${shift}` : ''),
+          data: values,
+          backgroundColor: baseColor + (isBar ? 'cc' : '33'),
+          borderColor: baseColor, borderWidth: 2,
+          fill: !isBar, tension: 0.3, pointRadius: sortedDates.length > 60 ? 1 : 3,
+          type: isBar ? 'bar' : 'line'
+        });
+      } else {
+        // Multiple shifts selected in separate mode: one dataset per (sensor×shift)
+        shifts.forEach((shift, shIdx) => {
+          const color = machineColors[(si * 4 + shIdx) % machineColors.length];
+          const values = sortedDates.map(dk => {
+            const row = EMS2.dailyData[sensor]; return row && row[dk] ? (row[dk][shift] || 0) : 0;
+          });
+          datasets.push({
+            label: EMS2.shortName(sensor) + ` Sh.${shift}`,
+            data: values,
+            backgroundColor: color + (isBar ? 'cc' : '33'),
+            borderColor: color, borderWidth: 2,
+            fill: !isBar, tension: 0.3, pointRadius: sortedDates.length > 60 ? 1 : 3,
+            type: isBar ? 'bar' : 'line'
+          });
+        });
+      }
+    });
   } else {
-    // Multiple sensors: aggregate by shift
-    for(const shift of shifts) {
-      const values = dayNums.map(d => {
-        let sum = 0;
-        for(const sensor of selectedSensors) {
+    // Combined mode (original behaviour)
+    if(selectedSensors.length === 1) {
+      const sensor = selectedSensors[0];
+      for(const shift of shifts) {
+        const values = sortedDates.map(dk => {
           const row = EMS2.dailyData[sensor];
-          sum += (row && row[d] ? (row[d][shift] || 0) : 0);
-        }
-        return sum;
-      });
-      datasets.push({
-        label: `Total — Shift ${shift}`,
-        data: values,
-        backgroundColor: shiftColors[shift] + (EMS2.dailyChartType==='bar'?'cc':'33'),
-        borderColor: shiftColors[shift],
-        borderWidth: 2,
-        fill: EMS2.dailyChartType==='line',
-        tension: 0.3,
-        pointRadius: 3,
-        stack: 'shifts'
-      });
+          return row && row[dk] ? (row[dk][shift] || 0) : 0;
+        });
+        datasets.push({
+          label: `${EMS2.shortName(sensor)} — Shift ${shift}`,
+          data: values,
+          backgroundColor: shiftColors[shift] + (isBar?'cc':'33'),
+          borderColor: shiftColors[shift], borderWidth: 2,
+          fill: !isBar, tension: 0.3, pointRadius: sortedDates.length > 60 ? 1 : 3,
+          stack: isBar ? shift : undefined
+        });
+      }
+    } else {
+      for(const shift of shifts) {
+        const values = sortedDates.map(dk => {
+          let sum = 0;
+          for(const sensor of selectedSensors) {
+            const row = EMS2.dailyData[sensor];
+            sum += (row && row[dk] ? (row[dk][shift] || 0) : 0);
+          }
+          return sum;
+        });
+        datasets.push({
+          label: `Total — Shift ${shift}`,
+          data: values,
+          backgroundColor: shiftColors[shift] + (isBar?'cc':'33'),
+          borderColor: shiftColors[shift], borderWidth: 2,
+          fill: !isBar, tension: 0.3, pointRadius: sortedDates.length > 60 ? 1 : 3,
+          stack: 'shifts'
+        });
+      }
     }
   }
 
+  const chartType = isSep ? (isBar ? 'bar' : 'line') : (isBar && shifts.length > 1 ? 'bar' : EMS2.dailyChartType);
   if(EMS2.dailyChartInst) EMS2.dailyChartInst.destroy();
-  const ctx = canvas.getContext('2d');
-  EMS2.dailyChartInst = new Chart(ctx, {
-    type: EMS2.dailyChartType === 'bar' && shifts.length > 1 ? 'bar' : EMS2.dailyChartType,
+  EMS2.dailyChartInst = new Chart(canvas.getContext('2d'), {
+    type: chartType,
     data: { labels, datasets },
     options: {
       responsive: true, maintainAspectRatio: false,
       interaction: { mode:'index', intersect:false },
       plugins: {
-        legend: { position:'top', labels:{ color: getComputedStyle(document.body).getPropertyValue('--text2').trim()||'#666', font:{size:11} } },
-        tooltip: { callbacks: { label: ctx => ` ${ctx.dataset.label}: ${ctx.parsed.y.toLocaleString(undefined,{maximumFractionDigits:1})} kWh` } }
+        legend: { position:'top', labels:{ color: getComputedStyle(document.body).getPropertyValue('--text2').trim()||'#666', font:{size:11}, usePointStyle: true, boxWidth: 12 } },
+        tooltip: { callbacks: { label: c => ` ${c.dataset.label}: ${c.parsed.y.toLocaleString(undefined,{maximumFractionDigits:1})} kWh` } }
       },
       scales: {
-        x: { stacked: EMS2.dailyChartType==='bar', ticks:{ color:'#888', font:{size:10} }, grid:{color:'rgba(128,128,128,0.1)'} },
-        y: { stacked: EMS2.dailyChartType==='bar', ticks:{ color:'#888', font:{size:10}, callback: v => v>=1000?(v/1000).toFixed(0)+'k':v }, grid:{color:'rgba(128,128,128,0.1)'}, title:{display:true,text:'kWh',color:'#888',font:{size:11}} }
+        x: { stacked: isBar && !isSep, ticks:{ color:'#888', font:{size:10}, maxRotation:45, autoSkip:true, maxTicksLimit:31 }, grid:{color:'rgba(128,128,128,0.1)'} },
+        y: { stacked: isBar && !isSep, ticks:{ color:'#888', font:{size:10}, callback: v => v>=1000?(v/1000).toFixed(0)+'k':v }, grid:{color:'rgba(128,128,128,0.1)'}, title:{display:true,text:'kWh',color:'#888',font:{size:11}} }
       }
     }
   });
@@ -4442,23 +5441,37 @@ function emsV2RenderDaily() {
 
 /* ── HOURLY CHART ── */
 function emsV2BuildTimeSelects() {
-  // 7AM start: hours 7,8,...23,0,1,...6 (next day)
-  const hours7to7 = [];
-  for(let h=7;h<24;h++) hours7to7.push(h);
-  for(let h=0;h<7;h++) hours7to7.push(h);
+  // FROM options: 7,8,...23,0,1,...6 (24 hours starting at 7AM)
+  const hoursFrom = [];
+  for(let h=7;h<24;h++) hoursFrom.push(h);
+  for(let h=0;h<7;h++) hoursFrom.push(h);
 
-  ['hourly-time-from','hourly-time-to'].forEach((id,idx) => {
-    const sel = document.getElementById(id);
-    sel.innerHTML = '';
-    hours7to7.forEach(h => {
-      const opt = document.createElement('option');
-      opt.value = h;
-      opt.textContent = String(h).padStart(2,'0')+':00';
-      sel.appendChild(opt);
-    });
-    if(idx===0) sel.value = 7;
-    else { sel.value = 6; } // 6AM = end of next day's shift
+  // TO options: 8,9,...23,0,1,...6,7 (same but includes 7AM as the end = full shift)
+  const hoursTo = [];
+  for(let h=8;h<24;h++) hoursTo.push(h);
+  for(let h=0;h<8;h++) hoursTo.push(h); // includes 7
+
+  const fromSel = document.getElementById('hourly-time-from');
+  const toSel   = document.getElementById('hourly-time-to');
+
+  fromSel.innerHTML = '';
+  hoursFrom.forEach(h => {
+    const opt = document.createElement('option');
+    opt.value = h;
+    opt.textContent = String(h).padStart(2,'0') + ':00';
+    fromSel.appendChild(opt);
   });
+  fromSel.value = 7; // default FROM = 7AM
+
+  toSel.innerHTML = '';
+  hoursTo.forEach(h => {
+    const opt = document.createElement('option');
+    opt.value = h;
+    // Label 7 as "07:00 (next day)" for clarity
+    opt.textContent = String(h).padStart(2,'0') + ':00' + (h === 7 ? ' (next day)' : '');
+    toSel.appendChild(opt);
+  });
+  toSel.value = 7; // default TO = 7AM next day = full shift
 }
 
 function emsV2SetHourlyChart(type) {
@@ -4479,27 +5492,51 @@ function emsV2RenderHourly() {
   const noData = document.getElementById('ems-hourly-no-data');
   const canvas = document.getElementById('ems-hourly-chart');
 
-  // Parse date range
-  const from = new Date(fromDate), to = new Date(toDate);
+  // Parse date range (these are the SHIFT DAYS, not calendar days)
+  const from = new Date(fromDate + 'T00:00:00');
+  const to   = new Date(toDate   + 'T00:00:00');
 
-  // Filter slots from hourlyData within date + time range
-  // Slot format: "01 Apr 07:00 - 01 Apr 08:00"
+  // Overnight shift: timeFrom > timeTo means shift wraps midnight (e.g. 7AM→6AM next day)
+  // timeFrom === timeTo means full 24h overnight shift (7AM→7AM next day)
+  const shiftWraps = timeFrom >= timeTo;
+  const toDateObj = new Date(toDate + 'T00:00:00');
+  // For the 7→7 case: need to also include hour=timeTo on toDate+1
+  const toDatePlus1 = new Date(toDateObj); toDatePlus1.setDate(toDatePlus1.getDate() + 1);
+
   const matchingSlots = [];
   for(const slot of Object.keys(EMS2.hourlyData)) {
     const parsed = emsV2ParseSlot(slot);
     if(!parsed) continue;
-    const slotDate = parsed.date; // Date obj
+    const slotDate = parsed.date;
     const slotHour = parsed.hour;
 
-    if(slotDate < from || slotDate > to) continue;
+    // For overnight shifts: early morning hours (< timeFrom) belong to the PREVIOUS shift day
+    let shiftDay = new Date(slotDate);
+    if(shiftWraps && slotHour < timeFrom) {
+      shiftDay.setDate(shiftDay.getDate() - 1);
+    }
 
-    // Time filter (7-to-7 logic)
+    // Special case: for full overnight shift (timeFrom===timeTo), include hour=timeTo of the day after toDate
+    if(timeFrom === timeTo && slotHour === timeTo) {
+      const calDate = new Date(slotDate);
+      // This slot's calendar date should be toDate+1 to be the final hour of the last shift
+      if(calDate.getTime() === toDatePlus1.getTime()) {
+        matchingSlots.push({ slot, ...parsed });
+        continue;
+      }
+    }
+
+    if(shiftDay < from || shiftDay > to) continue;
+
+    // Time filter — inclusive end
     let inRange;
-    if(timeFrom <= timeTo) {
-      inRange = slotHour >= timeFrom && slotHour < timeTo;
+    if(timeFrom === timeTo) {
+      // 7→7: full overnight shift — include all hours >= timeFrom OR the wrap-around early hours
+      inRange = true; // shift-day correction above handles the day boundary
+    } else if(!shiftWraps) {
+      inRange = slotHour >= timeFrom && slotHour <= timeTo;
     } else {
-      // Wraps midnight
-      inRange = slotHour >= timeFrom || slotHour < timeTo;
+      inRange = slotHour >= timeFrom || slotHour <= timeTo;
     }
     if(!inRange) continue;
     matchingSlots.push({ slot, ...parsed });
@@ -4560,12 +5597,42 @@ function emsV2ParseSlot(slot) {
   const months = {Jan:0,Feb:1,Mar:2,Apr:3,May:4,Jun:5,Jul:6,Aug:7,Sep:8,Oct:9,Nov:10,Dec:11};
   const day=parseInt(m[1]), mon=months[m[2]], hr=parseInt(m[3]);
   if(mon===undefined) return null;
-  const date = new Date(2026, mon, day);
+  // Use year from selected sheet if available, otherwise current year
+  const chosen = (EMS2.FOLDER_SHEETS||[]).find(p => p.id === EMS2.SHEET_ID);
+  const yr = chosen ? chosen.year : new Date().getFullYear();
+  const date = new Date(yr, mon, day);
   const ts = date.getTime() + hr*3600000;
   return { date, hour:hr, ts, label: `${m[1]} ${m[2]} ${m[3]}:00` };
 }
 
 /* ── HEATMAP ── */
+/* ── HEATMAP PRESET ── */
+function emsHeatmapPreset(preset) {
+  const now = new Date();
+  const pad = n => String(n).padStart(2,'0');
+  const fmt = d => `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`;
+  const yest = new Date(now); yest.setDate(now.getDate()-1);
+  let from, to;
+  if(preset === 'yesterday') {
+    from = yest; to = yest;
+  } else if(preset === 'last3') {
+    from = new Date(now); from.setDate(now.getDate()-3); to = yest;
+  } else if(preset === 'last7') {
+    from = new Date(now); from.setDate(now.getDate()-7); to = yest;
+  } else if(preset === 'thismonth') {
+    from = new Date(now.getFullYear(), now.getMonth(), 1);
+    to   = new Date(now.getFullYear(), now.getMonth()+1, 0);
+  } else {
+    from = new Date(now.getFullYear(), now.getMonth()-1, 1);
+    to   = new Date(now.getFullYear(), now.getMonth(), 0);
+  }
+  const f = document.getElementById('heatmap-date-from');
+  const t = document.getElementById('heatmap-date-to');
+  if(f) f.value = fmt(from);
+  if(t) t.value = fmt(to);
+  emsV2RenderHeatmap();
+}
+
 function emsV2RenderHeatmap() {
   if(!EMS2.hourlyData) return;
   const wrap = document.getElementById('ems-heatmap-wrap');
@@ -4576,69 +5643,94 @@ function emsV2RenderHeatmap() {
     return;
   }
 
-  // Build heatmap: X = hours 0-23 (displayed 0..23), Y = days 1-30
-  // Cell value = sum of selected sensors for that day+hour
-  const days = 30;
-  const hours = 24;
+  // Get date range from controls (or default to yesterday)
+  const fromEl = document.getElementById('heatmap-date-from');
+  const toEl   = document.getElementById('heatmap-date-to');
+  const now = new Date();
+  const pad = n => String(n).padStart(2,'0');
+  const yestFmt = (() => { const y=new Date(now); y.setDate(now.getDate()-1); return `${y.getFullYear()}-${pad(y.getMonth()+1)}-${pad(y.getDate())}`; })();
+  if(fromEl && !fromEl.value) fromEl.value = yestFmt;
+  if(toEl   && !toEl.value)   toEl.value   = yestFmt;
+  const fromDate = new Date((fromEl ? fromEl.value : `${now.getFullYear()}-${pad(now.getMonth()+1)}-01`) + 'T00:00:00');
+  const toDate   = new Date((toEl   ? toEl.value   : `${now.getFullYear()}-${pad(now.getMonth()+1)}-${pad(new Date(now.getFullYear(),now.getMonth()+1,0).getDate())}`) + 'T00:00:00');
 
-  // Build data matrix
-  const matrix = []; // matrix[day][hour] = value
-  for(let d=1;d<=days;d++) {
-    matrix[d] = new Array(hours).fill(0);
-  }
+  // Build sorted list of all dates in range that have data
+  const dateDayMap = {}; // "YYYY-MM-DD" → { hour: value }
+  const MSHORT = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
 
   let maxVal = 0;
   for(const [slot, sensors] of Object.entries(EMS2.hourlyData)) {
     const parsed = emsV2ParseSlot(slot);
-    if(!parsed || parsed.date.getMonth() !== 3 || parsed.date.getFullYear() !== 2026) continue;
-    const day = parsed.date.getDate();
-    const hr = parsed.hour;
+    if(!parsed) continue;
+    const slotDate = parsed.date;
+    if(slotDate < fromDate || slotDate > toDate) continue;
+    const dk = `${slotDate.getFullYear()}-${pad(slotDate.getMonth()+1)}-${pad(slotDate.getDate())}`;
+    if(!dateDayMap[dk]) dateDayMap[dk] = new Array(24).fill(0);
     let val = 0;
     for(const sensor of selectedSensors) val += sensors[sensor] || 0;
-    matrix[day][hr] += val;
-    if(matrix[day][hr] > maxVal) maxVal = matrix[day][hr];
+    dateDayMap[dk][parsed.hour] += val;
+    if(dateDayMap[dk][parsed.hour] > maxVal) maxVal = dateDayMap[dk][parsed.hour];
   }
 
-  if(maxVal === 0) {
+  const sortedDates = Object.keys(dateDayMap).sort();
+  if(sortedDates.length === 0 || maxVal === 0) {
     noData.style.display='block'; wrap.innerHTML=''; return;
   }
   noData.style.display='none';
 
-  // Render
-  const cellW = 26, cellH = 20;
-  const labelW = 45, labelH = 22;
-  const W = labelW + hours*cellW + 2;
-  const H = labelH + days*cellH + 2;
+  // Clear any selections from a previous date range (stale keys would ghost the selection bar)
+  EMS2.heatmapSelectedCells.clear();
+  emsV2UpdateHeatmapSelectionBar();
+  const numDays = sortedDates.length;
+  const cellW = numDays > 60 ? 20 : 26;
+  const cellH = numDays > 60 ? 16 : 20;
+  const labelW = 55;
+  // Show kWh numbers if cells are wide enough
+  const showNums = cellW >= 26;
+  const numFontSize = '0.48rem';
 
   let html = `<div style="display:inline-block;position:relative;">`;
   // Hour labels
   html += `<div style="display:flex;margin-left:${labelW}px;">`;
   for(let h=0;h<24;h++) {
-    html += `<div style="width:${cellW}px;text-align:center;font-size:0.58rem;color:var(--text3);font-weight:600;padding-bottom:3px;">${String(h).padStart(2,'0')}</div>`;
+    html += `<div style="width:${cellW}px;text-align:center;font-size:0.56rem;color:var(--text3);font-weight:600;padding-bottom:3px;">${String(h).padStart(2,'0')}</div>`;
   }
   html += `</div>`;
 
-  // Rows
-  for(let d=1;d<=days;d++) {
+  // Rows per day
+  for(const dk of sortedDates) {
+    const d = new Date(dk + 'T00:00:00');
+    const dayLabel = `${MSHORT[d.getMonth()]} ${String(d.getDate()).padStart(2,'0')}`;
     html += `<div style="display:flex;align-items:center;">`;
-    html += `<div style="width:${labelW}px;font-size:0.65rem;color:var(--text3);font-weight:600;text-align:right;padding-right:6px;">Apr ${String(d).padStart(2,'0')}</div>`;
+    html += `<div style="width:${labelW}px;font-size:0.62rem;color:var(--text3);font-weight:600;text-align:right;padding-right:6px;white-space:nowrap;">${dayLabel}</div>`;
     for(let h=0;h<24;h++) {
-      const val = matrix[d][h];
+      const val = dateDayMap[dk][h] || 0;
       const ratio = maxVal > 0 ? val/maxVal : 0;
       const color = emsV2HeatColor(ratio);
-      const cellKey = `${d}-${h}`;
+      const cellKey = `${dk}-${h}`;
       const isSel = EMS2.heatmapSelectedCells.has(cellKey);
-      html += `<div class="ems-hm-cell${isSel?' selected':''}" data-d="${d}" data-h="${h}" data-val="${val.toFixed(1)}"
-        style="width:${cellW}px;height:${cellH}px;background:${color};border-radius:2px;margin:1px;box-sizing:border-box;${isSel?'outline:2px solid #fff;':''}"
-        title="Apr ${String(d).padStart(2,'0')} ${String(h).padStart(2,'0')}:00 — ${val.toFixed(1)} kWh"></div>`;
+      // Text color: white on dark/colored, dark on very light
+      const textCol = ratio < 0.08 ? 'rgba(255,255,255,0.3)' : (ratio < 0.35 ? 'rgba(255,255,255,0.7)' : '#fff');
+      const numStr = val > 0 ? (val >= 1000 ? (val/1000).toFixed(1)+'k' : Math.round(val).toString()) : '';
+      html += `<div class="ems-hm-cell${isSel?' selected':''}" data-d="${dk}" data-h="${h}" data-val="${val.toFixed(1)}"
+        style="width:${cellW}px;height:${cellH}px;background:${color};border-radius:2px;margin:1px;box-sizing:border-box;display:flex;align-items:center;justify-content:center;"
+        title="${dayLabel} ${String(h).padStart(2,'0')}:00 — ${val.toFixed(1)} kWh">`;
+      if(showNums && numStr) {
+        html += `<span style="font-size:${numFontSize};color:${textCol};font-weight:700;line-height:1;pointer-events:none;">${numStr}</span>`;
+      }
+      html += `</div>`;
     }
     html += `</div>`;
   }
   html += `</div>`;
   wrap.innerHTML = html;
 
-  // Attach events
-  emsV2AttachHeatmapEvents(wrap);
+  // Attach events only once on the stable scroll outer container
+  const outer = document.getElementById('ems-heatmap-scroll-outer');
+  if(outer && !outer._heatEventsAttached) {
+    outer._heatEventsAttached = true;
+    emsV2AttachHeatmapEvents(outer);
+  }
 }
 
 function emsV2HeatColor(ratio) {
@@ -4663,47 +5755,101 @@ function emsV2HeatColor(ratio) {
 }
 
 function emsV2AttachHeatmapEvents(wrap) {
-  const isMobile = ('ontouchstart' in window) && window.innerWidth < 900;
-  
-  if(isMobile) {
-    // Mobile: tap toggle
-    wrap.addEventListener('touchend', e => {
+  const isTouchDevice = ('ontouchstart' in window) || navigator.maxTouchPoints > 0;
+
+  if(isTouchDevice) {
+    // ── MOBILE: long-press to select, full scroll freedom ──
+    let holdTimer = null;
+    let holdCell = null;
+    let touchMoved = false;
+    let startX = 0, startY = 0;
+
+    wrap.addEventListener('touchstart', e => {
       const cell = e.target.closest('.ems-hm-cell');
       if(!cell) return;
-      e.preventDefault();
-      const key = `${cell.dataset.d}-${cell.dataset.h}`;
-      if(EMS2.heatmapSelectedCells.has(key)) {
-        EMS2.heatmapSelectedCells.delete(key);
-      } else {
-        EMS2.heatmapSelectedCells.add(key);
+      holdCell = cell;
+      touchMoved = false;
+      startX = e.touches[0].clientX;
+      startY = e.touches[0].clientY;
+      holdTimer = setTimeout(() => {
+        if(!touchMoved && holdCell) {
+          // Trigger vibration feedback if available
+          if(navigator.vibrate) navigator.vibrate(30);
+          const key = `${holdCell.dataset.d}-${holdCell.dataset.h}`;
+          const adding = !EMS2.heatmapSelectedCells.has(key);
+          emsV2HeatmapCellAction(key, adding);
+        }
+        holdTimer = null;
+        holdCell = null;
+      }, 320);
+    }, { passive: true });
+
+    wrap.addEventListener('touchmove', e => {
+      const dx = Math.abs(e.touches[0].clientX - startX);
+      const dy = Math.abs(e.touches[0].clientY - startY);
+      if(dx > 8 || dy > 8) {
+        touchMoved = true;
+        if(holdTimer) { clearTimeout(holdTimer); holdTimer = null; }
+        holdCell = null;
       }
-      emsV2UpdateHeatmapUI();
-    }, { passive:false });
+    }, { passive: true });
+
+    wrap.addEventListener('touchend', e => {
+      if(holdTimer) { clearTimeout(holdTimer); holdTimer = null; }
+      holdCell = null;
+    }, { passive: true });
+
+    wrap.addEventListener('touchcancel', e => {
+      if(holdTimer) { clearTimeout(holdTimer); holdTimer = null; }
+      holdCell = null;
+    }, { passive: true });
+
   } else {
-    // Desktop: drag select
-    let dragging = false, adding = true, startKey = null;
+    // ── DESKTOP: click to toggle, mousedown+drag for multi-select ──
+    let dragging = false, adding = true, dragMoved = false;
+    let startX = 0, startY = 0;
 
     wrap.addEventListener('mousedown', e => {
       const cell = e.target.closest('.ems-hm-cell');
       if(!cell) return;
       e.preventDefault();
       dragging = true;
+      dragMoved = false;
+      startX = e.clientX;
+      startY = e.clientY;
       const key = `${cell.dataset.d}-${cell.dataset.h}`;
       adding = !EMS2.heatmapSelectedCells.has(key);
-      EMS2.hmDragActive = true;
-      emsV2HeatmapCellAction(key, adding);
     });
 
     wrap.addEventListener('mousemove', e => {
       if(!dragging) return;
+      const dx = Math.abs(e.clientX - startX);
+      const dy = Math.abs(e.clientY - startY);
+      if(dx > 6 || dy > 6) dragMoved = true;
+      if(!dragMoved) return;
       const cell = e.target.closest('.ems-hm-cell');
       if(!cell) return;
       const key = `${cell.dataset.d}-${cell.dataset.h}`;
       emsV2HeatmapCellAction(key, adding);
     });
 
-    document.addEventListener('mouseup', () => {
-      dragging = false; EMS2.hmDragActive = false;
+    wrap.addEventListener('mouseup', e => {
+      if(!dragging) return;
+      if(!dragMoved) {
+        // Pure click — toggle the cell
+        const cell = e.target.closest('.ems-hm-cell');
+        if(cell) {
+          const key = `${cell.dataset.d}-${cell.dataset.h}`;
+          emsV2HeatmapCellAction(key, adding);
+        }
+      }
+      dragging = false;
+      dragMoved = false;
+    });
+
+    wrap.addEventListener('mouseleave', e => {
+      dragging = false;
+      dragMoved = false;
     });
   }
 }
@@ -4711,9 +5857,11 @@ function emsV2AttachHeatmapEvents(wrap) {
 function emsV2HeatmapCellAction(key, adding) {
   if(adding) EMS2.heatmapSelectedCells.add(key);
   else EMS2.heatmapSelectedCells.delete(key);
-  // Update just that cell
-  const [d,h] = key.split('-');
-  const cell = document.querySelector(`.ems-hm-cell[data-d="${d}"][data-h="${h}"]`);
+  // Update just that cell — key is "YYYY-MM-DD-H"
+  const lastDash = key.lastIndexOf('-');
+  const dk = key.substring(0, lastDash);
+  const h  = key.substring(lastDash + 1);
+  const cell = document.querySelector(`.ems-hm-cell[data-d="${dk}"][data-h="${h}"]`);
   if(cell) { cell.classList.toggle('selected', adding); }
   emsV2UpdateHeatmapSelectionBar();
 }
@@ -4734,8 +5882,11 @@ function emsV2UpdateHeatmapSelectionBar() {
   bar.style.display='flex';
   let total = 0;
   EMS2.heatmapSelectedCells.forEach(key => {
-    const [d,h] = key.split('-');
-    const cell = document.querySelector(`.ems-hm-cell[data-d="${d}"][data-h="${h}"]`);
+    // Key format: "YYYY-MM-DD-H" — find cell by matching data-d and data-h combo via dataset
+    const lastDash = key.lastIndexOf('-');
+    const dk = key.substring(0, lastDash);
+    const h  = key.substring(lastDash + 1);
+    const cell = document.querySelector(`.ems-hm-cell[data-d="${dk}"][data-h="${h}"]`);
     if(cell) total += parseFloat(cell.dataset.val)||0;
   });
   document.getElementById('heatmap-sel-count').textContent = count;
@@ -4749,50 +5900,76 @@ function emsV2ClearHeatmapSel() {
 }
 
 /* ── KPI CARDS ── */
+// Helper: sum all date-key values for a sensor's data object
+function emsV2SumSensorField(rows, field) {
+  if(!rows) return 0;
+  return Object.values(rows).reduce((s,v) => s + (v[field]||0), 0);
+}
+// Helper: get all date keys for a sensor (any sensor with data)
+function emsV2AllDateKeys() {
+  const keys = new Set();
+  for(const sensor of [...EMS2.PRODUCTION, ...EMS2.UTILITY]) {
+    const rows = EMS2.dailyData[sensor];
+    if(rows) Object.keys(rows).forEach(k => keys.add(k));
+  }
+  return [...keys].sort();
+}
+
 function emsV2RenderKPIs() {
   if(!EMS2.dailyData) return;
   const grid = document.getElementById('ems-kpi-grid');
   
-  // Compute KPIs from DailyShift data
+  // Get date filter for KPI section
+  const filterFn = emsV2GetFilteredDateKeys('kpi');
+  
+  // Compute KPIs from DailyShift data — keys are "YYYY-MM-DD"
   const allSensors = [...EMS2.PRODUCTION, ...EMS2.UTILITY];
   const main33 = EMS2.dailyData['EMSG001 Main Incomer 33KV'] || {};
   const incomer11 = EMS2.dailyData['EMSG002 EB Incomer 11KV'] || {};
 
-  // Monthly totals
-  let total33=0, total11=0, totalA33=0, totalB33=0, totalC33=0;
-  let totalA11=0, totalB11=0, totalC11=0;
-  for(let d=1;d<=30;d++) {
-    if(main33[d]) { total33+=main33[d].Total||0; totalA33+=main33[d].A||0; totalB33+=main33[d].B||0; totalC33+=main33[d].C||0; }
-    if(incomer11[d]) { total11+=incomer11[d].Total||0; totalA11+=incomer11[d].A||0; totalB11+=incomer11[d].B||0; totalC11+=incomer11[d].C||0; }
-  }
+  const total33 = emsV2SumSensorFieldFiltered(main33, 'Total', filterFn);
+  const totalA33 = emsV2SumSensorFieldFiltered(main33, 'A', filterFn);
+  const totalB33 = emsV2SumSensorFieldFiltered(main33, 'B', filterFn);
+  const totalC33 = emsV2SumSensorFieldFiltered(main33, 'C', filterFn);
+  const total11 = emsV2SumSensorFieldFiltered(incomer11, 'Total', filterFn);
+  const totalA11 = emsV2SumSensorFieldFiltered(incomer11, 'A', filterFn);
+  const totalB11 = emsV2SumSensorFieldFiltered(incomer11, 'B', filterFn);
+  const totalC11 = emsV2SumSensorFieldFiltered(incomer11, 'C', filterFn);
 
-  // Production total
   let totalProd=0, totalUtil=0;
-  for(const sensor of EMS2.PRODUCTION) {
-    const rows = EMS2.dailyData[sensor];
-    if(!rows) continue;
-    for(let d=1;d<=30;d++) if(rows[d]) totalProd+=rows[d].Total||0;
-  }
-  for(const sensor of EMS2.UTILITY) {
-    const rows = EMS2.dailyData[sensor];
-    if(!rows) continue;
-    for(let d=1;d<=30;d++) if(rows[d]) totalUtil+=rows[d].Total||0;
-  }
+  for(const sensor of EMS2.PRODUCTION) totalProd += emsV2SumSensorFieldFiltered(EMS2.dailyData[sensor], 'Total', filterFn);
+  for(const sensor of EMS2.UTILITY)    totalUtil += emsV2SumSensorFieldFiltered(EMS2.dailyData[sensor], 'Total', filterFn);
 
-  // Peak day for 33KV
-  let peakDay=1, peakVal=0;
-  for(let d=1;d<=30;d++) { if(main33[d]&&(main33[d].Total||0)>peakVal){peakVal=main33[d].Total||0;peakDay=d;} }
+  // Peak day for 33KV (filtered)
+  let peakDay='', peakVal=0;
+  for(const [dk, v] of Object.entries(main33)) {
+    if(filterFn && !filterFn(dk)) continue;
+    if((v.Total||0) > peakVal) { peakVal = v.Total||0; peakDay = dk; }
+  }
+  const peakLabel = peakDay ? peakDay.slice(5).split('-').reverse().join(' ') : '--';
 
-  // Avg daily
-  const avgDaily33 = total33/30;
+  // Date range label from loaded data (filtered)
+  const filteredKeys = Object.keys(main33).filter(k => !filterFn || filterFn(k)).sort();
+  const numDays = filteredKeys.length || 30;
+  const avgDaily33 = numDays ? total33/numDays : 0;
+  // Period label
+  const periodLabel = filteredKeys.length
+    ? (() => {
+        const first=new Date(filteredKeys[0]+'T00:00:00');
+        const last=new Date(filteredKeys[filteredKeys.length-1]+'T00:00:00');
+        if(first.getMonth()===last.getMonth() && first.getFullYear()===last.getFullYear())
+          return `${first.toLocaleString('default',{month:'short'})} ${first.getFullYear()}`;
+        return `${first.toLocaleString('default',{month:'short'})}–${last.toLocaleString('default',{month:'short'})} ${last.getFullYear()}`;
+      })()
+    : 'Loaded';
 
   const kpis = [
-    {icon:'⚡',label:'Total kWh (33KV)',val:EMS2.fmt(total33)+' kWh',sub:'Apr 2026 · Main Incomer',color:'#0ea5e9'},
+    {icon:'⚡',label:'Total kWh (33KV)',val:EMS2.fmt(total33)+' kWh',sub:periodLabel+' · Main Incomer',color:'#0ea5e9'},
     {icon:'🔌',label:'Total kWh (11KV)',val:EMS2.fmt(total11)+' kWh',sub:'EB Incomer',color:'#6366f1'},
     {icon:'🏭',label:'Production Total',val:EMS2.fmt(totalProd)+' kWh',sub:`${EMS2.PRODUCTION.length} machines`,color:'#10b981'},
     {icon:'🔧',label:'Utility Total',val:EMS2.fmt(totalUtil)+' kWh',sub:`${EMS2.UTILITY.length} meters`,color:'#f59e0b'},
-    {icon:'📅',label:'Avg Daily (33KV)',val:EMS2.fmt(avgDaily33)+' kWh',sub:'30 day average',color:'#0ea5e9'},
-    {icon:'📈',label:'Peak Day (33KV)',val:`Apr ${String(peakDay).padStart(2,'0')}`,sub:EMS2.fmt(peakVal)+' kWh',color:'#ef4444'},
+    {icon:'📅',label:'Avg Daily (33KV)',val:EMS2.fmt(avgDaily33)+' kWh',sub:numDays+' day average',color:'#0ea5e9'},
+    {icon:'📈',label:'Peak Day (33KV)',val:peakLabel||'--',sub:EMS2.fmt(peakVal)+' kWh',color:'#ef4444'},
     {icon:'🌅',label:'Shift A — 33KV',val:EMS2.fmt(totalA33)+' kWh',sub:'7AM–3PM',color:'#3b82f6'},
     {icon:'🌇',label:'Shift B — 33KV',val:EMS2.fmt(totalB33)+' kWh',sub:'3PM–11PM',color:'#10b981'},
     {icon:'🌙',label:'Shift C — 33KV',val:EMS2.fmt(totalC33)+' kWh',sub:'11PM–7AM',color:'#6366f1'},
@@ -4819,47 +5996,256 @@ function emsV2RenderKPIs() {
 function emsV2RenderPieCharts() {
   if(!EMS2.dailyData) return;
 
-  // Sum monthly total per sensor
+  const filterFn = emsV2GetFilteredDateKeys('pie');
+
   const prodTotals = EMS2.PRODUCTION.map(s => {
-    const rows = EMS2.dailyData[s]; let t=0;
-    if(rows) for(let d=1;d<=30;d++) if(rows[d]) t+=rows[d].Total||0;
+    const t = emsV2SumSensorFieldFiltered(EMS2.dailyData[s], 'Total', filterFn);
     return { name: EMS2.shortName(s), val: t };
   }).sort((a,b)=>b.val-a.val);
 
   const utilTotals = EMS2.UTILITY.map(s => {
-    const rows = EMS2.dailyData[s]; let t=0;
-    if(rows) for(let d=1;d<=30;d++) if(rows[d]) t+=rows[d].Total||0;
+    const t = emsV2SumSensorFieldFiltered(EMS2.dailyData[s], 'Total', filterFn);
     return { name: EMS2.shortName(s), val: t };
   }).sort((a,b)=>b.val-a.val);
 
   const palette = ['#0ea5e9','#10b981','#f59e0b','#6366f1','#ef4444','#8b5cf6','#ec4899','#14b8a6','#f97316','#84cc16'];
+  // Always read current theme at render time — fixes stale color on theme switch
+  const isDark = document.body.classList.contains('dark') || document.body.classList.contains('holo');
+  const legendColor = isDark ? '#dfe8f8' : '#1a2340';
 
-  const makePie = (canvasId, items) => {
+  if(!EMS2.PIE_LEGEND_MODE) EMS2.PIE_LEGEND_MODE = {
+    'ems-pie-prod-top': 'arrows',
+    'ems-pie-util-top': 'arrows',
+    'ems-pie-prod-bot': 'arrows',
+    'ems-pie-util-bot': 'arrows'
+  };
+
+  const makePie = (canvasId, wrapId, items) => {
+    // Clean up old arrow labels
+    const wrap = document.getElementById(wrapId);
+    if(wrap) wrap.querySelectorAll('.ems-pie-label-col,.ems-pie-arrow-layer').forEach(el => el.remove());
+
     const canvas = document.getElementById(canvasId);
+    if(!canvas) return;
     const existing = Chart.getChart(canvas);
     if(existing) existing.destroy();
     if(!items.length) return;
-    new Chart(canvas.getContext('2d'), {
+
+    // Reset canvas to be responsive again
+    canvas.style.width  = '';
+    canvas.style.height = '';
+    canvas.removeAttribute('width');
+    canvas.removeAttribute('height');
+
+    // Legend mode: 'bottom' (chart.js legend) or 'arrows' (outside pointer lines)
+    const mode = EMS2.PIE_LEGEND_MODE[canvasId] || 'bottom';
+    const showChartLegend = (mode === 'bottom');
+
+    const chart = new Chart(canvas.getContext('2d'), {
       type: 'doughnut',
       data: {
-        labels: items.map(i=>i.name),
-        datasets:[{ data: items.map(i=>i.val), backgroundColor: palette.map(c=>c+'cc'), borderColor: palette, borderWidth:1.5 }]
+        labels: items.map(i => i.name),
+        datasets:[{
+          data: items.map(i => i.val),
+          backgroundColor: palette.map(c => c + 'bb'),
+          borderColor: palette,
+          borderWidth: 2,
+          hoverOffset: 6
+        }]
       },
       options: {
-        responsive:true, maintainAspectRatio:false,
+        responsive: true,
+        maintainAspectRatio: false,
+        layout: { padding: showChartLegend ? 0 : 80 },
         plugins: {
-          legend: { position:'right', labels:{ color:'#888', font:{size:9}, boxWidth:12 } },
-          tooltip: { callbacks: { label: c => ` ${c.label}: ${EMS2.fmt(c.parsed)} kWh` } }
+          legend: {
+            display: showChartLegend,
+            position: 'bottom',
+            labels: {
+              color: legendColor,
+              font: { size: 10, family: "'Space Grotesk', sans-serif", weight: '600' },
+              boxWidth: 10,
+              boxHeight: 10,
+              padding: 14,
+              generateLabels: chart => {
+                const data = chart.data;
+                return data.labels.map((label, i) => ({
+                  text: `${label}  ${EMS2.fmt(data.datasets[0].data[i])} kWh`,
+                  fillStyle: palette[i % palette.length] + 'bb',
+                  strokeStyle: palette[i % palette.length],
+                  lineWidth: 1.5,
+                  hidden: false,
+                  fontColor: legendColor,
+                  index: i
+                }));
+              }
+            }
+          },
+          tooltip: {
+            callbacks: { label: c => ` ${c.label}: ${EMS2.fmt(c.parsed)} kWh` }
+          }
         },
-        cutout:'55%'
+        cutout: '55%',
+        animation: {
+          onComplete: () => {
+            if(mode === 'arrows') emsV2DrawArrowLabels(chart, canvas, wrap, items, palette, legendColor);
+          }
+        }
       }
     });
   };
 
-  makePie('ems-pie-prod-top', prodTotals.slice(0,10));
-  makePie('ems-pie-util-top', utilTotals.slice(0,10));
-  makePie('ems-pie-prod-bot', prodTotals.filter(i=>i.val>0).slice(-10).reverse());
-  makePie('ems-pie-util-bot', utilTotals.filter(i=>i.val>0).slice(-10).reverse());
+  makePie('ems-pie-prod-top', 'ems-pie-wrap-prod-top', prodTotals.slice(0,10));
+  makePie('ems-pie-util-top', 'ems-pie-wrap-util-top', utilTotals.slice(0,10));
+  makePie('ems-pie-prod-bot', 'ems-pie-wrap-prod-bot', prodTotals.filter(i=>i.val>0).slice(-10).reverse());
+  makePie('ems-pie-util-bot', 'ems-pie-wrap-util-bot', utilTotals.filter(i=>i.val>0).slice(-10).reverse());
+}
+
+/* ── PIE LEGEND TOGGLE ── */
+function emsV2TogglePieLegend(pieId, btn) {
+  if(!EMS2.PIE_LEGEND_MODE) EMS2.PIE_LEGEND_MODE = {};
+  const canvasId = 'ems-pie-' + pieId;
+  const current = EMS2.PIE_LEGEND_MODE[canvasId] || 'bottom';
+  const next = current === 'bottom' ? 'arrows' : 'bottom';
+  EMS2.PIE_LEGEND_MODE[canvasId] = next;
+  if(btn) {
+    btn.textContent = next === 'bottom' ? '⬤ Arrows' : '≡ Bottom';
+    btn.style.color = next === 'bottom' ? 'var(--text2)' : 'var(--ems)';
+    btn.style.borderColor = next === 'bottom' ? 'var(--border)' : 'var(--ems)';
+  }
+  // Re-render only this specific chart
+  emsV2RenderPieCharts();
+}
+
+/* ── ARROW LABELS (outside pointers) — collision-aware radial layout ── */
+function emsV2DrawArrowLabels(chart, canvas, wrap, items, palette, legendColor) {
+  if(wrap) wrap.querySelectorAll('.ems-pie-arrow-layer').forEach(el => el.remove());
+
+  const svg = document.createElementNS('http://www.w3.org/2000/svg','svg');
+  svg.classList.add('ems-pie-arrow-layer');
+  svg.style.cssText = 'position:absolute;inset:0;width:100%;height:100%;pointer-events:none;overflow:visible;';
+
+  const w = canvas.offsetWidth || 300;
+  const h = canvas.offsetHeight || 300;
+  const MARGIN = 90; // extra canvas space for labels (matches layout.padding)
+  const svgW = w + MARGIN * 2;
+  const svgH = h + MARGIN * 2;
+  svg.setAttribute('viewBox', `${-MARGIN} ${-MARGIN} ${svgW} ${svgH}`);
+
+  const cx = w / 2;
+  const cy = h / 2;
+  const meta = chart.getDatasetMeta(0);
+  if(!meta || !meta.data || !meta.data.length) return;
+
+  const total = items.reduce((s,i) => s+i.val, 0);
+  if(!total) return;
+
+  const isDark = document.body.classList.contains('dark') || document.body.classList.contains('holo');
+  const textClr = isDark ? '#dfe8f8' : '#1a2340';
+  const fontSize = Math.max(9, Math.min(11, w / 30));
+  const lineH = fontSize * 1.35;
+
+  // ── Step 1: compute ideal label anchor point from arc mid-angle ──
+  const labelData = [];
+  meta.data.forEach((arc, i) => {
+    if(i >= items.length) return;
+    const item = items[i];
+    if(!item.val) return;
+    const midAngle = (arc.startAngle + arc.endAngle) / 2;
+    const outerR = arc.outerRadius;
+    // dot on rim
+    const dotX = cx + Math.cos(midAngle) * (outerR * 1.04);
+    const dotY = cy + Math.sin(midAngle) * (outerR * 1.04);
+    // elbow point (where line bends)
+    const elbowR = outerR * 1.28;
+    const elbowX = cx + Math.cos(midAngle) * elbowR;
+    const elbowY = cy + Math.sin(midAngle) * elbowR;
+    const isRight = elbowX >= cx;
+    const pct = ((item.val/total)*100).toFixed(1);
+    labelData.push({ i, item, midAngle, dotX, dotY, elbowX, elbowY, isRight,
+      color: palette[i % palette.length], pct,
+      ly: elbowY  // mutable label Y
+    });
+  });
+
+  // ── Step 2: separate labels into left/right columns and sort by Y ──
+  const right = labelData.filter(d => d.isRight).sort((a,b) => a.ly - b.ly);
+  const left  = labelData.filter(d => !d.isRight).sort((a,b) => a.ly - b.ly);
+
+  // ── Step 3: resolve vertical overlaps within each column ──
+  const ROW_H = lineH * 2.4; // name + sub + gap
+  function deOverlap(col) {
+    if(col.length < 2) return;
+    // One pass downward
+    for(let k = 1; k < col.length; k++) {
+      const prev = col[k-1];
+      const cur  = col[k];
+      if(cur.ly < prev.ly + ROW_H) cur.ly = prev.ly + ROW_H;
+    }
+    // One pass upward — pull back toward chart centre
+    for(let k = col.length - 2; k >= 0; k--) {
+      const next = col[k+1];
+      const cur  = col[k];
+      if(cur.ly > next.ly - ROW_H) cur.ly = next.ly - ROW_H;
+    }
+  }
+  deOverlap(right);
+  deOverlap(left);
+
+  // ── Step 4: compute horizontal label X (snap to a column rail) ──
+  const outerR0 = meta.data[0]?.outerRadius || w * 0.35;
+  const railRight = cx + outerR0 * 1.52;
+  const railLeft  = cx - outerR0 * 1.52;
+
+  // ── Step 5: draw everything ──
+  [...right, ...left].forEach(d => {
+    const { dotX, dotY, elbowX, ly, isRight, color, item, pct, i } = d;
+    const textX  = isRight ? railRight + 4 : railLeft - 4;
+    const anchor = isRight ? 'start' : 'end';
+    const lineEndX = isRight ? railRight : railLeft;
+
+    // leader: arc dot → elbow → horizontal to text rail
+    const path = document.createElementNS('http://www.w3.org/2000/svg','polyline');
+    path.setAttribute('points', `${dotX},${dotY} ${elbowX},${ly} ${lineEndX},${ly}`);
+    path.setAttribute('stroke', color);
+    path.setAttribute('stroke-width', '1.3');
+    path.setAttribute('fill', 'none');
+    path.setAttribute('opacity', '0.8');
+    svg.appendChild(path);
+
+    // dot at arc
+    const dot = document.createElementNS('http://www.w3.org/2000/svg','circle');
+    dot.setAttribute('cx', dotX); dot.setAttribute('cy', dotY);
+    dot.setAttribute('r', '2.5');
+    dot.setAttribute('fill', color);
+    svg.appendChild(dot);
+
+    // name label
+    const txt = document.createElementNS('http://www.w3.org/2000/svg','text');
+    txt.setAttribute('x', textX);
+    txt.setAttribute('y', ly - 1);
+    txt.setAttribute('text-anchor', anchor);
+    txt.setAttribute('font-size', fontSize);
+    txt.setAttribute('font-family', "'Space Grotesk', sans-serif");
+    txt.setAttribute('font-weight', '700');
+    txt.setAttribute('fill', textClr);
+    txt.textContent = item.name;
+    svg.appendChild(txt);
+
+    // sub label (kWh · %)
+    const sub = document.createElementNS('http://www.w3.org/2000/svg','text');
+    sub.setAttribute('x', textX);
+    sub.setAttribute('y', ly + fontSize + 1);
+    sub.setAttribute('text-anchor', anchor);
+    sub.setAttribute('font-size', fontSize - 1);
+    sub.setAttribute('font-family', "'Space Grotesk', sans-serif");
+    sub.setAttribute('fill', color);
+    sub.setAttribute('opacity', '0.9');
+    sub.textContent = `${EMS2.fmt(item.val)} kWh · ${pct}%`;
+    svg.appendChild(sub);
+  });
+
+  if(wrap) wrap.appendChild(svg);
 }
 
 /* ── MINI TABLES ── */
@@ -4867,10 +6253,15 @@ function emsV2RenderShiftSummaryTable() {
   if(!EMS2.dailyData) return;
   const table = document.getElementById('ems-shift-summary-table');
   const main = EMS2.dailyData['EMSG001 Main Incomer 33KV'] || {};
+  const filterFn = emsV2GetFilteredDateKeys('table');
   const rows = [];
-  for(let d=1;d<=30;d++) {
-    if(main[d] && main[d].Total > 0) {
-      rows.push({ day:`Apr ${String(d).padStart(2,'0')}`, A:main[d].A||0, B:main[d].B||0, C:main[d].C||0, Total:main[d].Total||0 });
+  // Keys are "YYYY-MM-DD"
+  for(const [dk, v] of Object.entries(main).sort()) {
+    if(filterFn && !filterFn(dk)) continue;
+    if(v && v.Total > 0) {
+      const d = new Date(dk + 'T00:00:00');
+      const label = d.toLocaleDateString('en-GB',{day:'2-digit',month:'short',year:'numeric'});
+      rows.push({ day: label, A: v.A||0, B: v.B||0, C: v.C||0, Total: v.Total||0 });
     }
   }
   table.innerHTML = `
@@ -4882,14 +6273,24 @@ function emsV2RenderShiftSummaryTable() {
 function emsV2RenderTopMachinesTable() {
   if(!EMS2.dailyData) return;
   const table = document.getElementById('ems-top-machines-table');
+  const filterFn = emsV2GetFilteredDateKeys('table');
   const all = [...EMS2.PRODUCTION, ...EMS2.UTILITY].map(s => {
-    const rows = EMS2.dailyData[s]; let t=0;
-    if(rows) for(let d=1;d<=30;d++) if(rows[d]) t+=rows[d].Total||0;
+    const t = emsV2SumSensorFieldFiltered(EMS2.dailyData[s], 'Total', filterFn);
     return { name: EMS2.shortName(s), val: t, type: EMS2.PRODUCTION.includes(s)?'Prod':'Util' };
   }).sort((a,b)=>b.val-a.val).slice(0,20);
 
+  // Build a period label from filtered keys
+  const mainKeys = Object.keys(EMS2.dailyData['EMSG001 Main Incomer 33KV']||{}).filter(k=>!filterFn||filterFn(k)).sort();
+  let periodHdr = 'Period';
+  if(mainKeys.length) {
+    const f=new Date(mainKeys[0]+'T00:00:00'), l=new Date(mainKeys[mainKeys.length-1]+'T00:00:00');
+    periodHdr = f.getMonth()===l.getMonth()&&f.getFullYear()===l.getFullYear()
+      ? f.toLocaleString('default',{month:'short'})+' '+f.getFullYear()
+      : f.toLocaleString('default',{month:'short'})+'–'+l.toLocaleString('default',{month:'short'})+' '+l.getFullYear();
+  }
+
   table.innerHTML = `
-    <thead><tr><th>#</th><th>Machine</th><th>Type</th><th>kWh (Apr)</th></tr></thead>
+    <thead><tr><th>#</th><th>Machine</th><th>Type</th><th>kWh (${periodHdr})</th></tr></thead>
     <tbody>${all.map((r,i)=>`<tr><td style="color:var(--text3);">${i+1}</td><td style="font-weight:600;">${r.name}</td><td><span style="font-size:0.65rem;padding:2px 6px;border-radius:10px;background:${r.type==='Prod'?'rgba(16,185,129,0.12)':'rgba(245,158,11,0.12)'};color:${r.type==='Prod'?'#10b981':'#f59e0b'};">${r.type}</span></td><td style="font-weight:700;color:var(--ems);">${EMS2.fmt(r.val)}</td></tr>`).join('')}</tbody>
   `;
 }
@@ -4917,7 +6318,7 @@ function emsV2TryAutoLoad() {
   // Observer for when EMS page becomes visible
   const obs = new MutationObserver(() => {
     if(emsPage.classList.contains('active')) {
-      if(!EMS2.dailyData) emsV2LoadGSheet();
+      if(!EMS2.dailyData) emsV2ScanFolder();
     }
   });
   obs.observe(emsPage, { attributes:true, attributeFilter:['class','style'] });
@@ -4925,13 +6326,13 @@ function emsV2TryAutoLoad() {
 
 // Override the global emsInit() called by showPage()
 function emsInit() {
-  if(!EMS2.dailyData) emsV2LoadGSheet();
+  if(!EMS2.dailyData) emsV2ScanFolder();
 }
 
 // Stub out old EMS functions so they don't error when called
 // Real implementations for all ems* functions defined further below
 // emsSaveAllToDrive — real implementation defined further below
-function emsLoadFromGSheet(){ emsV2LoadGSheet(); }
+function emsLoadFromGSheet(){ emsV2ScanFolder(); }
 function emsExportCSV(){
   if(!EMS2.dailyData){ alert('Load data first'); return; }
   const rows = [['Sensor','Day','Shift A','Shift B','Shift C','Total']];
@@ -4958,7 +6359,7 @@ function emsExportPDF(){ alert('Use browser Print > Save as PDF for the EMS dash
 
 const GAS_URL = 'https://script.google.com/macros/s/AKfycbwTjlAIapKrqf78dGs6za7H6pq0BpZHw15GQilcUKNq41G2t746h3ch-y4MDuPU_imr/exec';
 // Hardcoded EMS GSheet ID (Apr 2026 and future months stored here)
-const EMS_HARDCODED_SHEET_ID = '1ZmEx3u8Sk1lDyvCmhdmyIOMIohiIbAGLJntcNXUvoaU';
+const EMS_HARDCODED_SHEET_ID = '1BU16QT-Qef5yFy1jm2Do0z8LFs8enHV4xZDcVego5cQ';
 // Helper: extract just the sheet ID from a URL or raw ID
 function extractSheetId(input){
   if(!input) return null;
@@ -5537,7 +6938,125 @@ function toggleTheme(){
   if(dBarCharts.length)dRenderBars();
   if(sAVOChart)sRenderAVO();
   if(sVikChart)sRenderVikram();
+  // Re-render EMS pie charts so legend color updates for new theme
+  if(typeof emsV2RenderPieCharts === 'function' && EMS2 && EMS2.dailyData) {
+    setTimeout(emsV2RenderPieCharts, 50);
+  }
 }
+
+/* ── THEME BUTTON: single tap = light/dark · double-tap within 500ms = holo modal ── */
+(function(){
+  const btn = document.getElementById('themeBtn');
+  if(!btn) return;
+  let _lastTap = 0;
+
+  function onTap(e) {
+    const now = Date.now();
+    if(now - _lastTap < 500) {
+      // Double-tap — open holo
+      _lastTap = 0;
+      btn.style.transform = 'scale(1.3) rotate(360deg)';
+      btn.style.transition = 'transform 0.4s cubic-bezier(.34,1.56,.64,1)';
+      setTimeout(() => { btn.style.transform = ''; }, 400);
+      holoShowPasswordModal();
+    } else {
+      _lastTap = now;
+      toggleTheme();
+    }
+  }
+
+  // Use click for desktop; touchend for mobile (prevents double-fire)
+  btn.addEventListener('click', function(e) {
+    // On touch devices, click fires after touchend — skip to avoid double-fire
+    if(e.detail === 0) return; // synthetic/touch-generated click
+    onTap(e);
+  });
+  btn.addEventListener('touchend', function(e) {
+    e.preventDefault(); // prevent ghost click
+    onTap(e);
+  });
+})();
+
+/* ── NAV LOGO: double-tap within 500ms = open AI Insights page ── */
+(function(){
+  const logo = document.getElementById('navLogo');
+  if(!logo) return;
+  let _lastTap = 0;
+
+  function onTap(e) {
+    const now = Date.now();
+    if(now - _lastTap < 500) {
+      _lastTap = 0;
+      // Pulse the logo
+      logo.style.transform = 'scale(1.25)';
+      logo.style.transition = 'transform 0.3s cubic-bezier(.34,1.56,.64,1)';
+      setTimeout(() => { logo.style.transform = ''; }, 350);
+      if(typeof showPage === 'function') showPage('ai');
+    } else {
+      _lastTap = now;
+      // Single tap → go home
+      if(typeof showPage === 'function') showPage('home');
+    }
+  }
+
+  logo.addEventListener('click', function(e) {
+    if(e.detail === 0) return;
+    onTap(e);
+  });
+  logo.addEventListener('touchend', function(e) {
+    e.preventDefault();
+    onTap(e);
+  });
+})();
+
+/* ── IMAGE LIGHTBOX: double-tap any image to view fullscreen ── */
+(function(){
+  const lb = document.createElement('div');
+  lb.id = 'img-lightbox';
+  lb.style.cssText = 'display:none;position:fixed;inset:0;z-index:999999;background:rgba(0,0,0,0.92);cursor:zoom-out;align-items:center;justify-content:center;backdrop-filter:blur(8px);';
+  lb.innerHTML = '<img id="img-lightbox-img" style="max-width:94vw;max-height:90vh;border-radius:10px;box-shadow:0 8px 60px rgba(0,0,0,0.8);object-fit:contain;user-select:none;" />';
+  document.body.appendChild(lb);
+  lb.addEventListener('click', () => { lb.style.display = 'none'; });
+  lb.addEventListener('touchend', (e) => { e.preventDefault(); lb.style.display = 'none'; });
+
+  function openLightbox(src) {
+    document.getElementById('img-lightbox-img').src = src;
+    lb.style.display = 'flex';
+  }
+
+  function attachDoubleTap(el) {
+    if(el._lbAttached) return;
+    el._lbAttached = true;
+    let _lastTap = 0;
+
+    function onTap() {
+      const now = Date.now();
+      if(now - _lastTap < 500) {
+        _lastTap = 0;
+        openLightbox(el.src || el.currentSrc);
+      } else {
+        _lastTap = now;
+      }
+    }
+
+    el.addEventListener('click', function(e) {
+      if(e.detail === 0) return;
+      onTap();
+    });
+    el.addEventListener('touchend', function(e) {
+      e.preventDefault();
+      onTap();
+    });
+  }
+
+  function scanImages() {
+    document.querySelectorAll('img').forEach(attachDoubleTap);
+  }
+  document.addEventListener('DOMContentLoaded', scanImages);
+  setTimeout(scanImages, 1000);
+  setTimeout(scanImages, 3000);
+  new MutationObserver(scanImages).observe(document.body, { childList: true, subtree: true });
+})();
 
 /* ── LOADER ── */
 let _quoteInterval=null;
@@ -9612,21 +11131,11 @@ window.addEventListener('DOMContentLoaded',()=>{
     setTimeout(()=>{
       if(!sInitialized){sInitialized=true;sInit();}
     },2400);
-    // EMS — loads from Drive in background, then auto-load last month's data
+    // EMS — scans Drive folder for all month sheets, auto-selects current month
     setTimeout(()=>{
       if(!emsInitialized){emsInitialized=true;emsInit();}
-      // Seed localStorage with hardcoded sheet ID so future lookups skip Drive search
-      try{
-        const now=new Date();
-        const MLONG=['January','February','March','April','May','June','July','August','September','October','November','December'];
-        const currentMonth=MLONG[now.getMonth()]+' '+now.getFullYear();
-        if(EMS_HARDCODED_SHEET_ID){
-          localStorage.setItem('ems-last-sheetId', EMS_HARDCODED_SHEET_ID);
-          localStorage.setItem('ems-last-sheetMonth', currentMonth);
-        }
-        // Auto-load current month EMS data silently in background
-        setTimeout(()=>emsLoadFromGSheet(currentMonth).catch(e=>console.warn('EMS bg load:',e)),800);
-      }catch(e){console.warn('EMS seed:',e);}
+      // Folder scan handles sheet discovery and auto-load
+      setTimeout(()=>emsV2ScanFolder().catch(e=>console.warn('EMS bg scan:',e)),800);
     },3200);
     // AI — init date picker and auto-fetch yesterday's data
     setTimeout(()=>{
@@ -11321,7 +12830,7 @@ function holo2ScheduleGlitch() {
     <button class="mob-tab" id="mob-dryer" ontouchend="mobNavTap(event,'dryer')" onclick="showPage('dryer')"><span style="pointer-events:none" class="icon">🏜️</span><span style="pointer-events:none">Dryer</span></button>
     <button class="mob-tab" id="mob-solar" ontouchend="mobNavTap(event,'solar')" onclick="showPage('solar')"><span style="pointer-events:none" class="icon">☀️</span><span style="pointer-events:none">Solar</span></button>
     <button class="mob-tab" id="mob-ems" ontouchend="mobNavTap(event,'ems')" onclick="showPage('ems')"><span style="pointer-events:none" class="icon">⚡</span><span style="pointer-events:none">EMS</span></button>
-    <button class="mob-tab" id="mob-ai" ontouchend="mobNavTap(event,'ai')" onclick="showPage('ai')"><span style="pointer-events:none" class="icon">🤖</span><span style="pointer-events:none">AI</span></button>
+    <button class="mob-tab" id="mob-ai" ontouchend="mobNavTap(event,'ai')" onclick="showPage('ai')" style="display:none"><span style="pointer-events:none" class="icon">🤖</span><span style="pointer-events:none">AI</span></button>
   </div>
 </nav>
 
@@ -12534,7 +14043,7 @@ document.addEventListener('mousedown',function(e){
 });
 document.addEventListener('mouseup',()=>clearTimeout(_aiLongPress));
 </script>
-
+<div id="ems-touch-drag-ghost"></div>
 
 </body>
 </html>
