@@ -1532,7 +1532,8 @@ body.dark .s-online{background:rgba(16,185,129,0.15);color:#6ee7b7;} body.dark .
 .others-input{display:none;margin-top:4px;}
 .others-input.show{display:block;}
 .export-wrap{position:relative;display:inline-block;}
-.export-menu{position:absolute;top:calc(100% + 6px);right:0;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-sm);box-shadow:var(--shadow-md);overflow:hidden;display:none;z-index:200;min-width:200px;}
+.export-menu{position:absolute;top:calc(100% + 6px);right:0;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-sm);box-shadow:var(--shadow-md);overflow:hidden;display:none;z-index:200;min-width:200px;max-width:calc(100vw - 16px);}
+@media(max-width:600px){.export-menu{right:auto;left:0;}}
 .export-wrap:hover .export-menu,.export-wrap:focus-within .export-menu{display:block;}
 .export-item{display:block;width:100%;padding:10px 14px;background:none;border:none;color:var(--text);font-size:0.84rem;font-family:'Space Grotesk',sans-serif;text-align:left;cursor:pointer;transition:background 0.2s;}
 .export-item:hover{background:var(--surface2);color:var(--accent);}
@@ -2604,6 +2605,22 @@ body.holo2 .holo-mega-grid{background-image:linear-gradient(rgba(0,200,255,0.1) 
 body.holo2 .holo-reveal-main{color:#00c8ff !important;text-shadow:0 0 28px rgba(0,200,255,0.9),0 0 70px rgba(0,200,255,0.4) !important;}
 body.holo2 .holo-reveal-progress-fill{background:linear-gradient(90deg,transparent,#00c8ff,transparent) !important;box-shadow:0 0 10px rgba(0,200,255,0.6) !important;}
 
+@media print {
+  /* Hide everything except the active page */
+  nav, .nav-bar, #cursor, #holo3d-cursor, #holo-overlay, .loading-screen,
+  .export-wrap, .export-menu, .panel-header .btn, .solar-sub-tabs,
+  .qd-btn, .qd-btn-live, #d-liveBar, .live-status-bar,
+  .btn-primary, button:not(.chart-wrap button) { display: none !important; }
+  /* Show only the currently visible page */
+  .page { display: none !important; }
+  .page.active { display: block !important; }
+  body, html { background: #fff !important; }
+  .section-wrap { padding: 0 !important; }
+  .card { box-shadow: none !important; border: 1px solid #ddd !important; break-inside: avoid; }
+  canvas { max-width: 100% !important; }
+  * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
+}
+
 </style>
 </head>
 <body>
@@ -2733,7 +2750,7 @@ body.holo2 .holo-reveal-progress-fill{background:linear-gradient(90deg,transpare
 <!-- Loading Overlay -->
 <div class="loading-overlay" id="loadingOverlay">
   <div class="loading-content">
-    <img id="loadingLogo" src="https://raw.githubusercontent.com/Subhranil12385/Sublynq/main/logo-light.png" class="loading-logo" alt="SUBLYNQ">
+    <img id="loadingLogo" src="https://github.com/Subhranil12385/Sublynq/blob/main/SUBLYNQ_Light.jpg?raw=true" class="loading-logo" alt="SUBLYNQ">
     <div class="loading-title">SUBLYNQ</div>
     <div class="loading-subtitle" id="loadingSubtitle">Fetching data…</div>
     <div class="loading-bar-wrap"><div class="loading-bar" id="loaderBar"></div></div>
@@ -2745,7 +2762,7 @@ body.holo2 .holo-reveal-progress-fill{background:linear-gradient(90deg,transpare
 <!-- TOP NAV -->
 <nav class="topnav">
   <div class="topnav-left">
-    <img id="navLogo" src="https://raw.githubusercontent.com/Subhranil12385/Sublynq/main/logo-light.png" alt="SUBLYNQ" class="nav-logo-img" title="Tap: Home · Double-tap: AI Insights">
+    <img id="navLogo" src="https://github.com/Subhranil12385/Sublynq/blob/main/SUBLYNQ_Light.jpg?raw=true" alt="SUBLYNQ" class="nav-logo-img" title="Tap: Home · Double-tap: AI Insights">
     <div>
       <div class="nav-brand">SUBLYNQ</div>
       <div class="nav-tagline">Unified Monitoring Platform</div>
@@ -2781,7 +2798,7 @@ body.holo2 .holo-reveal-progress-fill{background:linear-gradient(90deg,transpare
     <div class="home-glow-2"></div>
     <div class="hero-scanlines" aria-hidden="true"></div>
     <div class="home-logo-wrap">
-      <img id="heroLogo" src="https://raw.githubusercontent.com/Subhranil12385/Sublynq/main/logo-light.png" class="home-logo" alt="SUBLYNQ Logo">
+      <img id="heroLogo" src="https://github.com/Subhranil12385/Sublynq/blob/main/SUBLYNQ_Light.jpg?raw=true" class="home-logo" alt="SUBLYNQ Logo">
       <div class="home-logo-ring"></div>
       <div class="home-logo-ring2"></div>
       <div class="logo-perimeter-orb" id="logoOrb1"></div>
@@ -2804,7 +2821,7 @@ body.holo2 .holo-reveal-progress-fill{background:linear-gradient(90deg,transpare
         <div class="home-card-desc">Open/close cycle analysis for 5 prepresses. Session durations, idle times.</div>
         <div class="home-card-arrow">→</div>
       </div>
-      <div class="home-card dryer" onclick="showPage('dryer')">
+      <div class="home-card dryer" onclick="window.open('https://subhranil12385.github.io/Dryer-temperature-monitoring-system-new-with-MS1208-M1/','_blank')">
         <span class="home-card-icon">🏜️</span>
         <div class="home-card-title">Dryer Temperature Monitor</div>
         <div class="home-card-desc">4 dryers × 6 chambers. Chamberwise temperature trends, statistics and threshold violations.</div>
@@ -2828,7 +2845,7 @@ body.holo2 .holo-reveal-progress-fill{background:linear-gradient(90deg,transpare
       <div class="ql-row">
         <a class="home-quicklink" href="https://subhranil12385.github.io/Resin-Kettle-Temperature-Monitoring-System-New-with-MS1208-M1/" target="_blank" rel="noopener"><span class="ql-icon">⚗️</span>Resin</a>
         <a class="home-quicklink" href="https://subhranil12385.github.io/Prepress-time-monitoring/" target="_blank" rel="noopener"><span class="ql-icon">🗜</span>Prepress</a>
-        <div class="home-quicklink" onclick="showPage('dryer')"><span class="ql-icon">🏜️</span>Dryer</div>
+        <a class="home-quicklink" href="https://subhranil12385.github.io/Dryer-temperature-monitoring-system-new-with-MS1208-M1/" target="_blank" rel="noopener"><span class="ql-icon">🏜️</span>Dryer</a>
       </div>
       <div class="ql-separator"><div class="ql-live-badge"><span class="ql-dot"></span>Detailed View (External Dashboard)</div></div>
       <div class="ql-row">
@@ -3030,7 +3047,13 @@ body.holo2 .holo-reveal-progress-fill{background:linear-gradient(90deg,transpare
       <button class="btn btn-sm" onclick="openDriveFolder('dryer')" style="background:var(--dryer-grad);color:#fff;box-shadow:0 2px 12px var(--dryer-glow);">🗄️ Go to Database</button>
       <span style="font-size:0.76rem;color:var(--text2);">Last seen: <strong id="d-lastUpdate">--</strong></span>
       <div id="d-mcuBadge" class="status-badge s-unknown" style="display:none;margin-top:8px;"><span class="dot dot-unknown"></span><span id="d-mcuText">MCU --</span></div>
-      <div class="export-wrap"><button class="btn btn-sm btn-dryer" style="background:var(--dryer-grad);color:#fff;box-shadow:0 2px 10px var(--dryer-glow);">📤 Export ▾</button><div class="export-menu"><button class="export-item" onclick="dExportPDF()">📄 Export PDF Report</button><button class="export-item" onclick="dExportCSV()">📊 Export CSV</button></div></div>
+      <div class="export-wrap">
+        <button class="btn btn-sm btn-dryer" style="background:var(--dryer-grad);color:#fff;box-shadow:0 2px 10px var(--dryer-glow);">📤 Export ▾</button>
+        <div class="export-menu">
+          <button class="export-item" onclick="dExportExcel()">📊 Export as Excel</button>
+          <button class="export-item" onclick="dPrintPDF()">🖨️ Print as PDF</button>
+        </div>
+      </div>
     </div>
   </div>
     <div class="card" style="margin-bottom:14px;">
@@ -3105,10 +3128,10 @@ body.holo2 .holo-reveal-progress-fill{background:linear-gradient(90deg,transpare
       <button class="btn btn-sm btn-solar" style="text-decoration:none;box-shadow:0 2px 12px var(--solar-glow);" onclick="showSolarExternalBanner()"><span class="live-dot">🔗</span> External Dashboard</button>
       <button class="btn btn-sm btn-solar" onclick="openDriveFolder('solar')" style="box-shadow:0 2px 12px var(--solar-glow);">🗄️ Go to Database</button>
       <div class="export-wrap">
-        <button class="btn btn-sm btn-solar">📤 Export ▾</button>
+        <button class="btn btn-sm btn-solar" style="box-shadow:0 2px 10px var(--solar-glow);">📤 Export ▾</button>
         <div class="export-menu">
-          <button class="export-item" onclick="sExportPDF()">📄 Export PDF Report</button>
-          <button class="export-item" onclick="sExportCSV()">📊 Export CSV Data</button>
+          <button class="export-item" onclick="sExportExcel()">📊 Export as Excel</button>
+          <button class="export-item" onclick="sPrintPDF()">🖨️ Print as PDF</button>
         </div>
       </div>
     </div>
@@ -3550,10 +3573,10 @@ body.holo2 .holo-reveal-progress-fill{background:linear-gradient(90deg,transpare
       <button class="btn btn-sm btn-ems" style="box-shadow:0 2px 12px var(--ems-glow);" onclick="showEMSExternalBanner()"><span class="live-dot">🔗</span> External Dashboard</button>
       <button class="btn btn-sm btn-ems" onclick="openDriveFolder('ems')" style="box-shadow:0 2px 12px var(--ems-glow);">🗄️ Go to Database</button>
       <div class="export-wrap">
-        <button class="btn btn-sm btn-ems">📤 Export ▾</button>
+        <button class="btn btn-sm btn-ems" style="box-shadow:0 2px 10px var(--ems-glow);">📤 Export ▾</button>
         <div class="export-menu">
-          <button class="export-item" onclick="emsExportCSV()">📊 Export CSV</button>
-          <button class="export-item" onclick="emsExportPDF()">📄 Export PDF</button>
+          <button class="export-item" onclick="emsExportPNG()">🖼️ Export as PNG</button>
+          <button class="export-item" onclick="emsExportCSV()">📊 Export as CSV</button>
         </div>
       </div>
     </div>
@@ -5389,9 +5412,9 @@ function emsV2RenderDaily() {
         datasets.push({
           label: EMS2.shortName(sensor) + (shift !== 'Total' ? ` Sh.${shift}` : ''),
           data: values,
-          backgroundColor: baseColor + (isBar ? 'cc' : '33'),
+          backgroundColor: baseColor + (isBar ? 'cc' : '00'),
           borderColor: baseColor, borderWidth: 2,
-          fill: !isBar, tension: 0.3, pointRadius: sortedDates.length > 60 ? 1 : 3,
+          fill: false, tension: 0.3, pointRadius: sortedDates.length > 60 ? 1 : 3,
           type: isBar ? 'bar' : 'line'
         });
       } else {
@@ -5404,9 +5427,9 @@ function emsV2RenderDaily() {
           datasets.push({
             label: EMS2.shortName(sensor) + ` Sh.${shift}`,
             data: values,
-            backgroundColor: color + (isBar ? 'cc' : '33'),
+            backgroundColor: color + (isBar ? 'cc' : '00'),
             borderColor: color, borderWidth: 2,
-            fill: !isBar, tension: 0.3, pointRadius: sortedDates.length > 60 ? 1 : 3,
+            fill: false, tension: 0.3, pointRadius: sortedDates.length > 60 ? 1 : 3,
             type: isBar ? 'bar' : 'line'
           });
         });
@@ -5424,9 +5447,9 @@ function emsV2RenderDaily() {
         datasets.push({
           label: `${EMS2.shortName(sensor)} — Shift ${shift}`,
           data: values,
-          backgroundColor: shiftColors[shift] + (isBar?'cc':'33'),
+          backgroundColor: shiftColors[shift] + (isBar?'cc':'00'),
           borderColor: shiftColors[shift], borderWidth: 2,
-          fill: !isBar, tension: 0.3, pointRadius: sortedDates.length > 60 ? 1 : 3,
+          fill: false, tension: 0.3, pointRadius: sortedDates.length > 60 ? 1 : 3,
           stack: isBar ? shift : undefined
         });
       }
@@ -5443,9 +5466,9 @@ function emsV2RenderDaily() {
         datasets.push({
           label: `Total — Shift ${shift}`,
           data: values,
-          backgroundColor: shiftColors[shift] + (isBar?'cc':'33'),
+          backgroundColor: shiftColors[shift] + (isBar?'cc':'00'),
           borderColor: shiftColors[shift], borderWidth: 2,
-          fill: !isBar, tension: 0.3, pointRadius: sortedDates.length > 60 ? 1 : 3,
+          fill: false, tension: 0.3, pointRadius: sortedDates.length > 60 ? 1 : 3,
           stack: 'shifts'
         });
       }
@@ -5682,8 +5705,8 @@ function emsV2RenderHeatmap() {
   const now = new Date();
   const pad = n => String(n).padStart(2,'0');
   const yestFmt = (() => { const y=new Date(now); y.setDate(now.getDate()-1); return `${y.getFullYear()}-${pad(y.getMonth()+1)}-${pad(y.getDate())}`; })();
-  if(fromEl && !fromEl.value) fromEl.value = yestFmt;
-  if(toEl   && !toEl.value)   toEl.value   = yestFmt;
+  if(fromEl && !fromEl.value) { const n=new Date(); fromEl.value=`${n.getFullYear()}-${String(n.getMonth()+1).padStart(2,'0')}-01`; }
+  if(toEl && !toEl.value) { const n=new Date(); const last=new Date(n.getFullYear(),n.getMonth()+1,0); toEl.value=`${last.getFullYear()}-${String(last.getMonth()+1).padStart(2,'0')}-${String(last.getDate()).padStart(2,'0')}`; }
   const fromDate = new Date((fromEl ? fromEl.value : `${now.getFullYear()}-${pad(now.getMonth()+1)}-01`) + 'T00:00:00');
   const toDate   = new Date((toEl   ? toEl.value   : `${now.getFullYear()}-${pad(now.getMonth()+1)}-${pad(new Date(now.getFullYear(),now.getMonth()+1,0).getDate())}`) + 'T00:00:00');
 
@@ -5744,7 +5767,7 @@ function emsV2RenderHeatmap() {
       const isSel = EMS2.heatmapSelectedCells.has(cellKey);
       // Text color: white on dark/colored, dark on very light
       const textCol = ratio < 0.08 ? 'rgba(255,255,255,0.3)' : (ratio < 0.35 ? 'rgba(255,255,255,0.7)' : '#fff');
-      const numStr = val > 0 ? (val >= 1000 ? (val/1000).toFixed(1)+'k' : Math.round(val).toString()) : '';
+      const numStr = val > 0 ? (val >= 1000 ? (val/1000).toFixed(1)+'k' : val.toFixed(1)) : '';
       html += `<div class="ems-hm-cell${isSel?' selected':''}" data-d="${dk}" data-h="${h}" data-val="${val.toFixed(1)}"
         style="width:${cellW}px;height:${cellH}px;background:${color};border-radius:2px;margin:1px;box-sizing:border-box;display:flex;align-items:center;justify-content:center;"
         title="${dayLabel} ${String(h).padStart(2,'0')}:00 — ${val.toFixed(1)} kWh">`;
@@ -6507,20 +6530,7 @@ function emsInit() {
 // Real implementations for all ems* functions defined further below
 // emsSaveAllToDrive — real implementation defined further below
 function emsLoadFromGSheet(){ emsV2ScanFolder(); }
-function emsExportCSV(){
-  if(!EMS2.dailyData){ alert('Load data first'); return; }
-  const rows = [['Sensor','Day','Shift A','Shift B','Shift C','Total']];
-  for(const [sensor, days] of Object.entries(EMS2.dailyData)){
-    for(const [day, shifts] of Object.entries(days)){
-      rows.push([sensor, `Apr ${String(day).padStart(2,'0')}`, shifts.A||0, shifts.B||0, shifts.C||0, shifts.Total||0]);
-    }
-  }
-  const csv = rows.map(r=>r.join(',')).join('\n');
-  const a=document.createElement('a');
-  a.href='data:text/csv;charset=utf-8,'+encodeURIComponent(csv);
-  a.download='EMS_Apr2026.csv'; a.click();
-}
-function emsExportPDF(){ alert('Use browser Print > Save as PDF for the EMS dashboard view.'); }
+// emsExportCSV and emsExportPDF are fully defined later in the file (GSheet + file-drop aware)
 </script>
 
 <script>
@@ -7103,8 +7113,8 @@ function mobNavTap(e,name){
 
 /* ── THEME ── */
 const LOGOS = {
-  light: 'https://raw.githubusercontent.com/Subhranil12385/Sublynq/main/logo-light.png',
-  dark:  'https://raw.githubusercontent.com/Subhranil12385/Sublynq/main/logo-dark.png'
+  light: 'https://github.com/Subhranil12385/Sublynq/blob/main/SUBLYNQ_Light.jpg?raw=true',
+  dark:  'https://github.com/Subhranil12385/Sublynq/blob/main/SUBLYNQ_Dark.jpg?raw=true'
 };
 
 function applyLogoTheme(){
@@ -8261,7 +8271,363 @@ function dRenderThreshold(){
   html+='</tbody></table>';
   container.innerHTML=html;
 }
-async function dExportPDF(){const{jsPDF}=window.jspdf;const pdf=new jsPDF('l','mm','a4');pdf.setFontSize(16);pdf.setTextColor(220,38,38);pdf.text('SUBLYNQ — Dryer Temperature Report',14,16);pdf.setFontSize(9);pdf.setTextColor(90,103,127);pdf.text(`Generated: ${new Date().toLocaleString()} | Dryer: ${dCurrentDryer}`,14,23);const canvas=document.getElementById('d-chart');if(canvas&&dAllData.length)pdf.addImage(canvas.toDataURL('image/png'),'PNG',14,28,270,80);const tableData=[];for(let d=1;d<=D_NUM_DRYERS;d++){let hi=-Infinity,lo=Infinity,cnt=0,sum=0;dAllData.forEach(r=>{for(let c=1;c<=D_NUM_CHAMBERS;c++){const v=r[`d${d}c${c}`];if(v&&v!==0){if(v>hi)hi=v;if(v<lo)lo=v;sum+=v;cnt++;}}});tableData.push([`Dryer ${d}`,hi!==-Infinity?hi.toFixed(1)+'°C':'--',lo!==Infinity?lo.toFixed(1)+'°C':'--',cnt?(sum/cnt).toFixed(1)+'°C':'--',cnt]);}pdf.autoTable({startY:115,head:[['Dryer','Max','Min','Avg','Readings']],body:tableData,styles:{fontSize:9},headStyles:{fillColor:[220,38,38]},margin:{left:14,right:14}});pdf.save(`SUBLYNQ_Dryer_Report_${new Date().toLocaleDateString().replace(/\//g,'-')}.pdf`);}
+/* ── Shared helper: screenshot a page element to PDF, fixing Chart.js blank canvases ── */
+/* ══════════════════════════════════════════════════════════
+   SUBLYNQ — PDF EXPORT ENGINE
+   Strategy:
+   1. Temporarily force plain light theme (remove dark/holo/holo2/holo3d)
+   2. Expand ALL collapsed/hidden sections so nothing is missed
+   3. Force Chart.js to re-render at correct size WITHOUT calling resize()
+      (resize() resets devicePixelRatio causing haze on subsequent exports)
+   4. Use onclone to stamp every canvas's pixel data into the clone
+   5. Use PNG (not JPEG) inside jsPDF to avoid double-compression haze
+   6. Restore everything exactly as it was
+   ══════════════════════════════════════════════════════════ */
+async function _sublynqPageToPDF(pageId, filename){
+  const pageEl = document.getElementById(pageId);
+  if(!pageEl){ alert('Page element not found.'); return; }
+  const body = document.body;
+
+  /* ── 1. Snapshot current theme state ── */
+  const hadDark   = body.classList.contains('dark');
+  const hadHolo   = body.classList.contains('holo');
+  const hadHolo2  = body.classList.contains('holo2');
+  const hadHolo3d = body.classList.contains('holo3d');
+  const prevBg    = body.style.background;
+  const prevColor = body.style.color;
+
+  /* ── 2. Snapshot layout state of the page element ── */
+  const prevPageOverflow = pageEl.style.overflow;
+  const prevPageHeight   = pageEl.style.height;
+  const prevPageMinH     = pageEl.style.minHeight;
+
+  /* ── 3. Snapshot hidden/collapsed child elements we'll expand ── */
+  const expandedEls = []; // {el, prop, was}
+
+  function forceVisible(el, prop, val){
+    expandedEls.push({el, prop, was: el.style[prop]});
+    el.style[prop] = val;
+  }
+
+  try{
+    /* ── Strip all dark/holo themes → plain light ── */
+    body.classList.remove('dark','holo','holo2','holo3d');
+    body.style.background = '';
+    body.style.color = '';
+
+    /* ── Expand the page container ── */
+    pageEl.style.overflow  = 'visible';
+    pageEl.style.height    = 'auto';
+    pageEl.style.minHeight = '0';
+
+    /* ── Force ALL child overflow:hidden → visible so nothing clips ── */
+    pageEl.querySelectorAll('*').forEach(el => {
+      const cs = window.getComputedStyle(el);
+      if(cs.overflow === 'hidden' || cs.overflowY === 'hidden' || cs.overflowX === 'hidden'){
+        forceVisible(el,'overflow','visible');
+      }
+    });
+
+    /* ── Expand collapsed sections (max-height:0) ── */
+    pageEl.querySelectorAll('.upload-body,.report-collapse-body').forEach(el => {
+      forceVisible(el,'maxHeight','none');
+      forceVisible(el,'opacity','1');
+      forceVisible(el,'display','block');
+    });
+
+    /* ── Make inactive solar sub-sections visible ── */
+    pageEl.querySelectorAll('.solar-section').forEach(el => {
+      forceVisible(el,'display','block');
+    });
+
+    /* ── Make EMS collapsed machine sections visible ── */
+    pageEl.querySelectorAll('.ems-machine-section-body').forEach(el => {
+      forceVisible(el,'display','block');
+    });
+
+    /* ── Expand chart-wrap to auto height ── */
+    pageEl.querySelectorAll('.chart-wrap,.chart-wrap-tall,.chart-wrap-sm').forEach(el => {
+      forceVisible(el,'height','auto');
+      forceVisible(el,'minHeight','200px');
+    });
+
+    /* ── Allow layout to settle ── */
+    await new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r)));
+    await new Promise(r => setTimeout(r, 80));
+
+    /* ── Capture snapshot of every live canvas BEFORE html2canvas clones DOM ── */
+    const canvasSnapshots = new Map();
+    pageEl.querySelectorAll('canvas').forEach((c, i) => {
+      try{
+        if(c.width > 0 && c.height > 0){
+          // Create an offscreen canvas with the exact pixel dimensions
+          const snap = document.createElement('canvas');
+          snap.width  = c.width;
+          snap.height = c.height;
+          snap.getContext('2d').drawImage(c, 0, 0);
+          canvasSnapshots.set(i, {
+            snap,
+            cssW: c.offsetWidth  || c.width,
+            cssH: c.offsetHeight || c.height
+          });
+        }
+      }catch(e){}
+    });
+
+    /* ── Run html2canvas ── */
+    const shot = await html2canvas(pageEl, {
+      scale: 3,           // High DPI for crisp output
+      useCORS: true,
+      allowTaint: true,
+      scrollX: 0,
+      scrollY: 0,
+      windowWidth:  pageEl.scrollWidth,
+      windowHeight: pageEl.scrollHeight,
+      backgroundColor: '#ffffff',
+      logging: false,
+      onclone: (clonedDoc) => {
+        const clonedPage = clonedDoc.getElementById(pageId);
+        if(!clonedPage) return;
+
+        /* Force cloned body to plain light theme */
+        const clonedBody = clonedDoc.body;
+        clonedBody.classList.remove('dark','holo','holo2','holo3d');
+        clonedBody.style.background = '#f0f2f7';
+        clonedBody.style.color = '#0d1630';
+
+        /* Stamp pre-captured canvas snapshots into cloned canvases */
+        const clonedCanvases = clonedPage.querySelectorAll('canvas');
+        clonedCanvases.forEach((clone, i) => {
+          const entry = canvasSnapshots.get(i);
+          if(!entry) return;
+          try{
+            clone.width  = entry.snap.width;
+            clone.height = entry.snap.height;
+            clone.style.width  = entry.cssW + 'px';
+            clone.style.height = entry.cssH + 'px';
+            const ctx = clone.getContext('2d');
+            ctx.drawImage(entry.snap, 0, 0);
+          }catch(e){}
+        });
+
+        /* Ensure no element in clone is overflow:hidden */
+        clonedPage.querySelectorAll('*').forEach(el => {
+          el.style.overflow   = 'visible';
+          el.style.maxHeight  = 'none';
+        });
+        clonedPage.querySelectorAll('.solar-section,.upload-body,.report-collapse-body,.ems-machine-section-body').forEach(el => {
+          el.style.display  = 'block';
+          el.style.opacity  = '1';
+        });
+      }
+    });
+
+    /* ── Build PDF using PNG to avoid JPEG double-compression haze ── */
+    const imgData = shot.toDataURL('image/png'); // lossless
+    const {jsPDF} = window.jspdf;
+    const pdfW = 210; // A4 portrait width mm
+    const pdfH = shot.height / shot.width * pdfW;
+    const pdf  = new jsPDF('p','mm',[pdfW, Math.max(pdfH, 10)]);
+    pdf.addImage(imgData,'PNG',0,0,pdfW,pdfH);
+    pdf.save(filename);
+
+  }catch(e){
+    alert('PDF export failed: '+e.message);
+    console.error(e);
+  }finally{
+    /* ── Restore EVERYTHING ── */
+    body.classList.toggle('dark',   hadDark);
+    body.classList.toggle('holo',   hadHolo);
+    body.classList.toggle('holo2',  hadHolo2);
+    body.classList.toggle('holo3d', hadHolo3d);
+    body.style.background = prevBg;
+    body.style.color      = prevColor;
+
+    pageEl.style.overflow  = prevPageOverflow;
+    pageEl.style.height    = prevPageHeight;
+    pageEl.style.minHeight = prevPageMinH;
+
+    // Restore all individually patched elements
+    expandedEls.forEach(({el, prop, was}) => { el.style[prop] = was; });
+  }
+}
+
+/* ── Shared helper: screenshot a page element to PNG (full-page long screenshot) ── */
+async function _sublynqPageToPNG(pageId, filename){
+  const pageEl = document.getElementById(pageId);
+  if(!pageEl){ alert('Page element not found.'); return; }
+  const body = document.body;
+  const hadDark   = body.classList.contains('dark');
+  const hadHolo   = body.classList.contains('holo');
+  const hadHolo2  = body.classList.contains('holo2');
+  const hadHolo3d = body.classList.contains('holo3d');
+  const prevBg    = body.style.background;
+  const prevColor = body.style.color;
+  const prevPageOverflow  = pageEl.style.overflow;
+  const prevPageHeight    = pageEl.style.height;
+  const prevPageMinH      = pageEl.style.minHeight;
+  const prevPagePadTop    = pageEl.style.paddingTop;
+  const expandedEls = [];
+  function forceVisible(el, prop, val){ expandedEls.push({el, prop, was: el.style[prop]}); el.style[prop] = val; }
+  try{
+    body.classList.remove('dark','holo','holo2','holo3d');
+    body.style.background = ''; body.style.color = '';
+
+    /* ── Remove nav padding so page starts at top with no blank gap ── */
+    pageEl.style.overflow   = 'visible';
+    pageEl.style.height     = 'auto';
+    pageEl.style.minHeight  = '0';
+    pageEl.style.paddingTop = '16px';
+
+    /* ── Force ALL overflow:hidden → visible ── */
+    pageEl.querySelectorAll('*').forEach(el => {
+      const cs = window.getComputedStyle(el);
+      if(cs.overflow==='hidden'||cs.overflowY==='hidden'||cs.overflowX==='hidden') forceVisible(el,'overflow','visible');
+    });
+
+    /* ── Expand collapsed bodies ── */
+    pageEl.querySelectorAll('.upload-body,.report-collapse-body').forEach(el => {
+      forceVisible(el,'maxHeight','none'); forceVisible(el,'opacity','1'); forceVisible(el,'display','block');
+    });
+
+    /* ── Solar: show all sub-sections ── */
+    pageEl.querySelectorAll('.solar-section').forEach(el => forceVisible(el,'display','block'));
+
+    /* ── EMS: show machine section bodies ── */
+    pageEl.querySelectorAll('.ems-machine-section-body').forEach(el => forceVisible(el,'display','block'));
+
+    /* ── Dryer: force bar chart grid and summary grid to auto height ── */
+    pageEl.querySelectorAll('.dryer-bar-grid,.dryer-summary-grid').forEach(el => {
+      forceVisible(el,'display','grid'); forceVisible(el,'height','auto'); forceVisible(el,'overflow','visible');
+    });
+    /* Force each bar chart wrapper inside dryer bar grid */
+    pageEl.querySelectorAll('.dryer-bar-grid > *,.dryer-summary-grid > *').forEach(el => {
+      forceVisible(el,'overflow','visible'); forceVisible(el,'height','auto');
+    });
+
+    /* ── All chart wraps: auto height ── */
+    pageEl.querySelectorAll('.chart-wrap,.chart-wrap-tall,.chart-wrap-sm').forEach(el => {
+      forceVisible(el,'height','auto'); forceVisible(el,'minHeight','220px'); forceVisible(el,'overflow','visible');
+    });
+
+    /* ── Force all canvases to be visible ── */
+    pageEl.querySelectorAll('canvas').forEach(el => {
+      forceVisible(el,'display','block'); forceVisible(el,'visibility','visible');
+    });
+
+    /* ── Wait longer for layout + chart re-paint ── */
+    await new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r)));
+    await new Promise(r => setTimeout(r, 300));
+
+    /* ── Capture snapshot of every live canvas BEFORE html2canvas clones DOM ── */
+    const canvasSnapshots = new Map();
+    pageEl.querySelectorAll('canvas').forEach((c, i) => {
+      try{
+        if(c.width>0 && c.height>0){
+          const snap = document.createElement('canvas');
+          snap.width  = c.width; snap.height = c.height;
+          snap.getContext('2d').drawImage(c, 0, 0);
+          canvasSnapshots.set(i, {snap, cssW: c.offsetWidth||c.width, cssH: c.offsetHeight||c.height});
+        }
+      }catch(e){}
+    });
+
+    /* ── Use full body scrollWidth so nothing is clipped horizontally ── */
+    const capW = Math.max(pageEl.scrollWidth, document.documentElement.scrollWidth, 1200);
+    const capH = pageEl.scrollHeight;
+
+    const shot = await html2canvas(pageEl, {
+      scale: 2,
+      useCORS: true,
+      allowTaint: true,
+      scrollX: 0,
+      scrollY: 0,
+      windowWidth:  capW,
+      windowHeight: capH,
+      backgroundColor: '#f0f2f7',
+      logging: false,
+      onclone: (clonedDoc) => {
+        const clonedPage = clonedDoc.getElementById(pageId); if(!clonedPage) return;
+        const clonedBody = clonedDoc.body;
+        clonedBody.classList.remove('dark','holo','holo2','holo3d');
+        clonedBody.style.background = '#f0f2f7'; clonedBody.style.color = '#0d1630';
+        clonedPage.style.paddingTop = '16px';
+        clonedPage.style.minHeight  = '0';
+
+        /* Stamp pre-captured canvas snapshots */
+        clonedPage.querySelectorAll('canvas').forEach((clone, i) => {
+          const entry = canvasSnapshots.get(i); if(!entry) return;
+          try{
+            clone.width=entry.snap.width; clone.height=entry.snap.height;
+            clone.style.width=entry.cssW+'px'; clone.style.height=entry.cssH+'px';
+            clone.getContext('2d').drawImage(entry.snap, 0, 0);
+          }catch(e){}
+        });
+
+        /* Remove all overflow restrictions in clone */
+        clonedPage.querySelectorAll('*').forEach(el => {
+          el.style.overflow='visible'; el.style.maxHeight='none';
+        });
+        clonedPage.querySelectorAll('.solar-section,.upload-body,.report-collapse-body,.ems-machine-section-body').forEach(el => {
+          el.style.display='block'; el.style.opacity='1';
+        });
+        clonedPage.querySelectorAll('.dryer-bar-grid,.dryer-summary-grid').forEach(el => {
+          el.style.display='grid'; el.style.height='auto';
+        });
+        clonedPage.querySelectorAll('.chart-wrap,.chart-wrap-tall,.chart-wrap-sm').forEach(el => {
+          el.style.height='auto'; el.style.minHeight='220px';
+        });
+      }
+    });
+
+    const link = document.createElement('a');
+    link.download = filename;
+    link.href = shot.toDataURL('image/png');
+    link.click();
+  }catch(e){
+    alert('PNG export failed: '+e.message); console.error(e);
+  }finally{
+    body.classList.toggle('dark',   hadDark);
+    body.classList.toggle('holo',   hadHolo);
+    body.classList.toggle('holo2',  hadHolo2);
+    body.classList.toggle('holo3d', hadHolo3d);
+    body.style.background = prevBg; body.style.color = prevColor;
+    pageEl.style.overflow   = prevPageOverflow;
+    pageEl.style.height     = prevPageHeight;
+    pageEl.style.minHeight  = prevPageMinH;
+    pageEl.style.paddingTop = prevPagePadTop;
+    expandedEls.forEach(({el, prop, was}) => { el.style[prop] = was; });
+  }
+}
+
+async function dExportPDF(){
+  if(!dAllData.length){ alert('Load data first.'); return; }
+  await _sublynqPageToPDF('page-dryer', `SUBLYNQ_Dryer_Report_${new Date().toLocaleDateString().replace(/\//g,'-')}.pdf`);
+}
+function dPrintPDF(){
+  if(!dAllData.length){ alert('Load data first.'); return; }
+  window.print();
+}
+async function dExportPNG(){
+  if(!dAllData.length){ alert('Load data first.'); return; }
+  await _sublynqPageToPNG('page-dryer', `SUBLYNQ_Dryer_${new Date().toLocaleDateString().replace(/\//g,'-')}.png`);
+}
+function dExportExcel(){
+  if(!dAllData.length){alert('Load data first.');return;}
+  const WB = XLSX.utils.book_new();
+  const headers = ['Timestamp'];
+  for(let d=1;d<=4;d++) for(let c=1;c<=8;c++) headers.push(`D${d}C${c}`);
+  const rows = [headers];
+  dAllData.forEach(r => {
+    const row = [r.ts];
+    for(let d=1;d<=4;d++) for(let c=1;c<=8;c++) row.push(r[`d${d}c${c}`]||0);
+    rows.push(row);
+  });
+  const ws = XLSX.utils.aoa_to_sheet(rows);
+  ws['!cols'] = [{wch:22},...Array(32).fill({wch:10})];
+  XLSX.utils.book_append_sheet(WB, ws, 'Temperature Data');
+  XLSX.writeFile(WB, `SUBLYNQ_Dryer_${new Date().toLocaleDateString().replace(/\//g,'-')}.xlsx`);
+}
 function dExportCSV(){if(!dAllData.length){alert('Load data first.');return;}const headers=['Timestamp'];for(let d=1;d<=4;d++)for(let c=1;c<=8;c++)headers.push(`D${d}C${c}`);let csv=headers.join(',')+'\n';dAllData.forEach(r=>{const row=[r.ts];for(let d=1;d<=4;d++)for(let c=1;c<=8;c++)row.push(r[`d${d}c${c}`]||0);csv+=row.join(',')+'\n';});const a=document.createElement('a');a.href='data:text/csv;charset=utf-8,'+encodeURIComponent(csv);a.download=`SUBLYNQ_Dryer_${new Date().toLocaleDateString().replace(/\//g,'-')}.csv`;a.click();}
 
 /* ══════════════════════════════════════════════════════
@@ -9948,14 +10314,38 @@ function sRehydrateVikram(rows){
 
 /* ── Solar Export ── */
 async function sExportPDF(){
-  const{jsPDF}=window.jspdf;const pdf=new jsPDF('l','mm','a4');
-  pdf.setFontSize(16);pdf.setTextColor(245,158,11);pdf.text(`SUBLYNQ — Solar Generation Report (${sCurrentTab.toUpperCase()})`,14,16);
-  pdf.setFontSize(9);pdf.setTextColor(90,103,127);pdf.text(`Generated: ${new Date().toLocaleString()}`,14,23);
-  const canvas=document.getElementById(sCurrentTab==='avo'?'s-avo-chart':'s-vik-chart');
-  if(canvas)pdf.addImage(canvas.toDataURL('image/png'),'PNG',14,28,270,80);
   const d=sCurrentTab==='avo'?sAVOData:sVikramData;
-  if(d&&d.dates){const tableData=d.dates.map((dt,i)=>{if(sCurrentTab==='avo')return[dt.toLocaleDateString(),d.dailyTotals[i]?.toFixed(0)||0,d.weather[i]||'',d.remarks[i]||''];return[dt.toLocaleDateString(),d.phase1[i]?.toFixed(0)||0,d.phase2[i]?.toFixed(0)||0,d.siteTotals[i]?.toFixed(0)||0];});const head=sCurrentTab==='avo'?[['Date','Total kWh','Weather','Remarks']]:[['Date','Phase 1 kWh','Phase 2 kWh','Site Total kWh']];pdf.autoTable({startY:115,head,body:tableData,styles:{fontSize:7},headStyles:{fillColor:[245,158,11]},margin:{left:14,right:14}});}
-  pdf.save(`SUBLYNQ_Solar_${sCurrentTab}_${new Date().toLocaleDateString().replace(/\//g,'-')}.pdf`);
+  if(!d){ alert('Load data first.'); return; }
+  await _sublynqPageToPDF('page-solar', `SUBLYNQ_Solar_${sCurrentTab}_${new Date().toLocaleDateString().replace(/\//g,'-')}.pdf`);
+}
+async function sExportPNG(){
+  const d=sCurrentTab==='avo'?sAVOData:sVikramData;
+  if(!d){ alert('Load data first.'); return; }
+  await _sublynqPageToPNG('page-solar', `SUBLYNQ_Solar_${sCurrentTab}_${new Date().toLocaleDateString().replace(/\//g,'-')}.png`);
+}
+function sPrintPDF(){
+  const d=sCurrentTab==='avo'?sAVOData:sVikramData;
+  if(!d){ alert('Load data first.'); return; }
+  window.print();
+}
+function sExportExcel(){
+  const d=sCurrentTab==='avo'?sAVOData:sVikramData;if(!d){alert('Load data first.');return;}
+  const WB = XLSX.utils.book_new();
+  let rows, ws;
+  if(sCurrentTab==='avo'){
+    rows = [['Date','Total kWh','Weather','Remarks']];
+    d.dates.forEach((dt,i)=>rows.push([dt.toLocaleDateString(), d.dailyTotals[i]?.toFixed(0)||0, d.weather[i]||'', d.remarks[i]||'']));
+    ws = XLSX.utils.aoa_to_sheet(rows);
+    ws['!cols']=[{wch:16},{wch:12},{wch:16},{wch:30}];
+    XLSX.utils.book_append_sheet(WB, ws, 'AVO Solar');
+  } else {
+    rows = [['Date','Phase1 kWh','Phase2 kWh','Site Total kWh']];
+    d.dates.forEach((dt,i)=>rows.push([dt.toLocaleDateString(), d.phase1[i]?.toFixed(0)||0, d.phase2[i]?.toFixed(0)||0, d.siteTotals[i]?.toFixed(0)||0]));
+    ws = XLSX.utils.aoa_to_sheet(rows);
+    ws['!cols']=[{wch:16},{wch:14},{wch:14},{wch:16}];
+    XLSX.utils.book_append_sheet(WB, ws, 'Vikram Solar');
+  }
+  XLSX.writeFile(WB, `SUBLYNQ_Solar_${sCurrentTab}_${new Date().toLocaleDateString().replace(/\//g,'-')}.xlsx`);
 }
 function sExportCSV(){
   const d=sCurrentTab==='avo'?sAVOData:sVikramData;if(!d){alert('Load data first.');return;}
@@ -10131,41 +10521,146 @@ function emsRenderTable(){
 }
 
 function emsExportCSV(){
-  if(!emsData){alert('Load data first.');return;}
-  const shift=(document.getElementById('ems-shift-sel')?.value)||'Total';
-  const activeSensors=[...emsActiveSensors].filter(s=>emsData.sensors.includes(s));
-  const MON3=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
-  let csv='Day,'+activeSensors.join(',')+',Total\n';
-  emsData.dayNumbers.forEach((day,i)=>{
-    const vals=activeSensors.map(s=>shift==='all'?emsData.dailyBySensor[s][i]||0:(emsData.byShift[s]?.[shift]?.[i]||0));
-    if(vals.every(v=>v===0))return;
-    const dt=emsData.dates?emsData.dates[i]:null;
-    const label=dt?`${String(dt.getDate()).padStart(2,'0')} ${MON3[dt.getMonth()]} ${dt.getFullYear()}`:`${emsData.month.split(' ')[0]||''} ${day}`;
-    csv+=`"${label}",`+vals.join(',')+','+vals.reduce((a,b)=>a+b,0)+'\n';
-  });
-  const a=document.createElement('a');a.href='data:text/csv;charset=utf-8,'+encodeURIComponent(csv);
-  a.download=`SUBLYNQ_EMS_${emsData.month||'data'}_${new Date().toLocaleDateString().replace(/\//g,'-')}.csv`;a.click();
+  const hasEMS2Data = EMS2.dailyData && Object.keys(EMS2.dailyData).length;
+  const hasHourly   = EMS2.hourlyData && Object.keys(EMS2.hourlyData).length;
+  if(!hasEMS2Data && !hasHourly){ alert('Load data first.'); return; }
+
+  const period  = EMS2.SELECTED_MONTH || 'data';
+  const WB      = XLSX.utils.book_new();
+
+  // ── Helper: parse "DD Mon HH:MM - DD Mon HH:MM" → Date for sorting ──
+  const MON_IDX = {jan:0,feb:1,mar:2,apr:3,may:4,jun:5,jul:6,aug:7,sep:8,oct:9,nov:10,dec:11};
+  function slotToDate(slot){
+    // e.g. "01 Mar 07:00 - 01 Mar 08:00"
+    const m = slot.match(/^(\d{2})\s+([A-Za-z]{3})\s+(\d{2}):(\d{2})/);
+    if(!m) return new Date(0);
+    const yr  = new Date().getFullYear(); // approximate — good enough for sorting
+    const mo  = MON_IDX[m[2].toLowerCase()] ?? 0;
+    return new Date(yr, mo, parseInt(m[1]), parseInt(m[3]), parseInt(m[4]));
+  }
+  // Smarter sort: extract year from EMS2 folder sheets if available
+  function slotToDateFull(slot){
+    const m = slot.match(/^(\d{2})\s+([A-Za-z]{3})\s+(\d{2}):(\d{2})/);
+    if(!m) return new Date(0);
+    const mo = MON_IDX[m[2].toLowerCase()] ?? 0;
+    // Try to find the year from loaded sheets
+    let yr = new Date().getFullYear();
+    if(EMS2.FOLDER_SHEETS && EMS2.FOLDER_SHEETS.length){
+      const match = EMS2.FOLDER_SHEETS.find(sh => {
+        const shMo = sh.month !== undefined ? sh.month : -1;
+        return shMo === mo;
+      });
+      if(match && match.year) yr = match.year;
+    }
+    return new Date(yr, mo, parseInt(m[1]), parseInt(m[3]), parseInt(m[4]));
+  }
+
+  // ── SHEET 1: Hourly ──────────────────────────────────────────
+  if(hasHourly){
+    // Sort slots chronologically
+    const sortedSlots = Object.keys(EMS2.hourlyData).sort((a,b) => slotToDateFull(a) - slotToDateFull(b));
+    const allSensors  = [...new Set(sortedSlots.flatMap(s => Object.keys(EMS2.hourlyData[s])))].sort();
+
+    const rows = [['DateTimeStamp', ...allSensors]];
+    sortedSlots.forEach(slot => {
+      const d = EMS2.hourlyData[slot] || {};
+      rows.push([slot, ...allSensors.map(s => d[s] != null ? d[s] : '')]);
+    });
+    const ws1 = XLSX.utils.aoa_to_sheet(rows);
+    // Column widths
+    ws1['!cols'] = [{ wch: 28 }, ...allSensors.map(() => ({ wch: 14 }))];
+    XLSX.utils.book_append_sheet(WB, ws1, 'Hourly');
+  }
+
+  // ── SHEET 2: DailyShift ──────────────────────────────────────
+  if(hasEMS2Data){
+    const sensors     = Object.keys(EMS2.dailyData).sort();
+    const allDates    = new Set();
+    sensors.forEach(s => Object.keys(EMS2.dailyData[s]).forEach(d => allDates.add(d)));
+    const sortedDates = [...allDates].sort(); // ISO "YYYY-MM-DD" sorts correctly
+
+    // Header: Sensor Name | Day 01 – Shift A | Day 01 – Shift B | Day 01 – Shift C | Day 01 – Total | ...
+    // Date row (row 1): blank for sensor column, then the full date repeated 4 times per day
+    const dateRow = ['Date'];
+    sortedDates.forEach(dt => {
+      dateRow.push(dt, dt, dt, dt); // repeat date for A, B, C, Total columns
+    });
+
+    const header = ['Sensor Name'];
+    sortedDates.forEach(dt => {
+      const day = dt.split('-')[2]; // "01"
+      header.push(`Day ${day} – Shift A`, `Day ${day} – Shift B`, `Day ${day} – Shift C`, `Day ${day} – Total`);
+    });
+
+    const rows = [dateRow, header];
+    sensors.forEach(sensor => {
+      const row = [sensor];
+      sortedDates.forEach(dt => {
+        const s = (EMS2.dailyData[sensor] && EMS2.dailyData[sensor][dt]) || {};
+        row.push(s.A||0, s.B||0, s.C||0, s.Total||0);
+      });
+      rows.push(row);
+    });
+    const ws2 = XLSX.utils.aoa_to_sheet(rows);
+    ws2['!cols'] = [{ wch: 30 }, ...sortedDates.flatMap(() => [{ wch: 13 },{ wch: 13 },{ wch: 13 },{ wch: 13 }])];
+    XLSX.utils.book_append_sheet(WB, ws2, 'DailyShift');
+  }
+
+  // ── SHEET 3: Collective ──────────────────────────────────────
+  if(hasEMS2Data){
+    const sensors = Object.keys(EMS2.dailyData).sort();
+    const rows    = [['Sensor Name', 'Shift A (kWh)', 'Shift B (kWh)', 'Shift C (kWh)', 'Total (kWh)']];
+    sensors.forEach(sensor => {
+      let A=0, B=0, C=0, Tot=0;
+      Object.values(EMS2.dailyData[sensor]).forEach(s => { A+=s.A||0; B+=s.B||0; C+=s.C||0; Tot+=s.Total||0; });
+      if(Tot > 0) rows.push([sensor, +A.toFixed(1), +B.toFixed(1), +C.toFixed(1), +Tot.toFixed(1)]);
+    });
+    const ws3 = XLSX.utils.aoa_to_sheet(rows);
+    ws3['!cols'] = [{ wch: 30 }, { wch: 16 }, { wch: 16 }, { wch: 16 }, { wch: 16 }];
+    XLSX.utils.book_append_sheet(WB, ws3, 'Collective');
+  }
+
+  const fname = `SUBLYNQ_EMS_${period.replace(/ /g,'_')}_${new Date().toLocaleDateString().replace(/\//g,'-')}.xlsx`;
+  XLSX.writeFile(WB, fname);
 }
-function emsExportPDF(){
-  if(!emsData){alert('Load data first.');return;}
-  const{jsPDF}=window.jspdf;const pdf=new jsPDF('l','mm','a4');
-  pdf.setFontSize(16);pdf.setTextColor(14,165,233);pdf.text(`SUBLYNQ — EMS Consumption Report`,14,16);
-  pdf.setFontSize(9);pdf.setTextColor(90,103,127);pdf.text(`Period: ${emsData.month} | Generated: ${new Date().toLocaleString()}`,14,23);
-  const canvas=document.getElementById('ems-chart');
-  if(canvas)pdf.addImage(canvas.toDataURL('image/png'),'PNG',14,28,270,80);
-  const shift=(document.getElementById('ems-shift-sel')?.value)||'Total';
-  const activeSensors=[...emsActiveSensors].filter(s=>emsData.sensors.includes(s));
-  const MON3=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
-  const tableData=[];
-  emsData.dayNumbers.forEach((day,i)=>{
-    const vals=activeSensors.map(s=>shift==='all'?emsData.dailyBySensor[s][i]||0:(emsData.byShift[s]?.[shift]?.[i]||0));
-    if(vals.every(v=>v===0))return;
-    const dt=emsData.dates?emsData.dates[i]:null;
-    const label=dt?`${String(dt.getDate()).padStart(2,'0')} ${MON3[dt.getMonth()]} ${dt.getFullYear()}`:`${emsData.month.split(' ')[0]||''} ${day}`;
-    tableData.push([label,...vals,vals.reduce((a,b)=>a+b,0)]);
-  });
-  pdf.autoTable({startY:115,head:[['Day',...activeSensors,'Total']],body:tableData,styles:{fontSize:6},headStyles:{fillColor:[14,165,233]},margin:{left:14,right:14}});
-  pdf.save(`SUBLYNQ_EMS_${emsData.month||'report'}_${new Date().toLocaleDateString().replace(/\//g,'-')}.pdf`);
+async function emsExportPDF(){
+  const hasEMS2Data = EMS2.dailyData && Object.keys(EMS2.dailyData).length;
+  const hasEmsData  = emsData && emsData.sensors && emsData.sensors.length;
+  if(!hasEMS2Data && !hasEmsData){ alert('Load data first.'); return; }
+  const period = EMS2.SELECTED_MONTH || (emsData && emsData.month) || 'EMS Report';
+  const fname  = `SUBLYNQ_EMS_${period.replace(/ /g,'_')}_${new Date().toLocaleDateString().replace(/\//g,'-')}.pdf`;
+  const statusEl = document.getElementById('ems-gs-status-text');
+  const prevText = statusEl ? statusEl.textContent : '';
+  if(statusEl){ statusEl.textContent='📄 Generating PDF…'; statusEl.style.color='var(--ems)'; }
+  try{
+    await _sublynqPageToPDF('page-ems', fname);
+    if(statusEl){ statusEl.textContent='✅ PDF exported'; statusEl.style.color='#10b981'; }
+    setTimeout(()=>{ if(statusEl) statusEl.textContent=prevText; },3000);
+  }catch(e){
+    console.error('EMS PDF export error:',e);
+    if(statusEl){ statusEl.textContent='❌ PDF failed: '+e.message; statusEl.style.color='#ef4444'; }
+    alert('PDF export failed: '+e.message);
+  }
+}
+
+async function emsExportPNG(){
+  const hasEMS2Data = EMS2.dailyData && Object.keys(EMS2.dailyData).length;
+  const hasEmsData  = emsData && emsData.sensors && emsData.sensors.length;
+  if(!hasEMS2Data && !hasEmsData){ alert('Load data first.'); return; }
+  const period = EMS2.SELECTED_MONTH || (emsData && emsData.month) || 'EMS Report';
+  const fname  = `SUBLYNQ_EMS_${period.replace(/ /g,'_')}_${new Date().toLocaleDateString().replace(/\//g,'-')}.png`;
+  const statusEl = document.getElementById('ems-gs-status-text');
+  const prevText = statusEl ? statusEl.textContent : '';
+  if(statusEl){ statusEl.textContent='🖼️ Generating PNG…'; statusEl.style.color='var(--ems)'; }
+  try{
+    await _sublynqPageToPNG('page-ems', fname);
+    if(statusEl){ statusEl.textContent='✅ PNG exported'; statusEl.style.color='#10b981'; }
+    setTimeout(()=>{ if(statusEl) statusEl.textContent=prevText; },3000);
+  }catch(e){
+    console.error('EMS PNG export error:',e);
+    if(statusEl){ statusEl.textContent='❌ PNG failed: '+e.message; statusEl.style.color='#ef4444'; }
+    alert('PNG export failed: '+e.message);
+  }
 }
 
 /* ════════════════════════════════════════════════════════════
