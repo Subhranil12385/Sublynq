@@ -7643,7 +7643,7 @@ function rUpdateStatus(){
       const trend=recentVals.length>=2?recentVals[recentVals.length-1]-recentVals[0]:0;
       const last5minTs=Date.now()-5*60*1000;
       const recent5min=rAllData.filter(r=>{const t=parseTS(String(r[0]));return t&&t.getTime()>=last5minTs;});
-      const allBelow40=recent5min.length>0&&recent5min.every(r=>{const v=parseFloat(r[k]);return v&&v!==0?v<40:true;});
+      const allBelow45=recent5min.length>0&&recent5min.every(r=>{const v=parseFloat(r[k]);return v&&v!==0?v<45:true;});
       if(lastVal>=95){
         cookEl.innerHTML='⚠️ Too High';cookEl.style.color='#ef4444';
         cookEl.style.animation='cookPulse 0.4s ease-in-out infinite';
