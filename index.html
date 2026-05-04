@@ -16,6 +16,7 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/luxon/3.4.4/luxon.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/chartjs-adapter-luxon/1.3.1/chartjs-adapter-luxon.umd.min.js"></script>
+
 <script src="https://cdnjs.cloudflare.com/ajax/libs/flatpickr/4.6.13/flatpickr.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
@@ -3605,6 +3606,15 @@ body.holo2 .holo-reveal-progress-fill{background:linear-gradient(90deg,transpare
       <option value="">Loading…</option>
     </select>
     <span id="ems-gs-status-text" style="font-size:0.82rem;font-weight:600;color:var(--ems);"></span>
+    <div id="ems-bg-progress-wrap" style="display:none;flex:1;min-width:140px;max-width:320px;">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:3px;">
+        <span id="ems-bg-progress-label" style="font-size:0.72rem;color:var(--text3);font-weight:600;"></span>
+        <span id="ems-bg-progress-pct" style="font-size:0.72rem;color:var(--ems);font-weight:700;"></span>
+      </div>
+      <div style="height:5px;background:rgba(14,165,233,0.15);border-radius:4px;overflow:hidden;">
+        <div id="ems-bg-progress-bar" style="height:100%;width:0%;background:linear-gradient(90deg,#0ea5e9,#6366f1);border-radius:4px;transition:width 0.4s ease;"></div>
+      </div>
+    </div>
     <button class="btn btn-sm btn-ems" onclick="emsV2LoadGSheet()" style="margin-left:auto;font-size:0.72rem;padding:4px 12px;">↻ Reload</button>
   </div>
 
@@ -4309,10 +4319,13 @@ async function emsV2ScanFolder() {
 
   // Initialize all months as selected (default = all)
   EMS2.SELECTED_MONTHS = new Set(parsed.map(p => p.label));
-  // Initialize section filters too
+  // Default section filters to THIS MONTH only (avoids triggering bg-load overlay on init)
+  const _nowLbl = (()=>{const n=new Date();const ML=['January','February','March','April','May','June','July','August','September','October','November','December'];return ML[n.getMonth()]+' '+n.getFullYear();})();
+  const _thisMonthSet = new Set(parsed.filter(p=>p.label===_nowLbl).map(p=>p.label));
+  const _defaultSet = _thisMonthSet.size > 0 ? _thisMonthSet : (parsed.length > 0 ? new Set([parsed[0].label]) : new Set());
   if(!EMS2.SECTION_MONTHS) EMS2.SECTION_MONTHS = {};
   ['pie','kpi','table'].forEach(s => {
-    EMS2.SECTION_MONTHS[s] = new Set(parsed.map(p => p.label));
+    EMS2.SECTION_MONTHS[s] = new Set(_defaultSet);
   });
 
   // Populate legacy hidden select for compatibility
@@ -4551,69 +4564,218 @@ function emsV2RenderAll() {
   emsV2RenderDetailedTable();
 }
 
+// ── EMS PROGRESSIVE LOAD STATE ──
+const EMS_LOAD = {
+  loadedMonths: new Set(),   // labels of fully-loaded months (e.g. "May 2026")
+  loading: false,            // bg load in progress
+  configPromise: null,
+  allSensors: new Set()
+};
+
+// Merge one sheet's data into EMS2.dailyData / EMS2.hourlyData
+function _emsMergeSheetResult(sh, dsRows, hrRows) {
+  if(dsRows && dsRows.length > 1) {
+    for(let r = 1; r < dsRows.length; r++) {
+      const sName = String(dsRows[r][0] || '').trim();
+      if(sName) EMS_LOAD.allSensors.add(sName);
+    }
+  }
+  if(!EMS2.dailyData) EMS2.dailyData = {};
+  if(!EMS2.hourlyData) EMS2.hourlyData = {};
+  const parsed = emsV2ParseDailyShiftRowsFull(dsRows, sh.year, sh.month);
+  for(const [sensor, days] of Object.entries(parsed)) {
+    if(!EMS2.dailyData[sensor]) EMS2.dailyData[sensor] = {};
+    Object.assign(EMS2.dailyData[sensor], days);
+  }
+  if(hrRows && hrRows.length > 1) {
+    const parsedHr = emsV2ParseHourlyRows(hrRows);
+    Object.assign(EMS2.hourlyData, parsedHr);
+  }
+  EMS_LOAD.loadedMonths.add(sh.label);
+}
+
+function _emsSetProgress(loaded, total, currentLabel) {
+  const wrap = document.getElementById('ems-bg-progress-wrap');
+  const bar  = document.getElementById('ems-bg-progress-bar');
+  const lbl  = document.getElementById('ems-bg-progress-label');
+  const pct  = document.getElementById('ems-bg-progress-pct');
+  if(!wrap) return;
+  if(loaded >= total) { wrap.style.display = 'none'; return; }
+  wrap.style.display = 'flex';
+  wrap.style.flexDirection = 'column';
+  const p = Math.round((loaded / total) * 100);
+  if(bar) bar.style.width = p + '%';
+  if(lbl) lbl.textContent = '⏳ Loading ' + currentLabel + '…';
+  if(pct) pct.textContent = loaded + '/' + total + ' months';
+}
+
+function _emsHideProgress() {
+  const wrap = document.getElementById('ems-bg-progress-wrap');
+  if(wrap) wrap.style.display = 'none';
+}
+
+// Blocking overlay for "waiting for month to load"
+function _emsShowWaitOverlay(label) {
+  let ov = document.getElementById('ems-wait-overlay');
+  if(!ov) {
+    ov = document.createElement('div');
+    ov.id = 'ems-wait-overlay';
+    ov.style.cssText = 'position:fixed;inset:0;z-index:9999;background:rgba(5,11,24,0.82);backdrop-filter:blur(6px);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:18px;';
+    ov.innerHTML = `<div style="text-align:center;">
+      <div style="font-size:2rem;margin-bottom:8px;">⏳</div>
+      <div id="ems-wait-overlay-title" style="font-size:1.1rem;font-weight:800;color:#e2e8f0;margin-bottom:6px;">Loading data…</div>
+      <div id="ems-wait-overlay-sub" style="font-size:0.85rem;color:#94a3b8;"></div>
+      <div style="margin-top:18px;width:260px;height:6px;background:rgba(14,165,233,0.15);border-radius:4px;overflow:hidden;">
+        <div id="ems-wait-overlay-bar" style="height:100%;width:0%;background:linear-gradient(90deg,#0ea5e9,#6366f1);border-radius:4px;transition:width 0.4s ease;"></div>
+      </div>
+      <div id="ems-wait-overlay-pct" style="margin-top:6px;font-size:0.78rem;color:#0ea5e9;font-weight:700;"></div>
+    </div>`;
+    document.body.appendChild(ov);
+  }
+  document.getElementById('ems-wait-overlay-title').textContent = 'Loading ' + label + '…';
+  document.getElementById('ems-wait-overlay-sub').textContent = 'Background loading in progress. Please wait.';
+  ov.style.display = 'flex';
+}
+function _emsUpdateWaitOverlay(loaded, total, label) {
+  const bar = document.getElementById('ems-wait-overlay-bar');
+  const pct = document.getElementById('ems-wait-overlay-pct');
+  const sub = document.getElementById('ems-wait-overlay-sub');
+  if(bar) bar.style.width = Math.round((loaded/total)*100) + '%';
+  if(pct) pct.textContent = loaded + ' of ' + total + ' months loaded';
+  if(sub) sub.textContent = 'Now loading: ' + label;
+}
+function _emsHideWaitOverlay() {
+  const ov = document.getElementById('ems-wait-overlay');
+  if(ov) ov.style.display = 'none';
+}
+
+// Check if any month in the currently-requested date range is not yet loaded.
+// Returns null if all needed months are loaded, or the label of the first unloaded needed month.
+function _emsNeededMonthLoaded() {
+  if(EMS_LOAD.initializing) return null; // suppress during init render
+  if(!EMS_LOAD.loading) return null;     // nothing loading — no need to gate
+  const sheets = EMS2.FOLDER_SHEETS || [];
+  if(!sheets.length) return null;
+  // Collect the date range from both daily and heatmap pickers
+  const fromDaily = document.getElementById('daily-date-from');
+  const toDaily   = document.getElementById('daily-date-to');
+  const fromHeat  = document.getElementById('heatmap-date-from');
+  const toHeat    = document.getElementById('heatmap-date-to');
+  // Build list of [from, to] pairs that are actively set
+  const ranges = [];
+  if(fromDaily && fromDaily.value && toDaily && toDaily.value)
+    ranges.push([new Date(fromDaily.value+'T00:00:00'), new Date(toDaily.value+'T00:00:00')]);
+  if(fromHeat && fromHeat.value && toHeat && toHeat.value)
+    ranges.push([new Date(fromHeat.value+'T00:00:00'), new Date(toHeat.value+'T00:00:00')]);
+  if(!ranges.length) return null;
+  // For each sheet, check if its month overlaps any requested range AND isn't loaded yet
+  for(const sh of sheets) {
+    if(EMS_LOAD.loadedMonths.has(sh.label)) continue;
+    const shStart = new Date(sh.year, sh.month, 1);
+    const shEnd   = new Date(sh.year, sh.month + 1, 0); // last day of month
+    for(const [from, to] of ranges) {
+      // Overlap: shStart <= to AND shEnd >= from
+      if(shStart <= to && shEnd >= from) return sh.label;
+    }
+  }
+  return null;
+}
+
+// Wait until a specific month (by label) is loaded, showing overlay
+async function _emsWaitForMonth(label) {
+  if(EMS_LOAD.loadedMonths.has(label)) return;
+  const sheets = EMS2.FOLDER_SHEETS || [];
+  const total = sheets.length;
+  _emsShowWaitOverlay(label);
+  while(!EMS_LOAD.loadedMonths.has(label)) {
+    const loaded = EMS_LOAD.loadedMonths.size;
+    _emsUpdateWaitOverlay(loaded, total, label);
+    await new Promise(r => setTimeout(r, 400));
+  }
+  _emsHideWaitOverlay();
+}
+
 async function emsV2LoadGSheet() {
+  // Reset state
+  EMS2.dailyData = {};
+  EMS2.hourlyData = {};
+  EMS_LOAD.loadedMonths.clear();
+  EMS_LOAD.allSensors.clear();
+  EMS_LOAD.loading = true;
+
   const statusEl = document.getElementById('ems-gs-status-text');
-  if(statusEl) { statusEl.textContent = '⏳ Loading all months…'; statusEl.style.color = 'var(--text2)'; }
-  try {
-    const sheets = EMS2.FOLDER_SHEETS.length > 0 ? EMS2.FOLDER_SHEETS : [{ id: EMS2.SHEET_ID, label: EMS2.SELECTED_MONTH || 'Current', year: 2026, month: new Date().getMonth() }];
-    if(statusEl) statusEl.textContent = '📥 Loading ' + sheets.length + ' month(s)…';
+  if(statusEl) { statusEl.textContent = '📥 Loading this month…'; statusEl.style.color = 'var(--text2)'; }
 
-    // Load config tab in parallel with data
-    const configPromise = emsV2LoadMeterConfig();
+  const now = new Date();
+  const sheets = EMS2.FOLDER_SHEETS.length > 0
+    ? EMS2.FOLDER_SHEETS
+    : [{ id: EMS2.SHEET_ID, label: EMS2.SELECTED_MONTH || 'Current', year: now.getFullYear(), month: now.getMonth() }];
 
-    const results = await Promise.allSettled(sheets.map(async sh => {
+  // Sort: newest first so this month & last month load first
+  const sorted = [...sheets].sort((a,b) => b.year - a.year || b.month - a.month);
+  const total = sorted.length;
+
+  // Start config load in parallel
+  EMS_LOAD.configPromise = emsV2LoadMeterConfig();
+
+  // ── PHASE 1: load this month + last month ──
+  const priority = sorted.slice(0, Math.min(2, total));
+  const rest     = sorted.slice(Math.min(2, total));
+
+  for(let i = 0; i < priority.length; i++) {
+    const sh = priority[i];
+    try {
       const dsRows = await emsV2FetchTab(sh.id, 'DailyShift');
       let hrRows = [];
       try { hrRows = await emsV2FetchTab(sh.id, 'Hourly'); } catch(e) {}
-      return { sh, dsRows, hrRows };
-    }));
+      _emsMergeSheetResult(sh, dsRows, hrRows);
+    } catch(e) { console.warn('Month load failed (' + sh.label + '):', e.message); EMS_LOAD.loadedMonths.add(sh.label); }
+    _emsSetProgress(EMS_LOAD.loadedMonths.size, total, rest.length ? rest[0].label : '');
+  }
 
-    // Merge all into unified data keyed by full date "YYYY-MM-DD"
-    const mergedDaily = {};   // { sensor: { "2026-04-01": {A,B,C,Total} } }
-    const mergedHourly = {};  // { slotStr: { sensor: val } }
-    let hourlyOk = false;
-    const allSensorsFromSheet = new Set();
+  // Apply config + show UI with priority data
+  try {
+    const savedConfig = await EMS_LOAD.configPromise;
+    emsV2ApplyMeterConfig(savedConfig, EMS_LOAD.allSensors);
+  } catch(e) {}
 
-    for(const res of results) {
-      if(res.status !== 'fulfilled') { console.warn('Month load failed:', res.reason); continue; }
-      const { sh, dsRows, hrRows } = res.value;
-      // Extract sensor names from col A (row 1+)
-      if(dsRows && dsRows.length > 1) {
-        for(let r = 1; r < dsRows.length; r++) {
-          const sName = String(dsRows[r][0] || '').trim();
-          if(sName) allSensorsFromSheet.add(sName);
-        }
-      }
-      const parsed = emsV2ParseDailyShiftRowsFull(dsRows, sh.year, sh.month);
-      for(const [sensor, days] of Object.entries(parsed)) {
-        if(!mergedDaily[sensor]) mergedDaily[sensor] = {};
-        Object.assign(mergedDaily[sensor], days);
-      }
-      if(hrRows && hrRows.length > 1) {
-        const parsedHr = emsV2ParseHourlyRows(hrRows);
-        Object.assign(mergedHourly, parsedHr);
-        hourlyOk = true;
+  const numSensors = Object.keys(EMS2.dailyData).length;
+  if(statusEl) {
+    statusEl.textContent = '✅ ' + numSensors + ' sensors · ' + EMS_LOAD.loadedMonths.size + '/' + total + ' months';
+    statusEl.style.color = '#10b981';
+  }
+  EMS_LOAD.initializing = true;
+  emsV2InitUI();
+  EMS_LOAD.initializing = false;
+
+  if(!rest.length) { _emsHideProgress(); EMS_LOAD.loading = false; return; }
+
+  // ── PHASE 2: load older months one by one in background ──
+  (async () => {
+    for(let i = 0; i < rest.length; i++) {
+      const sh = rest[i];
+      const next = rest[i+1];
+      _emsSetProgress(EMS_LOAD.loadedMonths.size, total, sh.label);
+      try {
+        const dsRows = await emsV2FetchTab(sh.id, 'DailyShift');
+        let hrRows = [];
+        try { hrRows = await emsV2FetchTab(sh.id, 'Hourly'); } catch(e) {}
+        _emsMergeSheetResult(sh, dsRows, hrRows);
+      } catch(e) { console.warn('BG month load failed (' + sh.label + '):', e.message); EMS_LOAD.loadedMonths.add(sh.label); }
+      _emsSetProgress(EMS_LOAD.loadedMonths.size, total, next ? next.label : '');
+      if(statusEl) {
+        const n = Object.keys(EMS2.dailyData).length;
+        statusEl.textContent = '✅ ' + n + ' sensors · ' + EMS_LOAD.loadedMonths.size + '/' + total + ' months';
       }
     }
-
-    EMS2.dailyData = mergedDaily;
-    EMS2.hourlyData = mergedHourly;
-
-    // Apply saved config or default: all sensors → production
-    const savedConfig = await configPromise;
-    emsV2ApplyMeterConfig(savedConfig, allSensorsFromSheet);
-
-    const numSensors = Object.keys(mergedDaily).length;
-    const loaded = results.filter(r=>r.status==='fulfilled').length;
+    _emsHideProgress();
+    EMS_LOAD.loading = false;
     if(statusEl) {
-      statusEl.textContent = '✅ ' + numSensors + ' sensors · ' + loaded + ' month' + (loaded>1?'s':'') + (hourlyOk?' + Hourly':'');
+      const n = Object.keys(EMS2.dailyData).length;
+      statusEl.textContent = '✅ ' + n + ' sensors · ' + total + ' months (all loaded)';
       statusEl.style.color = '#10b981';
     }
-    emsV2InitUI();
-  } catch(e) {
-    console.error('EMS GSheet load error:', e);
-    if(statusEl) { statusEl.textContent = '❌ Load failed: ' + e.message; statusEl.style.color = '#ef4444'; }
-  }
+  })();
 }
 
 function emsV2ChangeSheet() {
@@ -5027,9 +5189,12 @@ function emsV2InitUI() {
 
   // Sync section month filters to the current selection (or all if not set yet)
   if(!EMS2.SECTION_MONTHS) EMS2.SECTION_MONTHS = {};
+  const _nowLbl2 = (()=>{const n=new Date();const ML=['January','February','March','April','May','June','July','August','September','October','November','December'];return ML[n.getMonth()]+' '+n.getFullYear();})();
   ['pie','kpi','table'].forEach(s => {
     if(!EMS2.SECTION_MONTHS[s]) {
-      EMS2.SECTION_MONTHS[s] = new Set((EMS2.FOLDER_SHEETS||[]).map(p=>p.label));
+      const _sheets = EMS2.FOLDER_SHEETS||[];
+      const _tm = _sheets.filter(p=>p.label===_nowLbl2);
+      EMS2.SECTION_MONTHS[s] = _tm.length > 0 ? new Set([_tm[0].label]) : (_sheets.length > 0 ? new Set([_sheets[0].label]) : new Set());
     }
     emsV2UpdateSectionLabel(s);
   });
@@ -5357,6 +5522,14 @@ function emsV2SetDailyChart(type) {
 
 function emsV2RenderDaily() {
   if(!EMS2.dailyData) return;
+  // Check if requested date range covers months not yet loaded
+  if(EMS_LOAD && EMS_LOAD.loading) {
+    const needed = _emsNeededMonthLoaded();
+    if(needed) {
+      _emsWaitForMonth(needed).then(() => emsV2RenderDaily());
+      return;
+    }
+  }
   const fromVal = document.getElementById('daily-date-from').value;
   const toVal   = document.getElementById('daily-date-to').value;
   const from = new Date(fromVal + 'T00:00:00');
@@ -5476,12 +5649,13 @@ function emsV2RenderDaily() {
   }
 
   const chartType = isSep ? (isBar ? 'bar' : 'line') : (isBar && shifts.length > 1 ? 'bar' : EMS2.dailyChartType);
-  if(EMS2.dailyChartInst) EMS2.dailyChartInst.destroy();
+  const _emsDailyFirst=!EMS2.dailyChartInst;if(EMS2.dailyChartInst) EMS2.dailyChartInst.destroy();
   EMS2.dailyChartInst = new Chart(canvas.getContext('2d'), {
     type: chartType,
     data: { labels, datasets },
     options: {
       responsive: true, maintainAspectRatio: false,
+      animation: _emsDailyFirst ? {duration:400} : false,
       interaction: { mode:'index', intersect:false },
       plugins: {
         legend: { position:'top', labels:{ color: getComputedStyle(document.body).getPropertyValue('--text2').trim()||'#666', font:{size:11}, usePointStyle: true, boxWidth: 12 } },
@@ -5626,13 +5800,14 @@ function emsV2RenderHourly() {
     };
   });
 
-  if(EMS2.hourlyChartInst) EMS2.hourlyChartInst.destroy();
+  const _emsHrFirst=!EMS2.hourlyChartInst;if(EMS2.hourlyChartInst) EMS2.hourlyChartInst.destroy();
   const ctx = canvas.getContext('2d');
   EMS2.hourlyChartInst = new Chart(ctx, {
     type: EMS2.hourlyChartType,
     data: { labels, datasets },
     options: {
       responsive: true, maintainAspectRatio: false,
+      animation: _emsHrFirst ? {duration:400} : false,
       interaction: { mode:'index', intersect:false },
       plugins: {
         legend: { position:'top', labels:{ color:'#888', font:{size:10} } },
@@ -5691,6 +5866,14 @@ function emsHeatmapPreset(preset) {
 
 function emsV2RenderHeatmap() {
   if(!EMS2.hourlyData) return;
+  // Check if requested date range covers months not yet loaded
+  if(EMS_LOAD && EMS_LOAD.loading) {
+    const needed = _emsNeededMonthLoaded();
+    if(needed) {
+      _emsWaitForMonth(needed).then(() => emsV2RenderHeatmap());
+      return;
+    }
+  }
   const wrap = document.getElementById('ems-heatmap-wrap');
   const noData = document.getElementById('ems-heatmap-no-data');
   const selectedSensors = [...EMS2.selectedProd, ...EMS2.selectedUtil];
@@ -8217,7 +8400,7 @@ function dRenderBars(){
   if(!dAllData.length)return;const grid=document.getElementById('d-barGrid');grid.innerHTML='';dBarCharts.forEach(c=>{try{c.destroy();}catch(e){}});dBarCharts=[];
   const hideZero=dGetHideZero();
   const textColor=isDark?'#6e8aac':'#5a677f';const gridColor=isDark?'rgba(255,255,255,0.04)':'rgba(0,0,0,0.04)';
-  for(let d=1;d<=D_NUM_DRYERS;d++){const card=document.createElement('div');card.className='dryer-bar-card';card.innerHTML=`<h4>🏜️ Dryer ${d} — Max Temp per Chamber</h4><div class="dryer-bar-wrap"><canvas id="dbar-${d}"></canvas></div>`;grid.appendChild(card);const maxPerCh=[];const colors=[];const labels=[];for(let c=1;c<=D_NUM_CHAMBERS;c++){let maxV=-Infinity;dAllData.forEach(r=>{const v=r[`d${d}c${c}`];if(v&&(!hideZero||v!==0)&&v!==0&&v>maxV)maxV=v;});maxPerCh.push(maxV===-Infinity?0:maxV);labels.push(`Ch ${c}`);colors.push(D_COLORS[((d-1)*8+(c-1))%D_COLORS.length]);}const ctx=document.getElementById(`dbar-${d}`).getContext('2d');const bc=new Chart(ctx,{type:'bar',data:{labels,datasets:[{label:`Dryer ${d} Max Temp (°C)`,data:maxPerCh,backgroundColor:colors.map(c=>c+'aa'),borderColor:colors,borderWidth:2,borderRadius:6}]},options:{responsive:true,maintainAspectRatio:false,animation:{duration:300},plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>`Max: ${c.parsed.y.toFixed(1)}°C`}}},scales:{x:{ticks:{color:textColor,font:{size:9}},grid:{color:gridColor}},y:{ticks:{color:textColor,callback:v=>v+'°C',font:{size:9}},grid:{color:gridColor}}}}});dBarCharts.push(bc);}
+  for(let d=1;d<=D_NUM_DRYERS;d++){const card=document.createElement('div');card.className='dryer-bar-card';card.innerHTML=`<h4>🏜️ Dryer ${d} — Max Temp per Chamber</h4><div class="dryer-bar-wrap"><canvas id="dbar-${d}"></canvas></div>`;grid.appendChild(card);const maxPerCh=[];const colors=[];const labels=[];for(let c=1;c<=D_NUM_CHAMBERS;c++){let maxV=-Infinity;dAllData.forEach(r=>{const v=r[`d${d}c${c}`];if(v&&(!hideZero||v!==0)&&v!==0&&v>maxV)maxV=v;});maxPerCh.push(maxV===-Infinity?0:maxV);labels.push(`Ch ${c}`);colors.push(D_COLORS[((d-1)*8+(c-1))%D_COLORS.length]);}const ctx=document.getElementById(`dbar-${d}`).getContext('2d');const bc=new Chart(ctx,{type:'bar',data:{labels,datasets:[{label:`Dryer ${d} Max Temp (°C)`,data:maxPerCh,backgroundColor:colors.map(c=>c+'aa'),borderColor:colors,borderWidth:2,borderRadius:6}]},options:{responsive:true,maintainAspectRatio:false,animation:false,plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>`Max: ${c.parsed.y.toFixed(1)}°C`}}},scales:{x:{ticks:{color:textColor,font:{size:9}},grid:{color:gridColor}},y:{ticks:{color:textColor,callback:v=>v+'°C',font:{size:9}},grid:{color:gridColor}}}}});dBarCharts.push(bc);}
 }
 function dRenderSummary(){
   const grid=document.getElementById('d-summaryGrid');grid.innerHTML='';
@@ -9363,7 +9546,7 @@ function sRenderAVOInvChart(){
   const raw=sAVOData;const idxs=sFilteredIndices(raw);
   const d={dates:idxs.map(i=>raw.dates[i]),perInverter:raw.perInverter.map(a=>idxs.map(i=>a[i])),inverterNames:raw.inverterNames,remarks:idxs.map(i=>raw.remarks[i]||'')};
   const canvas=document.getElementById('s-avo-inv-chart');
-  if(sAVOInvChart){sAVOInvChart.destroy();sAVOInvChart=null;}
+  const _avoInvFirst=!sAVOInvChart;if(sAVOInvChart){sAVOInvChart.destroy();sAVOInvChart=null;}
   const textColor=isDark?'#6e8aac':'#5a677f';const gridColor=isDark?'rgba(255,255,255,0.05)':'rgba(0,0,0,0.04)';
   const toggles=document.querySelectorAll('#s-avo-inv-toggles input');
   const labels=d.dates.map(dt=>dt.toLocaleDateString('en-GB',{day:'2-digit',month:'short'}));
@@ -11547,6 +11730,10 @@ async function emsSaveAllToDrive(){
       try{localStorage.setItem('ems-last-sheetId', sheetId);localStorage.setItem('ems-last-sheetMonth', consumption.month);}catch(e){}
       statusEl.textContent=`✅ Saved to GSheet "${shName}" — Collective + DailyShift (${consumption.sensors.length} sensors)`;
     }
+    // Auto-reload EMS data with progressive loader after successful save
+    setTimeout(() => {
+      emsV2ScanFolder().catch(e => console.warn('EMS auto-rescan after save:', e));
+    }, 1200);
     saveBtn.disabled=false;
   }catch(err){
     statusEl.textContent='❌ '+err.message;
