@@ -52,7 +52,7 @@
   --ems-glow: rgba(14,165,233,0.28);
   --success: #10b981; --warning: #f59e0b; --danger: #ef4444;
   --shadow-sm: 0 2px 8px rgba(13,22,48,0.06); --shadow: 0 4px 20px rgba(13,22,48,0.08);
-  --shadow-md: 0 8px 40px rgba(13,22,48,0.12); --shadow-lg: 0 16px 64px rgba(13,22,48,0.16);
+  --shadow-md: 0 8px px rgba(13,22,48,0.12); --shadow-lg: 0 16px 64px rgba(13,22,48,0.16);
   --radius: 18px; --radius-sm: 12px; --nav-h: 68px; --cursor-color: #1a3aff;
 }
 body.dark {
@@ -83,7 +83,7 @@ body.dark {
   --ems-grad: linear-gradient(135deg,#38bdf8 0%,#60a5fa 50%,#818cf8 100%);
   --ems-glow: rgba(56,189,248,0.22);
   --shadow-sm: 0 2px 8px rgba(0,0,0,0.3); --shadow: 0 4px 20px rgba(0,0,0,0.4);
-  --shadow-md: 0 8px 40px rgba(0,0,0,0.5); --shadow-lg: 0 16px 64px rgba(0,0,0,0.6);
+  --shadow-md: 0 8px px rgba(0,0,0,0.5); --shadow-lg: 0 16px 64px rgba(0,0,0,0.6);
   --cursor-color: #38bdf8;
 }
 /* ============================================================
@@ -7647,7 +7647,7 @@ function rUpdateStatus(){
       if(lastVal>=95){
         cookEl.innerHTML='⚠️ Too High';cookEl.style.color='#ef4444';
         cookEl.style.animation='cookPulse 0.4s ease-in-out infinite';
-      } else if(allBelow40){
+      } else if(allBelow45){
         cookEl.textContent='❄️ Idle';cookEl.style.color='#94a3b8';cookEl.style.animation='';
       } else if(lastVal>=80){
         cookEl.textContent='🔥 Cooking';cookEl.style.color='#f97316';cookEl.style.animation='cookPulse 1s ease-in-out infinite';
