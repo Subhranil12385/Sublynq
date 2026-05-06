@@ -3088,23 +3088,10 @@ body.holo2 .holo-reveal-progress-fill{background:linear-gradient(90deg,transpare
   </div>
   <div class="card" style="margin-bottom:14px;">
     <div class="card-title">📈 Temperature Trend</div>
-    <div style="display:flex;gap:12px;flex-wrap:wrap;margin-bottom:10px;align-items:center;">
+    <div style="display:flex;gap:12px;flex-wrap:wrap;margin-bottom:10px;">
       <label class="chk-label"><input type="checkbox" id="d-hideZero" checked onchange="dRenderChart();dUpdateKPIStats();dRenderBars();dRenderSummary();"> Hide 0°C (offline) readings</label>
       <label class="chk-label"><input type="checkbox" id="d-joinGaps" checked onchange="dRenderChart()"> Join gaps</label>
       <span style="font-size:0.76rem;color:var(--text2);align-self:center;">Hidden: <strong id="d-zeroCount" style="color:var(--danger);">0</strong></span>
-    </div>
-    <!-- Scroll controls -->
-    <div id="d-scroll-controls" style="display:flex;align-items:center;gap:10px;margin-bottom:8px;flex-wrap:wrap;">
-      <button id="d-scroll-left" class="btn btn-sm btn-secondary" onclick="dScrollChart(-1)" title="Scroll left 10 min" style="font-size:1rem;padding:5px 12px;">◀ 10min</button>
-      <button id="d-scroll-right" class="btn btn-sm btn-secondary" onclick="dScrollChart(1)" title="Scroll right 10 min" style="font-size:1rem;padding:5px 12px;">10min ▶</button>
-      <button class="btn btn-sm btn-secondary" onclick="dScrollReset()" title="Reset to full view" style="padding:5px 12px;">⟳ Full View</button>
-      <span id="d-scroll-window" style="font-size:0.74rem;color:var(--text2);font-family:'JetBrains Mono',monospace;"></span>
-      <span id="d-scroll-loading" style="font-size:0.74rem;color:var(--warning);font-weight:700;display:none;">⏳ Preloading history…</span>
-      <span id="d-scroll-ready" style="font-size:0.74rem;color:var(--success);font-weight:700;display:none;">✓ 3-day history ready</span>
-    </div>
-    <!-- Preload progress bar -->
-    <div id="d-preload-bar-wrap" style="height:3px;background:var(--surface3);border-radius:2px;margin-bottom:8px;display:none;">
-      <div id="d-preload-bar" style="height:100%;width:0%;background:var(--dryer-grad);border-radius:2px;transition:width 0.3s;"></div>
     </div>
     <div class="chart-wrap chart-wrap-tall"><canvas id="d-chart"></canvas></div>
   </div>
@@ -8059,8 +8046,6 @@ async function dFetchLive(silent){
     dRenderChart();dRenderBars();dRenderSummary();dRenderThreshold();dUpdateKPIStats();
     const now=new Date().toLocaleTimeString();
     _setLiveBar('d',true,now);
-    // Kick off background preload after first live data arrives
-    _dMaybeStartPreload();
   }catch(e){console.error('Dryer live error:',e);if(!silent){document.getElementById('d-error').textContent='Live error: '+e.message;document.getElementById('d-error').style.display='block';}}
   if(!silent)hideLoader();
 }
@@ -8225,7 +8210,7 @@ let dChart=null,dAllData=[],dCurrentDryer=1,dActiveChambers={},dFp=null,dBarChar
 const D_NUM_DRYERS=4,D_NUM_CHAMBERS=8;
 const D_DRIVE_FOLDER_2026='1G6ZyKmXADZaOrDZ2AJhhC7HuPTC4n4xR';
 const D_MONTH_NAMES=['January','February','March','April','May','June','July','August','September','October','November','December'];
-const D_COLORS=['#00f5ff','#ff00ff','#00ff88','#ffdd00','#ff6600','#8888ff','#ff0088','#88ff00','#ff6b35','#ff4d4d','#ffaa00','#00cc99','#9966ff','#ff66b2','#66ffb2','#ff9966','#7b61ff','#4dff4d','#ff4d88','#00ffff','#ffb366','#b266ff','#66ffcc','#ff8533','#ffff66','#ff6b6b','#6bff6b','#6b6bff','#ffb2d9','#b2ffb2','#b2b2ff','#ffd966'];
+const D_COLORS=['#ff0000','#0055ff','#ff8800','#00cc00','#00ffff','#ff00ff','#888888','#888888','#ff0000','#0055ff','#ff8800','#00cc00','#00ffff','#ff00ff','#888888','#888888','#ff0000','#0055ff','#ff8800','#00cc00','#00ffff','#ff00ff','#888888','#888888','#ff0000','#0055ff','#ff8800','#00cc00','#00ffff','#ff00ff','#888888','#888888'];
 
 function dInit(){
   dFp=flatpickr('#d-dateRange',{mode:'range',dateFormat:'d/m/Y',defaultDate:[new Date(),new Date()],maxDate:new Date(),onReady:function(_,__,fp){if(document.body.classList.contains('holo'))fp.calendarContainer&&fp.calendarContainer.classList.add('holo-fp');}});
@@ -8342,8 +8327,6 @@ async function dLoadDataRange(startDt, endDt, bg){
     const last=dAllData[dAllData.length-1];const lastTs=parseTS(String(last.ts));if(lastTs){document.getElementById('d-lastUpdate').textContent=lastTs.toLocaleString();dCheckDryerStatus(lastTs);}
     if(dAllData.length>=2){const t1=parseTS(String(dAllData[0].ts)),t2=parseTS(String(dAllData[dAllData.length-1].ts));if(t1&&t2)document.getElementById('d-timeRange').textContent=((t2-t1)/3600000).toFixed(1)+'h';}
     dRenderChart();dRenderBars();dRenderSummary();dRenderThreshold();dUpdateKPIStats();
-    // Kick off background preload
-    _dMaybeStartPreload();
   }catch(e){console.error('Dryer error',e);if(!bg){document.getElementById('d-error').textContent='Error loading dryer data: '+e.message;document.getElementById('d-error').style.display='block';}}
   if(!bg)hideLoader();
 }
@@ -8471,217 +8454,6 @@ function dRenderThreshold(){
   html+='</tbody></table>';
   container.innerHTML=html;
 }
-/* ══════════════════════════════════════════════════════════
-   DRYER — GRAPH SCROLL + BACKGROUND PRELOAD SYSTEM
-   ══════════════════════════════════════════════════════════ */
-
-// Scrollable window state (null = full view)
-let _dScrollStart = null; // Date
-let _dScrollEnd   = null; // Date
-const _D_SCROLL_STEP_MS = 10 * 60 * 1000; // 10 minutes in ms
-const _D_VIEW_WINDOW_MS = 6 * 60 * 60 * 1000; // default view = 6 hours when scrolling
-
-// Preloaded data cache
-let _dPreloadCache = {
-  last3: null,   // Array of rows, null = not loaded yet
-  last7: null,
-  lastMonth: null,
-  loading3: false,
-  loading7: false,
-  loadingMonth: false,
-  ready3: false,
-  ready7: false,
-  readyMonth: false,
-};
-
-// Start background preloading of 3d/7d/month data simultaneously
-async function dPreloadBackground() {
-  const today = new Date();
-  const todayEnd = new Date(today.getFullYear(), today.getMonth(), today.getDate(), 23, 59, 59, 999);
-
-  // Show progress bar
-  const barWrap = document.getElementById('d-preload-bar-wrap');
-  const bar = document.getElementById('d-preload-bar');
-  const loadingLbl = document.getElementById('d-scroll-loading');
-  const readyLbl = document.getElementById('d-scroll-ready');
-  const scrollLeft = document.getElementById('d-scroll-left');
-
-  if (barWrap) { barWrap.style.display = 'block'; bar.style.width = '0%'; }
-  if (loadingLbl) loadingLbl.style.display = '';
-  if (readyLbl) readyLbl.style.display = 'none';
-  // Disable left scroll until 3-day data is ready
-  if (scrollLeft) { scrollLeft.disabled = true; scrollLeft.title = 'Loading 3-day history…'; }
-
-  // Helper: load a date range silently and merge + deduplicate
-  async function _loadRange(startDt, endDt) {
-    const dayList = [];
-    const cur = new Date(startDt); cur.setHours(0,0,0,0);
-    const tmpCur = new Date(cur);
-    while (tmpCur <= endDt) { dayList.push(new Date(tmpCur)); tmpCur.setDate(tmpCur.getDate()+1); }
-
-    const todayStart = new Date(today.getFullYear(), today.getMonth(), today.getDate(), 0, 0, 0, 0);
-    const yesterday = new Date(todayStart.getTime() - 1);
-    const csvEnd = endDt >= todayStart ? new Date(Math.min(endDt.getTime(), yesterday.getTime())) : endDt;
-
-    const csvDays = dayList.filter(d => d <= csvEnd);
-    let allRows = [];
-
-    for (const day of csvDays) {
-      const filename = dGetCsvFilename(day);
-      try {
-        const csv = await dFetchDriveCsv(filename, D_DRIVE_FOLDER_2026);
-        if (csv) { const rows = dParseCsv(csv); allRows = allRows.concat(rows); }
-      } catch(e) { /* silent */ }
-    }
-
-    // Deduplicate & filter
-    const seen = new Set();
-    return allRows.filter(r => {
-      const t = parseTS(String(r.ts));
-      if (!t || t < startDt || t > endDt) return false;
-      const key = String(r.ts).trim();
-      if (seen.has(key)) return false;
-      seen.add(key); return true;
-    }).sort((a,b) => (parseTS(String(a.ts))||0) - (parseTS(String(b.ts))||0));
-  }
-
-  // Load 3 days (highest priority — needed to enable scroll)
-  if (!_dPreloadCache.ready3 && !_dPreloadCache.loading3) {
-    _dPreloadCache.loading3 = true;
-    const s3 = new Date(today); s3.setDate(today.getDate() - 3); s3.setHours(0,0,0,0);
-    try {
-      _dPreloadCache.last3 = await _loadRange(s3, todayEnd);
-      _dPreloadCache.ready3 = true;
-    } catch(e) { console.warn('Dryer preload 3d failed', e); }
-    _dPreloadCache.loading3 = false;
-    if (bar) bar.style.width = '40%';
-
-    // Enable scroll left now that 3d is ready
-    if (scrollLeft) { scrollLeft.disabled = false; scrollLeft.title = 'Scroll left 10 min'; }
-    if (loadingLbl) loadingLbl.style.display = 'none';
-    if (readyLbl) readyLbl.style.display = '';
-  }
-
-  // Load 7 days concurrently (doesn't block scroll enable)
-  const load7 = (async () => {
-    if (!_dPreloadCache.ready7 && !_dPreloadCache.loading7) {
-      _dPreloadCache.loading7 = true;
-      const s7 = new Date(today); s7.setDate(today.getDate() - 7); s7.setHours(0,0,0,0);
-      try {
-        _dPreloadCache.last7 = await _loadRange(s7, todayEnd);
-        _dPreloadCache.ready7 = true;
-      } catch(e) { console.warn('Dryer preload 7d failed', e); }
-      _dPreloadCache.loading7 = false;
-      if (bar) bar.style.width = '70%';
-    }
-  })();
-
-  // Load last month
-  const loadMonth = (async () => {
-    if (!_dPreloadCache.readyMonth && !_dPreloadCache.loadingMonth) {
-      _dPreloadCache.loadingMonth = true;
-      const sM = new Date(today); sM.setDate(today.getDate() - 30); sM.setHours(0,0,0,0);
-      try {
-        _dPreloadCache.lastMonth = await _loadRange(sM, todayEnd);
-        _dPreloadCache.readyMonth = true;
-      } catch(e) { console.warn('Dryer preload month failed', e); }
-      _dPreloadCache.loadingMonth = false;
-    }
-  })();
-
-  await Promise.all([load7, loadMonth]);
-  if (bar) bar.style.width = '100%';
-  setTimeout(() => { if (barWrap) barWrap.style.display = 'none'; }, 800);
-}
-
-// Get the richest preloaded dataset available (month > 7d > 3d > current)
-function _dGetPreloadedData() {
-  if (_dPreloadCache.readyMonth && _dPreloadCache.lastMonth?.length) return _dPreloadCache.lastMonth;
-  if (_dPreloadCache.ready7 && _dPreloadCache.last7?.length) return _dPreloadCache.last7;
-  if (_dPreloadCache.ready3 && _dPreloadCache.last3?.length) return _dPreloadCache.last3;
-  return null;
-}
-
-// Scroll chart left (dir=-1) or right (dir=1) by 10 minutes
-function dScrollChart(dir) {
-  // Only allow left scroll if 3-day data is loaded
-  if (dir < 0 && !_dPreloadCache.ready3) {
-    alert('Please wait — 3-day history is still loading.');
-    return;
-  }
-
-  // Get the full dataset to scroll through
-  const fullData = _dGetPreloadedData() || dAllData;
-  if (!fullData.length) return;
-
-  const allTs = fullData.map(r => parseTS(String(r.ts))).filter(Boolean);
-  if (!allTs.length) return;
-
-  const dataStart = new Date(Math.min(...allTs));
-  const dataEnd = new Date(Math.max(...allTs));
-
-  // Initialize window if not set
-  if (!_dScrollStart || !_dScrollEnd) {
-    // Start at end of data, show last 6h
-    _dScrollEnd = new Date(dataEnd);
-    _dScrollStart = new Date(_dScrollEnd.getTime() - _D_VIEW_WINDOW_MS);
-    if (_dScrollStart < dataStart) _dScrollStart = new Date(dataStart);
-  }
-
-  // Shift
-  const step = dir * _D_SCROLL_STEP_MS;
-  let newStart = new Date(_dScrollStart.getTime() + step);
-  let newEnd = new Date(_dScrollEnd.getTime() + step);
-
-  // Clamp: don't go before data start or after data end
-  if (newStart < dataStart) { newStart = new Date(dataStart); newEnd = new Date(newStart.getTime() + (_dScrollEnd - _dScrollStart)); }
-  if (newEnd > dataEnd) { newEnd = new Date(dataEnd); newStart = new Date(newEnd.getTime() - (_dScrollEnd - _dScrollStart)); }
-  if (newStart < dataStart) newStart = new Date(dataStart);
-
-  _dScrollStart = newStart;
-  _dScrollEnd = newEnd;
-
-  // Filter full dataset to window
-  const windowData = fullData.filter(r => {
-    const t = parseTS(String(r.ts));
-    return t && t >= _dScrollStart && t <= _dScrollEnd;
-  });
-
-  // Temporarily swap dAllData for rendering
-  const saved = dAllData;
-  dAllData = windowData;
-  dRenderChart();
-  dUpdateKPIStats();
-  dAllData = saved;
-
-  // Update window label
-  _dUpdateScrollLabel();
-}
-
-function dScrollReset() {
-  _dScrollStart = null;
-  _dScrollEnd = null;
-  // Re-render with current dAllData
-  dRenderChart();
-  dUpdateKPIStats();
-  const lbl = document.getElementById('d-scroll-window');
-  if (lbl) lbl.textContent = '';
-}
-
-function _dUpdateScrollLabel() {
-  const lbl = document.getElementById('d-scroll-window');
-  if (!lbl || !_dScrollStart || !_dScrollEnd) return;
-  const fmt = d => d.toLocaleString([], {month:'short',day:'numeric',hour:'2-digit',minute:'2-digit'});
-  lbl.textContent = `${fmt(_dScrollStart)} — ${fmt(_dScrollEnd)}`;
-}
-
-// Called after any data load to kick off background preload
-function _dMaybeStartPreload() {
-  // Only preload if at least one cache slot is not ready
-  if (_dPreloadCache.ready3 && _dPreloadCache.ready7 && _dPreloadCache.readyMonth) return;
-  dPreloadBackground();
-}
-
 /* ── Shared helper: screenshot a page element to PDF, fixing Chart.js blank canvases ── */
 /* ══════════════════════════════════════════════════════════
    SUBLYNQ — PDF EXPORT ENGINE
@@ -12256,106 +12028,6 @@ window.addEventListener('DOMContentLoaded',()=>{
     },4000);
   },300);
 });
-
-/* ══════════════════════════════════════════════════════════
-   SUBLYNQ — BULLETPROOF NAVIGATION HARDENING
-   Home cards + bottom nav bar: guaranteed to navigate on
-   every click / tap, regardless of CSS pointer-events,
-   z-index stacking, holo overlays, or touch ghost events.
-   Called 1000s of times? Still works. Always.
-   ══════════════════════════════════════════════════════════ */
-(function installBulletproofNav() {
-  function _go(name) {
-    if (typeof showPage === 'function') showPage(name);
-  }
-
-  // ── Wire home cards ──
-  function _wireHomeCards() {
-    document.querySelectorAll('.home-card[onclick]').forEach(card => {
-      // Extract destination from onclick attr
-      const oc = card.getAttribute('onclick') || '';
-      const m = oc.match(/showPage\(['"](\w+)['"]\)/);
-      if (!m) return;
-      const dest = m[1];
-
-      // Remove onclick to avoid double-fire; replace with robust listener
-      card.removeAttribute('onclick');
-      card.style.cursor = 'pointer';
-      card.style.pointerEvents = 'auto';
-
-      // Touch: track if finger moved to distinguish tap vs scroll
-      let _ts = {x:0, y:0, moved:false, started:false};
-      card.addEventListener('touchstart', e => {
-        _ts.x = e.touches[0].clientX;
-        _ts.y = e.touches[0].clientY;
-        _ts.moved = false;
-        _ts.started = true;
-      }, {passive:true});
-      card.addEventListener('touchmove', e => {
-        if (Math.abs(e.touches[0].clientX - _ts.x) > 8 ||
-            Math.abs(e.touches[0].clientY - _ts.y) > 8) _ts.moved = true;
-      }, {passive:true});
-      card.addEventListener('touchend', e => {
-        if (_ts.started && !_ts.moved) {
-          e.preventDefault();
-          _ts.started = false;
-          _go(dest);
-        }
-        _ts.started = false;
-      }, {passive:false});
-
-      // Mouse click (desktop)
-      card.addEventListener('click', e => { _go(dest); });
-    });
-  }
-
-  // ── Wire bottom nav mob-tabs ──
-  function _wireMobTabs() {
-    document.querySelectorAll('.mob-tab').forEach(btn => {
-      const oc = btn.getAttribute('onclick') || '';
-      const m = oc.match(/showPage\(['"](\w+)['"]\)/);
-      if (!m) return;
-      const dest = m[1];
-
-      // Keep original ontouchstart/ontouchend for their scroll-guard logic
-      // but ALSO add a click listener as ultimate fallback
-      btn.addEventListener('click', e => {
-        e.stopPropagation();
-        _go(dest);
-      });
-    });
-  }
-
-  // ── Wire desktop nav tabs ──
-  function _wireNavTabs() {
-    document.querySelectorAll('.nav-tab').forEach(btn => {
-      const oc = btn.getAttribute('onclick') || '';
-      const m = oc.match(/showPage\(['"](\w+)['"]\)/);
-      if (!m) return;
-      const dest = m[1];
-      btn.addEventListener('click', e => {
-        e.stopPropagation();
-        _go(dest);
-      });
-    });
-  }
-
-  function _install() {
-    _wireHomeCards();
-    _wireMobTabs();
-    _wireNavTabs();
-  }
-
-  // Run immediately and after DOM ready (handles both inline scripts and deferred)
-  if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', _install);
-  } else {
-    _install();
-  }
-  // Also run after a short delay to catch any late DOM mutations
-  setTimeout(_install, 500);
-  setTimeout(_install, 1500);
-})();
 /* ═══════════════════════════════════════════════════
    AI ANALYST — Groq-powered insights & chat
 ═══════════════════════════════════════════════════ */
