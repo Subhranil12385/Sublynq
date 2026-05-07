@@ -3142,6 +3142,7 @@ body.holo2 .holo-reveal-progress-fill{background:linear-gradient(90deg,transpare
   <div class="solar-sub-tabs">
     <button class="solar-sub-tab active-avo" id="s-tabAVO" onclick="sSwitchTab('avo')">🌅 AVO Solar</button>
     <button class="solar-sub-tab" id="s-tabVIKRAM" onclick="sSwitchTab('vikram')">🌄 Vikram Solar</button>
+    <button class="solar-sub-tab" id="s-tabCOMPARE" onclick="sSwitchTab('compare')">⚖️ Compare</button>
   </div>
 
   <!-- ── PINNED WEATHER STRIP (always visible, both tabs) ── -->
@@ -3259,6 +3260,9 @@ body.holo2 .holo-reveal-progress-fill{background:linear-gradient(90deg,transpare
     <!-- Chart: Per Inverter -->
     <div class="card" style="margin-bottom:14px;">
       <div class="card-title">📊 Per-Inverter Daily Generation (Bar)</div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:8px;">
+        <div class="chart-type-toggle"><button id="s-avo-inv-modeKwh" class="active" onclick="sAVOInvSetMode('kwh')">kWh</button><button id="s-avo-inv-modeKwp" onclick="sAVOInvSetMode('kwp')">kWh/kWp</button></div>
+      </div>
       <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px;" id="s-avo-inv-toggles"></div>
       <div class="chart-wrap chart-wrap-tall"><canvas id="s-avo-inv-chart"></canvas></div>
     </div>
@@ -3439,8 +3443,9 @@ body.holo2 .holo-reveal-progress-fill{background:linear-gradient(90deg,transpare
 
     <!-- Per inverter trend -->
     <div class="card" style="margin-bottom:14px;">
-      <div class="card-title">📈 Per-Inverter Trend</div>
-      <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px;">
+      <div class="card-title">📈 Per-Inverter Daily Generation (Bar)</div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:8px;">
+        <div class="chart-type-toggle"><button id="s-vik-inv-modeKwh" class="active" onclick="sVikInvSetMode('kwh')">kWh</button><button id="s-vik-inv-modeKwp" onclick="sVikInvSetMode('kwp')">kWh/kWp</button></div>
         <div class="ctrl-group"><label>Phase</label><select id="s-vik-phase-sel" onchange="sRenderVikramInvChart()" style="min-width:unset;"><option value="1">Phase 1</option><option value="2">Phase 2</option></select></div>
       </div>
       <div class="chart-wrap chart-wrap-tall"><canvas id="s-vik-inv-chart"></canvas></div>
@@ -3486,8 +3491,8 @@ body.holo2 .holo-reveal-progress-fill{background:linear-gradient(90deg,transpare
             <div style="height:200px;"><canvas id="s-vik-monthly-bar-chart"></canvas></div>
           </div>
           <div style="background:var(--surface2);border-radius:var(--radius-sm);padding:14px;">
-            <div style="font-size:0.78rem;font-weight:700;color:var(--text2);margin-bottom:8px;">Phase 1 vs Phase 2 Monthly</div>
-            <div style="height:200px;"><canvas id="s-vik-monthly-phase-chart"></canvas></div>
+            <div style="font-size:0.78rem;font-weight:700;color:var(--text2);margin-bottom:8px;">Monthly kWh/kWp (Site)</div>
+            <div style="height:200px;"><canvas id="s-vik-monthly-kwp-chart"></canvas></div>
           </div>
         </div>
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:20px;">
@@ -3553,10 +3558,57 @@ body.holo2 .holo-reveal-progress-fill{background:linear-gradient(90deg,transpare
 </div>
 </div>
 
+  <!-- COMPARE Section -->
+  <div class="solar-section" id="s-compare">
+    <div class="card" style="margin-bottom:14px;">
+      <div class="panel-header" style="margin-bottom:0;">
+        <div class="panel-title" style="font-size:1rem;">⚖️ AVO vs Vikram — Comparison</div>
+        <div style="display:flex;gap:6px;flex-wrap:wrap;align-items:center;">
+          <div class="chart-type-toggle">
+            <button id="cmp-modeLine" class="active" onclick="cmpSetMode('line')">↗ Line</button>
+            <button id="cmp-modeBar" onclick="cmpSetMode('bar')">▐ Bar</button>
+          </div>
+          <div class="chart-type-toggle" id="cmp-bar-opts" style="display:none;">
+            <button id="cmp-stackSep" class="active" onclick="cmpSetStack('separate')">Separate</button>
+            <button id="cmp-stackStack" onclick="cmpSetStack('stacked')">Stacked</button>
+          </div>
+          <div class="chart-type-toggle">
+            <button id="cmp-metricKwh" class="active" onclick="cmpSetMetric('kwh')">kWh</button>
+            <button id="cmp-metricKwp" onclick="cmpSetMetric('kwp')">kWh/kWp</button>
+          </div>
+        </div>
+      </div>
+    </div>
 
+    <!-- Daily Comparison -->
+    <div class="card" style="margin-bottom:14px;">
+      <div class="card-title">📅 Daily Comparison — AVO vs Vikram</div>
+      <div class="chart-wrap chart-wrap-tall"><canvas id="cmp-daily-chart"></canvas></div>
+    </div>
 
+    <!-- Monthly Comparison -->
+    <div class="card" style="margin-bottom:14px;">
+      <div class="card-title">📆 Monthly Comparison — AVO vs Vikram</div>
+      <div class="chart-wrap" style="height:260px;"><canvas id="cmp-monthly-chart"></canvas></div>
+    </div>
 
-
+    <!-- KPI Summary -->
+    <div class="card" style="margin-bottom:14px;">
+      <div class="card-title">📊 Summary Comparison</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;" id="cmp-kpi-grid">
+        <div style="background:var(--surface2);border-radius:var(--radius-sm);padding:16px;border-left:4px solid var(--solar-avo);">
+          <div style="font-size:0.7rem;font-weight:700;color:var(--solar-avo);text-transform:uppercase;margin-bottom:10px;">🌅 AVO Solar</div>
+          <div id="cmp-avo-kpis" style="display:flex;flex-direction:column;gap:6px;"></div>
+        </div>
+        <div style="background:var(--surface2);border-radius:var(--radius-sm);padding:16px;border-left:4px solid var(--solar-vikram);">
+          <div style="font-size:0.7rem;font-weight:700;color:var(--solar-vikram);text-transform:uppercase;margin-bottom:10px;">🌄 Vikram Solar</div>
+          <div id="cmp-vik-kpis" style="display:flex;flex-direction:column;gap:6px;"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+</div>
 
 
 
@@ -9030,7 +9082,7 @@ function sPickerThisMonth(){
   sSetFromDate(from);sSetToDate(to);
   sDateFrom=new Date(from.getFullYear(),from.getMonth(),from.getDate(),0,0,0,0);
   sDateTo=new Date(to.getFullYear(),to.getMonth(),to.getDate(),23,59,59,999);
-  sUpdateRangeLabel();if(sAVOData)sRenderAVO();if(sVikramData)sRenderVikram();
+  sUpdateRangeLabel();if(sAVOData)sRenderAVO();if(sVikramData)sRenderVikram();if(sCurrentTab==='compare')sRenderCompare();
 }
 
 function sPickerLastMonth(){
@@ -9041,7 +9093,7 @@ function sPickerLastMonth(){
   sSetFromDate(from);sSetToDate(to);
   sDateFrom=new Date(y,m,1,0,0,0,0);
   sDateTo=new Date(y,m+1,0,23,59,59,999);
-  sUpdateRangeLabel();if(sAVOData)sRenderAVO();if(sVikramData)sRenderVikram();
+  sUpdateRangeLabel();if(sAVOData)sRenderAVO();if(sVikramData)sRenderVikram();if(sCurrentTab==='compare')sRenderCompare();
 }
 
 function sPickerLast3(){
@@ -9050,7 +9102,7 @@ function sPickerLast3(){
   sSetFromDate(from);sSetToDate(to);
   sDateFrom=new Date(from.getFullYear(),from.getMonth(),1,0,0,0,0);
   sDateTo=new Date(to.getFullYear(),to.getMonth(),to.getDate(),23,59,59,999);
-  sUpdateRangeLabel();if(sAVOData)sRenderAVO();if(sVikramData)sRenderVikram();
+  sUpdateRangeLabel();if(sAVOData)sRenderAVO();if(sVikramData)sRenderVikram();if(sCurrentTab==='compare')sRenderCompare();
 }
 
 function sPickerLast6(){
@@ -9059,7 +9111,7 @@ function sPickerLast6(){
   sSetFromDate(from);sSetToDate(to);
   sDateFrom=new Date(from.getFullYear(),from.getMonth(),1,0,0,0,0);
   sDateTo=new Date(to.getFullYear(),to.getMonth(),to.getDate(),23,59,59,999);
-  sUpdateRangeLabel();if(sAVOData)sRenderAVO();if(sVikramData)sRenderVikram();
+  sUpdateRangeLabel();if(sAVOData)sRenderAVO();if(sVikramData)sRenderVikram();if(sCurrentTab==='compare')sRenderCompare();
 }
 
 function sPickerLastYear(){
@@ -9068,17 +9120,17 @@ function sPickerLastYear(){
   sSetFromDate(from);sSetToDate(to);
   sDateFrom=new Date(from.getFullYear(),from.getMonth(),from.getDate(),0,0,0,0);
   sDateTo=new Date(to.getFullYear(),to.getMonth(),to.getDate(),23,59,59,999);
-  sUpdateRangeLabel();if(sAVOData)sRenderAVO();if(sVikramData)sRenderVikram();
+  sUpdateRangeLabel();if(sAVOData)sRenderAVO();if(sVikramData)sRenderVikram();if(sCurrentTab==='compare')sRenderCompare();
 }
 
 function sPickerAll(){
-  if(!_sAllDates.length){sDateFrom=null;sDateTo=null;sUpdateRangeLabel();if(sAVOData)sRenderAVO();if(sVikramData)sRenderVikram();return;}
+  if(!_sAllDates.length){sDateFrom=null;sDateTo=null;sUpdateRangeLabel();if(sAVOData)sRenderAVO();if(sVikramData)sRenderVikram();if(sCurrentTab==='compare')sRenderCompare();return;}
   const sorted=[..._sAllDates].sort((a,b)=>a-b);
   const minD=sorted[0],maxD=sorted[sorted.length-1];
   sDateFrom=new Date(minD.getFullYear(),minD.getMonth(),minD.getDate(),0,0,0,0);
   sDateTo=new Date(maxD.getFullYear(),maxD.getMonth(),maxD.getDate(),23,59,59,999);
   sSetFromDate(minD);sSetToDate(maxD);
-  sUpdateRangeLabel();if(sAVOData)sRenderAVO();if(sVikramData)sRenderVikram();
+  sUpdateRangeLabel();if(sAVOData)sRenderAVO();if(sVikramData)sRenderVikram();if(sCurrentTab==='compare')sRenderCompare();
 }
 
 // Called after data loads — merges dates into _sAllDates and expands year dropdowns
@@ -9116,10 +9168,10 @@ function sSetDatePreset(days){
   sSetFromDate(from);sSetToDate(to);
   sDateFrom=new Date(from.getFullYear(),from.getMonth(),from.getDate(),0,0,0,0);
   sDateTo=new Date(to.getFullYear(),to.getMonth(),to.getDate(),23,59,59,999);
-  sUpdateRangeLabel();if(sAVOData)sRenderAVO();if(sVikramData)sRenderVikram();
+  sUpdateRangeLabel();if(sAVOData)sRenderAVO();if(sVikramData)sRenderVikram();if(sCurrentTab==='compare')sRenderCompare();
 }
 
-function sApplyDateFilter(){if(sAVOData)sRenderAVO();if(sVikramData)sRenderVikram();}
+function sApplyDateFilter(){if(sAVOData)sRenderAVO();if(sVikramData)sRenderVikram();if(sCurrentTab==='compare')sRenderCompare();}
 
 function sFilteredIndices(data){
   return data.dates.reduce((acc,d,i)=>{
@@ -9276,11 +9328,14 @@ function sSwitchTab(tab){
   sCurrentTab=tab;
   document.getElementById('s-tabAVO').className='solar-sub-tab '+(tab==='avo'?'active-avo':'');
   document.getElementById('s-tabVIKRAM').className='solar-sub-tab '+(tab==='vikram'?'active-vikram':'');
+  document.getElementById('s-tabCOMPARE').className='solar-sub-tab '+(tab==='compare'?'active-avo':'');
   document.getElementById('s-avo').classList.toggle('active',tab==='avo');
   document.getElementById('s-vikram').classList.toggle('active',tab==='vikram');
+  document.getElementById('s-compare').classList.toggle('active',tab==='compare');
   // Refresh weather pin for new tab
   if(tab==='avo'&&sAVOData)sUpdateWeatherPin(sAVOData,'avo');
   if(tab==='vikram'&&sVikramData)sUpdateWeatherPin(sVikramData,'vikram');
+  if(tab==='compare')sRenderCompare();
   // Nav strip always shows AVO weather regardless of tab
   if(sAVOData)sUpdateNavWeatherStrip(sAVOData);
 }
@@ -9509,6 +9564,7 @@ function sRenderAVO(){
   sRenderAVOMainChart();
   sRenderAVOInvChart();
   sRenderAVOMonthly();
+  if(sCurrentTab==='compare')sRenderCompare();
 }
 
 function sRenderAVOMainChart(){
@@ -9541,17 +9597,21 @@ function sRenderAVOMainChart(){
   sAVOChart=new Chart(canvas.getContext('2d'),{type:chartType,data:{labels,datasets},options:{responsive:true,maintainAspectRatio:false,animation:{duration:400},interaction:{mode:'index',intersect:false},plugins:{legend:{display:true,position:'top',labels:{color:textColor,font:{size:11,family:'Space Grotesk'},usePointStyle:true}},tooltip:{callbacks:{label:c=>{if(c.dataset.yAxisID==='y2')return`kWh/kWp: ${c.parsed.y.toFixed(3)}`;if(c.dataset.label?.includes('kWh/kWp'))return`kWh/kWp: ${c.parsed.y.toFixed(3)}`;return c.dataset.label+': '+c.parsed.y.toFixed(0)+' kWh';},afterBody:ctx=>{const i=ctx[0]?.dataIndex;if(i==null)return[];const note=d.remarks?.[i];return note?[`📝 ${note}`]:[];}}}},scales:{x:{ticks:{color:textColor,font:{size:9},maxRotation:45},grid:{color:gridColor}},y:{title:{display:true,text:showKwh?'Generation (kWh)':'kWh/kWp',color:textColor},ticks:{color:textColor,font:{size:9}},grid:{color:gridColor}},y2:{position:'right',title:{display:hasY2,text:'kWh/kWp',color:'#06b6d4'},ticks:{color:'#06b6d4',font:{size:9}},grid:{display:false},display:hasY2}}}});
 }
 
+let sAVOInvMode='kwh'; // 'kwh' or 'kwp'
+function sAVOInvSetMode(m){sAVOInvMode=m;document.getElementById('s-avo-inv-modeKwh').classList.toggle('active',m==='kwh');document.getElementById('s-avo-inv-modeKwp').classList.toggle('active',m==='kwp');sRenderAVOInvChart();}
+
 function sRenderAVOInvChart(){
   if(!sAVOData)return;
   const raw=sAVOData;const idxs=sFilteredIndices(raw);
-  const d={dates:idxs.map(i=>raw.dates[i]),perInverter:raw.perInverter.map(a=>idxs.map(i=>a[i])),inverterNames:raw.inverterNames,remarks:idxs.map(i=>raw.remarks[i]||'')};
+  const d={dates:idxs.map(i=>raw.dates[i]),perInverter:raw.perInverter.map(a=>idxs.map(i=>a[i])),inverterNames:raw.inverterNames,inverterKwp:raw.inverterKwp,remarks:idxs.map(i=>raw.remarks[i]||'')};
   const canvas=document.getElementById('s-avo-inv-chart');
   const _avoInvFirst=!sAVOInvChart;if(sAVOInvChart){sAVOInvChart.destroy();sAVOInvChart=null;}
   const textColor=isDark?'#6e8aac':'#5a677f';const gridColor=isDark?'rgba(255,255,255,0.05)':'rgba(0,0,0,0.04)';
   const toggles=document.querySelectorAll('#s-avo-inv-toggles input');
   const labels=d.dates.map(dt=>dt.toLocaleDateString('en-GB',{day:'2-digit',month:'short'}));
-  const datasets=d.inverterNames.map((name,i)=>{if(toggles[i]&&!toggles[i].checked)return null;const color=CHART_COLORS_12[i%CHART_COLORS_12.length];return{label:name,data:d.perInverter[i],type:'bar',backgroundColor:color+'cc',borderColor:color,borderWidth:1.5,borderRadius:3};}).filter(Boolean);
-  sAVOInvChart=new Chart(canvas.getContext('2d'),{type:'bar',data:{labels,datasets},options:{responsive:true,maintainAspectRatio:false,animation:{duration:400},interaction:{mode:'index',intersect:false},plugins:{legend:{display:true,position:'top',labels:{color:textColor,font:{size:10,family:'Space Grotesk'},usePointStyle:true}},tooltip:{callbacks:{afterBody:ctx=>{const i=ctx[0]?.dataIndex;if(i==null)return[];const note=d.remarks?.[i];return note?[`📝 ${note}`]:[];}}}},scales:{x:{stacked:true,ticks:{color:textColor,font:{size:9},maxRotation:45},grid:{color:gridColor}},y:{stacked:true,title:{display:true,text:'kWh',color:textColor},ticks:{color:textColor,font:{size:9}},grid:{color:gridColor}}}}});
+  const isKwp=sAVOInvMode==='kwp';
+  const datasets=d.inverterNames.map((name,i)=>{if(toggles[i]&&!toggles[i].checked)return null;const color=CHART_COLORS_12[i%CHART_COLORS_12.length];const kwp=d.inverterKwp?.[i]||AVO_INV_KWP[i]||1;const data=isKwp?d.perInverter[i].map(v=>+(v/kwp).toFixed(4)):d.perInverter[i];return{label:name,data,type:'bar',backgroundColor:color+'cc',borderColor:color,borderWidth:1.5,borderRadius:3};}).filter(Boolean);
+  sAVOInvChart=new Chart(canvas.getContext('2d'),{type:'bar',data:{labels,datasets},options:{responsive:true,maintainAspectRatio:false,animation:{duration:400},interaction:{mode:'index',intersect:false},plugins:{legend:{display:true,position:'top',labels:{color:textColor,font:{size:10,family:'Space Grotesk'},usePointStyle:true}},tooltip:{callbacks:{label:c=>c.dataset.label+': '+c.parsed.y.toFixed(isKwp?3:0)+(isKwp?' kWh/kWp':' kWh'),afterBody:ctx=>{const i=ctx[0]?.dataIndex;if(i==null)return[];const note=d.remarks?.[i];return note?[`📝 ${note}`]:[];}}}},scales:{x:{stacked:true,ticks:{color:textColor,font:{size:9},maxRotation:45},grid:{color:gridColor}},y:{stacked:true,title:{display:true,text:isKwp?'kWh/kWp':'kWh',color:textColor},ticks:{color:textColor,font:{size:9}},grid:{color:gridColor}}}}});
 }
 
 /* ── Vikram Excel parsing ── */
@@ -9722,6 +9782,7 @@ function sRenderVikram(){
   sRenderVikramPhaseChart();
   sRenderVikramInvChart();
   sRenderVikramMonthly();
+  if(sCurrentTab==='compare')sRenderCompare();
 }
 
 function sRenderVikramMainChart(){
@@ -9767,6 +9828,9 @@ function sRenderVikramPhaseChart(){
   sVikPhaseChart=new Chart(canvas.getContext('2d'),{type:'bar',data:{labels,datasets:[{label:'Phase 1 (590.72 kWp)',data:d.phase1,backgroundColor:'rgba(16,185,129,0.75)',borderColor:'#10b981',borderWidth:1.5,borderRadius:4},{label:'Phase 2 (465.28 kWp)',data:d.phase2,backgroundColor:'rgba(245,158,11,0.7)',borderColor:'#f59e0b',borderWidth:1.5,borderRadius:4}]},options:{responsive:true,maintainAspectRatio:false,animation:{duration:400},interaction:{mode:'index',intersect:false},plugins:{legend:{display:true,position:'top',labels:{color:textColor,font:{size:11,family:'Space Grotesk'},usePointStyle:true}},tooltip:{callbacks:{afterBody:ctx=>{const i=ctx[0]?.dataIndex;if(i==null)return[];const note=d.remarks?.[i];return note?[`📝 ${note}`]:[];}}}},scales:{x:{ticks:{color:textColor,font:{size:9},maxRotation:45},grid:{color:gridColor}},y:{title:{display:true,text:'kWh',color:textColor},ticks:{color:textColor,font:{size:9}},grid:{color:gridColor}}}}});
 }
 
+let sVikInvMode='kwh';
+function sVikInvSetMode(m){sVikInvMode=m;document.getElementById('s-vik-inv-modeKwh').classList.toggle('active',m==='kwh');document.getElementById('s-vik-inv-modeKwp').classList.toggle('active',m==='kwp');sRenderVikramInvChart();}
+
 function sRenderVikramInvChart(){
   if(!sVikramData)return;
   const raw=sVikramData;const idxs=sFilteredIndices(raw);
@@ -9778,9 +9842,11 @@ function sRenderVikramInvChart(){
   const phSel=document.getElementById('s-vik-phase-sel')?.value||'1';
   const invArr=phSel==='1'?d.perInv.ph1:d.perInv.ph2;
   const invNames=phSel==='1'?VIK_PH1_NAMES:VIK_PH2_NAMES;
+  const invKwp=phSel==='1'?VIK_PH1_KWP:VIK_PH2_KWP;
   const colors=phSel==='1'?CHART_COLORS_12:CHART_COLORS_9;
-  const datasets=invArr.map((inv,i)=>({label:invNames[i]||`Inv${i+1}`,data:inv,type:'line',borderColor:colors[i%colors.length],backgroundColor:'transparent',borderWidth:1.5,pointRadius:0,pointHoverRadius:4,tension:0.3}));
-  sVikInvChart=new Chart(canvas.getContext('2d'),{type:'line',data:{labels,datasets},options:{responsive:true,maintainAspectRatio:false,animation:{duration:400},interaction:{mode:'index',intersect:false},plugins:{legend:{display:true,position:'top',labels:{color:textColor,font:{size:9,family:'Space Grotesk'},usePointStyle:true,boxWidth:12}},tooltip:{callbacks:{afterBody:ctx=>{const i=ctx[0]?.dataIndex;if(i==null)return[];const note=d.remarks?.[i];return note?[`📝 ${note}`]:[];}}}},scales:{x:{ticks:{color:textColor,font:{size:9},maxRotation:45},grid:{color:gridColor}},y:{title:{display:true,text:'kWh',color:textColor},ticks:{color:textColor,font:{size:9}},grid:{color:gridColor}}}}});
+  const isKwp=sVikInvMode==='kwp';
+  const datasets=invArr.map((inv,i)=>{const kwp=invKwp[i]||1;const data=isKwp?inv.map(v=>+(v/kwp).toFixed(4)):inv;return{label:invNames[i]||`Inv${i+1}`,data,type:'bar',backgroundColor:colors[i%colors.length]+'cc',borderColor:colors[i%colors.length],borderWidth:1.5,borderRadius:3};});
+  sVikInvChart=new Chart(canvas.getContext('2d'),{type:'bar',data:{labels,datasets},options:{responsive:true,maintainAspectRatio:false,animation:{duration:400},interaction:{mode:'index',intersect:false},plugins:{legend:{display:true,position:'top',labels:{color:textColor,font:{size:9,family:'Space Grotesk'},usePointStyle:true,boxWidth:12}},tooltip:{callbacks:{label:c=>c.dataset.label+': '+c.parsed.y.toFixed(isKwp?3:0)+(isKwp?' kWh/kWp':' kWh'),afterBody:ctx=>{const i=ctx[0]?.dataIndex;if(i==null)return[];const note=d.remarks?.[i];return note?[`📝 ${note}`]:[];}}}},scales:{x:{stacked:true,ticks:{color:textColor,font:{size:9},maxRotation:45},grid:{color:gridColor}},y:{stacked:true,title:{display:true,text:isKwp?'kWh/kWp':'kWh',color:textColor},ticks:{color:textColor,font:{size:9}},grid:{color:gridColor}}}}});
 }
 
 
@@ -9927,9 +9993,9 @@ function sRenderAVOMonthly(){
   });
   if(tfoot)tfoot.innerHTML='<tr style="background:var(--surface2);font-weight:700;border-top:2px solid var(--border);"><td style="padding:7px 10px;">TOTAL</td><td style="padding:7px 10px;text-align:right;color:var(--solar-avo);">'+grandTotal.toFixed(1)+'</td><td style="padding:7px 10px;text-align:right;">'+(grandTotal/n).toFixed(1)+'</td><td style="padding:7px 10px;text-align:right;color:var(--solar-avo);">'+(grandTotal/AVO_TOTAL_KWP).toFixed(3)+'</td><td style="padding:7px 10px;text-align:right;">'+n+'</td><td colspan="6"></td></tr>';
   sDestroyChart('am-b');var c1=document.getElementById('s-avo-monthly-bar-chart');
-  if(c1){var lbl=monthData.map(function(m){return m.label;});var vls=monthData.map(function(m){return m.total;});_sMC['am-b']=new Chart(c1.getContext('2d'),{type:'bar',data:{labels:lbl,datasets:[{label:'Total kWh',data:vls,backgroundColor:sDailyGradientColors(vls,0.8),borderColor:sDailyGradientColors(vls,1),borderWidth:1.5,borderRadius:5}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{x:{ticks:{color:tc,font:{size:9}}},y:{ticks:{color:tc,font:{size:9}},grid:{color:gc}}}}});}
+  if(c1){var lbl=monthData.map(function(m){return m.label;});var vls=monthData.map(function(m){return m.total;});var kwpVls=monthData.map(function(m){return m.kwpTotal;});_sMC['am-b']=new Chart(c1.getContext('2d'),{type:'bar',data:{labels:lbl,datasets:[{label:'Total kWh',data:vls,backgroundColor:sDailyGradientColors(vls,0.75),borderColor:sDailyGradientColors(vls,1),borderWidth:1.5,borderRadius:5,yAxisID:'y'},{label:'kWh/kWp',data:kwpVls,type:'line',borderColor:'#10b981',backgroundColor:'rgba(16,185,129,0.15)',fill:false,tension:0.4,pointRadius:4,pointHoverRadius:6,borderWidth:2.5,yAxisID:'y2'}]},options:{responsive:true,maintainAspectRatio:false,interaction:{mode:'index',intersect:false},plugins:{legend:{display:true,position:'top',labels:{color:tc,font:{size:9},usePointStyle:true,boxWidth:10}}},scales:{x:{ticks:{color:tc,font:{size:9}}},y:{title:{display:true,text:'kWh',color:tc},ticks:{color:tc,font:{size:9}},grid:{color:gc}},y2:{position:'right',title:{display:true,text:'kWh/kWp',color:'#10b981'},ticks:{color:'#10b981',font:{size:9}},grid:{display:false}}}}});}
   sDestroyChart('am-k');var c2=document.getElementById('s-avo-monthly-kwp-chart');
-  if(c2){var lbl=monthData.map(function(m){return m.label;});var vls=monthData.map(function(m){return m.kwpTotal;});_sMC['am-k']=new Chart(c2.getContext('2d'),{type:'line',data:{labels:lbl,datasets:[{label:'kWh/kWp',data:vls,borderColor:'#10b981',backgroundColor:'rgba(16,185,129,0.1)',fill:true,tension:0.4,pointRadius:4,borderWidth:2}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{x:{ticks:{color:tc,font:{size:9}}},y:{ticks:{color:tc,font:{size:9}},grid:{color:gc}}}}});}
+  if(c2){var lbl=monthData.map(function(m){return m.label;});var vls=monthData.map(function(m){return m.kwpTotal;});_sMC['am-k']=new Chart(c2.getContext('2d'),{type:'bar',data:{labels:lbl,datasets:[{label:'kWh/kWp',data:vls,backgroundColor:vls.map(function(v){return'rgba(16,185,129,'+Math.max(0.3,Math.min(1,v/5*0.85))+')';}),borderColor:'#10b981',borderWidth:1.5,borderRadius:4}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{callbacks:{label:function(ctx){return'kWh/kWp: '+ctx.parsed.y.toFixed(3);}}}},scales:{x:{ticks:{color:tc,font:{size:9}}},y:{title:{display:true,text:'kWh/kWp',color:tc},ticks:{color:tc,font:{size:9}},grid:{color:gc}}}}});}
   sDestroyChart('am-c');var c3=document.getElementById('s-avo-cumulative-chart');
   if(c3){var lbl=monthData.map(function(m){return m.label;});var cum=0;var cumV=monthData.map(function(m){cum+=m.total;return cum;});var ds=monthData.map(function(m,i){var d2=monthData.map(function(_,j){return j===i?cumV[i]:null;});return{label:m.label,data:d2,backgroundColor:MPAL[i%12]+'cc',borderColor:MPAL[i%12],borderWidth:0,borderRadius:4};});_sMC['am-c']=new Chart(c3.getContext('2d'),{type:'bar',data:{labels:lbl,datasets:ds},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{callbacks:{label:function(ctx){return ctx.dataset.label+': '+cumV[ctx.dataIndex].toFixed(0)+' kWh';}}}},scales:{x:{ticks:{color:tc,font:{size:9}}},y:{ticks:{color:tc,font:{size:9}},grid:{color:gc}}}}});}
   sDestroyChart('am-p');var c4=document.getElementById('s-avo-pie-chart');
@@ -10063,7 +10129,9 @@ function sRenderVikramMonthly(){
   });
   if(tfoot)tfoot.innerHTML='<tr style="background:var(--surface2);font-weight:700;border-top:2px solid var(--border);"><td style="padding:7px 10px;">TOTAL</td><td style="padding:7px 10px;text-align:right;color:var(--solar-vikram);">'+grandTotal.toFixed(1)+'</td><td style="padding:7px 10px;text-align:right;">'+(grandTotal/n).toFixed(1)+'</td><td style="padding:7px 10px;text-align:right;color:var(--solar-vikram);">'+(d.phase1.reduce(function(a,b){return a+b;},0)/VP1).toFixed(3)+'</td><td style="padding:7px 10px;text-align:right;color:var(--solar-vikram);">'+(d.phase2.reduce(function(a,b){return a+b;},0)/VP2).toFixed(3)+'</td><td style="padding:7px 10px;text-align:right;">'+n+'</td><td colspan="5"></td></tr>';
   sDestroyChart('vm-b');var vc1=document.getElementById('s-vik-monthly-bar-chart');
-  if(vc1){var lbl=monthData.map(function(m){return m.label;});var vls=monthData.map(function(m){return m.total;});_sMC['vm-b']=new Chart(vc1.getContext('2d'),{type:'bar',data:{labels:lbl,datasets:[{label:'Total kWh',data:vls,backgroundColor:sDailyGradientColors(vls,0.8),borderColor:sDailyGradientColors(vls,1),borderWidth:1.5,borderRadius:5}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{x:{ticks:{color:tc,font:{size:9}}},y:{ticks:{color:tc,font:{size:9}},grid:{color:gc}}}}});}
+  if(vc1){var lbl=monthData.map(function(m){return m.label;});var vls=monthData.map(function(m){return m.total;});var vikKwpVls=monthData.map(function(m){return m.total/(VP1+VP2);});_sMC['vm-b']=new Chart(vc1.getContext('2d'),{type:'bar',data:{labels:lbl,datasets:[{label:'Total kWh',data:vls,backgroundColor:sDailyGradientColors(vls,0.75),borderColor:sDailyGradientColors(vls,1),borderWidth:1.5,borderRadius:5,yAxisID:'y'},{label:'kWh/kWp',data:vikKwpVls,type:'line',borderColor:'#8b5cf6',backgroundColor:'rgba(139,92,246,0.15)',fill:false,tension:0.4,pointRadius:4,pointHoverRadius:6,borderWidth:2.5,yAxisID:'y2'}]},options:{responsive:true,maintainAspectRatio:false,interaction:{mode:'index',intersect:false},plugins:{legend:{display:true,position:'top',labels:{color:tc,font:{size:9},usePointStyle:true,boxWidth:10}}},scales:{x:{ticks:{color:tc,font:{size:9}}},y:{title:{display:true,text:'kWh',color:tc},ticks:{color:tc,font:{size:9}},grid:{color:gc}},y2:{position:'right',title:{display:true,text:'kWh/kWp',color:'#8b5cf6'},ticks:{color:'#8b5cf6',font:{size:9}},grid:{display:false}}}}});}
+  sDestroyChart('vm-kwp');var vc1b=document.getElementById('s-vik-monthly-kwp-chart');
+  if(vc1b){var lbl=monthData.map(function(m){return m.label;});var siteKwp=monthData.map(function(m){return m.total/(VP1+VP2);});var p1Kwp=monthData.map(function(m){return m.ph1Kwp;});var p2Kwp=monthData.map(function(m){return m.ph2Kwp;});_sMC['vm-kwp']=new Chart(vc1b.getContext('2d'),{type:'bar',data:{labels:lbl,datasets:[{label:'Site kWh/kWp',data:siteKwp,backgroundColor:'rgba(139,92,246,0.7)',borderColor:'#8b5cf6',borderWidth:1.5,borderRadius:4},{label:'Ph1 kWh/kWp',data:p1Kwp,backgroundColor:'rgba(16,185,129,0.6)',borderColor:'#10b981',borderWidth:1.5,borderRadius:4},{label:'Ph2 kWh/kWp',data:p2Kwp,backgroundColor:'rgba(245,158,11,0.6)',borderColor:'#f59e0b',borderWidth:1.5,borderRadius:4}]},options:{responsive:true,maintainAspectRatio:false,interaction:{mode:'index'},plugins:{legend:{display:true,position:'top',labels:{color:tc,font:{size:9},boxWidth:10,usePointStyle:true}}},scales:{x:{ticks:{color:tc,font:{size:9}}},y:{title:{display:true,text:'kWh/kWp',color:tc},ticks:{color:tc,font:{size:9}},grid:{color:gc}}}}});}
   sDestroyChart('vm-ph');var vc2=document.getElementById('s-vik-monthly-phase-chart');
   if(vc2){var lbl=monthData.map(function(m){return m.label;});_sMC['vm-ph']=new Chart(vc2.getContext('2d'),{type:'bar',data:{labels:lbl,datasets:[{label:'Phase 1',data:monthData.map(function(m){return m.ph1T;}),backgroundColor:'rgba(16,185,129,0.75)',borderColor:'#10b981',borderWidth:1.5,borderRadius:4},{label:'Phase 2',data:monthData.map(function(m){return m.ph2T;}),backgroundColor:'rgba(245,158,11,0.7)',borderColor:'#f59e0b',borderWidth:1.5,borderRadius:4}]},options:{responsive:true,maintainAspectRatio:false,interaction:{mode:'index'},plugins:{legend:{display:true,position:'top',labels:{color:tc,font:{size:9},boxWidth:12}}},scales:{x:{ticks:{color:tc,font:{size:9}}},y:{ticks:{color:tc,font:{size:9}},grid:{color:gc}}}}});}
   sDestroyChart('vm-c');var vc3=document.getElementById('s-vik-cumulative-chart');
@@ -10150,6 +10218,98 @@ function sRenderVikramInvPerf(d,VP1,VP2){
   if(ch1){_sMC['vip-t']=new Chart(ch1.getContext('2d'),{type:'bar',data:{labels:allN,datasets:[{label:'Total kWh',data:aT,backgroundColor:aT.map(function(v){return sInvColor(v,Math.min.apply(null,aT),Math.max.apply(null,aT))+'cc';}),borderColor:aT.map(function(v){return sInvColor(v,Math.min.apply(null,aT),Math.max.apply(null,aT));}),borderWidth:1.5,borderRadius:4}]},options:{indexAxis:'y',responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{x:{ticks:{color:tc,font:{size:8}},grid:{color:gc}},y:{ticks:{color:tc,font:{size:7}}}}}});}
   sDestroyChart('vip-k');var ch2=document.getElementById('s-vik-inv-kwp-bar');
   if(ch2){_sMC['vip-k']=new Chart(ch2.getContext('2d'),{type:'bar',data:{labels:allN,datasets:[{label:'kWh/kWp',data:aR,backgroundColor:aR.map(function(v){return sInvColor(v,Math.min.apply(null,aR),Math.max.apply(null,aR))+'cc';}),borderColor:aR.map(function(v){return sInvColor(v,Math.min.apply(null,aR),Math.max.apply(null,aR));}),borderWidth:1.5,borderRadius:4}]},options:{indexAxis:'y',responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{x:{ticks:{color:tc,font:{size:8}},grid:{color:gc}},y:{ticks:{color:tc,font:{size:7}}}}}});}
+}
+
+/* ── COMPARE SECTION ── */
+let cmpMode='line';       // 'line' | 'bar'
+let cmpStack='separate';  // 'separate' | 'stacked' (bar only)
+let cmpMetric='kwh';      // 'kwh' | 'kwp'
+let _cmpDailyChart=null, _cmpMonthlyChart=null;
+
+function cmpSetMode(m){
+  cmpMode=m;
+  document.getElementById('cmp-modeLine').classList.toggle('active',m==='line');
+  document.getElementById('cmp-modeBar').classList.toggle('active',m==='bar');
+  document.getElementById('cmp-bar-opts').style.display=m==='bar'?'':'none';
+  sRenderCompare();
+}
+function cmpSetStack(s){
+  cmpStack=s;
+  document.getElementById('cmp-stackSep').classList.toggle('active',s==='separate');
+  document.getElementById('cmp-stackStack').classList.toggle('active',s==='stacked');
+  sRenderCompare();
+}
+function cmpSetMetric(met){
+  cmpMetric=met;
+  document.getElementById('cmp-metricKwh').classList.toggle('active',met==='kwh');
+  document.getElementById('cmp-metricKwp').classList.toggle('active',met==='kwp');
+  sRenderCompare();
+}
+
+function sRenderCompare(){
+  const tc=isDark?'#6e8aac':'#5a677f';const gc=isDark?'rgba(255,255,255,0.05)':'rgba(0,0,0,0.04)';
+  const AVO_KWP=AVO_TOTAL_KWP;
+  const VIK_KWP=(VIK_PH1_KWP.reduce((a,b)=>a+b,0))+(VIK_PH2_KWP.reduce((a,b)=>a+b,0));
+  const isKwp=cmpMetric==='kwp';
+  const yLabel=isKwp?'kWh/kWp':'kWh';
+
+  /* ── Build aligned daily datasets ── */
+  // Collect all dates from both sources in the filtered range
+  const avoIdxs=sAVOData?sFilteredIndices(sAVOData):[];
+  const vikIdxs=sVikramData?sFilteredIndices(sVikramData):[];
+  const avoDates=avoIdxs.map(i=>sAVOData.dates[i]);
+  const vikDates=vikIdxs.map(i=>sVikramData.dates[i]);
+  const avoTotals=avoIdxs.map(i=>sAVOData.dailyTotals[i]);
+  const vikTotals=vikIdxs.map(i=>sVikramData.siteTotals[i]);
+  // Union of dates
+  const allDatesSet=new Set([...avoDates,...vikDates].map(d=>d.toISOString().slice(0,10)));
+  const allDates=[...allDatesSet].sort();
+  const avoMap=Object.fromEntries(avoDates.map((d,i)=>[d.toISOString().slice(0,10),avoTotals[i]]));
+  const vikMap=Object.fromEntries(vikDates.map((d,i)=>[d.toISOString().slice(0,10),vikTotals[i]]));
+  const avoVals=allDates.map(d=>avoMap[d]!=null?(isKwp?+(avoMap[d]/AVO_KWP).toFixed(4):avoMap[d]):null);
+  const vikVals=allDates.map(d=>vikMap[d]!=null?(isKwp?+(vikMap[d]/VIK_KWP).toFixed(4):vikMap[d]):null);
+  const dailyLabels=allDates.map(d=>{const dt=new Date(d);return dt.toLocaleDateString('en-GB',{day:'2-digit',month:'short'});});
+
+  const avoColor='#10b981';const vikColor='#8b5cf6';
+
+  // Destroy and rebuild daily chart
+  if(_cmpDailyChart){_cmpDailyChart.destroy();_cmpDailyChart=null;}
+  const dc=document.getElementById('cmp-daily-chart');
+  if(dc&&(avoVals.some(v=>v!=null)||vikVals.some(v=>v!=null))){
+    const isLine=cmpMode==='line';
+    const isStacked=!isLine&&cmpStack==='stacked';
+    const avoDs={label:'AVO ('+AVO_KWP.toFixed(0)+' kWp)',data:avoVals,borderColor:avoColor,backgroundColor:isLine?'rgba(16,185,129,0.12)':avoColor+'bb',fill:isLine,tension:0.3,pointRadius:isLine?2:0,pointHoverRadius:5,borderWidth:2,borderRadius:isLine?0:4,type:isLine?'line':'bar',spanGaps:true,yAxisID:'y'};
+    const vikDs={label:'Vikram ('+VIK_KWP.toFixed(0)+' kWp)',data:vikVals,borderColor:vikColor,backgroundColor:isLine?'rgba(139,92,246,0.10)':vikColor+'bb',fill:isLine,tension:0.3,pointRadius:isLine?2:0,pointHoverRadius:5,borderWidth:2,borderRadius:isLine?0:4,type:isLine?'line':'bar',spanGaps:true,yAxisID:'y'};
+    _cmpDailyChart=new Chart(dc.getContext('2d'),{type:isLine?'line':'bar',data:{labels:dailyLabels,datasets:[avoDs,vikDs]},options:{responsive:true,maintainAspectRatio:false,animation:{duration:350},interaction:{mode:'index',intersect:false},plugins:{legend:{display:true,position:'top',labels:{color:tc,font:{size:10},usePointStyle:true}},tooltip:{callbacks:{label:c=>c.dataset.label+': '+c.parsed.y.toFixed(isKwp?3:0)+' '+yLabel}}},scales:{x:{stacked:isStacked,ticks:{color:tc,font:{size:8},maxRotation:45},grid:{color:gc}},y:{stacked:isStacked,title:{display:true,text:yLabel,color:tc},ticks:{color:tc,font:{size:9}},grid:{color:gc}}}}});
+  }
+
+  /* ── Monthly comparison ── */
+  if(_cmpMonthlyChart){_cmpMonthlyChart.destroy();_cmpMonthlyChart=null;}
+  const mc=document.getElementById('cmp-monthly-chart');
+  if(mc){
+    const avoMonthMap=sAVOData?sGroupByMonth(avoDates,avoTotals):{};
+    const vikMonthMap=sVikramData?sGroupByMonth(vikDates,vikTotals):{};
+    const allMonths=[...new Set([...Object.keys(avoMonthMap),...Object.keys(vikMonthMap)])].sort();
+    if(allMonths.length){
+      const mlbl=allMonths.map(k=>{var m=avoMonthMap[k]||vikMonthMap[k];return m.label;});
+      const avoMVals=allMonths.map(k=>{var m=avoMonthMap[k];if(!m)return null;var t=m.values.reduce((a,b)=>a+b,0);return isKwp?+(t/AVO_KWP).toFixed(3):t;});
+      const vikMVals=allMonths.map(k=>{var m=vikMonthMap[k];if(!m)return null;var t=m.values.reduce((a,b)=>a+b,0);return isKwp?+(t/VIK_KWP).toFixed(3):t;});
+      const isLine=cmpMode==='line';
+      const isStacked=!isLine&&cmpStack==='stacked';
+      _cmpMonthlyChart=new Chart(mc.getContext('2d'),{type:isLine?'line':'bar',data:{labels:mlbl,datasets:[{label:'AVO',data:avoMVals,borderColor:avoColor,backgroundColor:isLine?'rgba(16,185,129,0.12)':avoColor+'bb',fill:isLine,tension:0.35,pointRadius:4,pointHoverRadius:7,borderWidth:2.5,borderRadius:isLine?0:5,spanGaps:true},{label:'Vikram',data:vikMVals,borderColor:vikColor,backgroundColor:isLine?'rgba(139,92,246,0.10)':vikColor+'bb',fill:isLine,tension:0.35,pointRadius:4,pointHoverRadius:7,borderWidth:2.5,borderRadius:isLine?0:5,spanGaps:true}]},options:{responsive:true,maintainAspectRatio:false,animation:{duration:400},interaction:{mode:'index',intersect:false},plugins:{legend:{display:true,position:'top',labels:{color:tc,font:{size:10},usePointStyle:true}},tooltip:{callbacks:{label:c=>`${c.dataset.label}: ${c.parsed.y!=null?c.parsed.y.toFixed(isKwp?3:0):'-'} ${yLabel}`}}},scales:{x:{stacked:isStacked,ticks:{color:tc,font:{size:9}}},y:{stacked:isStacked,title:{display:true,text:yLabel,color:tc},ticks:{color:tc,font:{size:9}},grid:{color:gc}}}}});
+    }
+  }
+
+  /* ── KPI Cards ── */
+  function renderKpis(containerId,totals,kwp,label){
+    const el=document.getElementById(containerId);if(!el)return;
+    if(!totals||!totals.length){el.innerHTML='<span style="color:var(--text3);font-size:0.8rem;">No data loaded</span>';return;}
+    const grand=totals.reduce((a,b)=>a+b,0);const avg=grand/totals.length;const best=Math.max(...totals);
+    const items=[{l:'Total kWh',v:grand.toFixed(0)+' kWh'},{l:'Days',v:totals.length},{l:'Daily Avg',v:avg.toFixed(0)+' kWh'},{l:'Best Day',v:best.toFixed(0)+' kWh'},{l:'Total kWh/kWp',v:(grand/kwp).toFixed(2)},{l:'Avg kWh/kWp/day',v:(avg/kwp).toFixed(3)}];
+    el.innerHTML=items.map(it=>`<div style="display:flex;justify-content:space-between;font-size:0.78rem;padding:3px 0;border-bottom:1px solid var(--border);"><span style="color:var(--text2);">${it.l}</span><span style="font-weight:700;color:var(--text);">${it.v}</span></div>`).join('');
+  }
+  renderKpis('cmp-avo-kpis',avoTotals,AVO_KWP,'AVO');
+  renderKpis('cmp-vik-kpis',vikTotals,VIK_KWP,'Vikram');
 }
 
 /* ── Drive Save / Load ── */
