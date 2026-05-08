@@ -1492,6 +1492,9 @@ body.dark .section-wrap:hover{background:rgba(5,11,24,0.35);backdrop-filter:blur
 .ctrl-group input:focus,.ctrl-group select:focus{outline:none;border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-glow);}
 .flatpickr-input{padding:8px 12px;border:1.5px solid var(--border);border-radius:9px;background:var(--surface2);color:var(--text);font-size:0.86rem;font-family:'Space Grotesk',sans-serif;transition:border-color 0.2s,box-shadow 0.2s;min-width:220px;}
 .chart-wrap{position:relative;height:380px;margin:12px 0;}
+/* Drag-select hint shown on chart hover */
+.chart-wrap::after{content:'⟺ Drag to select range';position:absolute;bottom:6px;right:10px;font-size:0.6rem;color:var(--text3);opacity:0;pointer-events:none;transition:opacity 0.25s;letter-spacing:0.3px;font-family:'JetBrains Mono',monospace;}
+.chart-wrap:hover::after{opacity:0.75;}
 .chart-wrap-tall{height:460px;}
 .chart-wrap-sm{height:250px;}
 .chk-label{display:flex;align-items:center;gap:7px;font-size:0.82rem;font-weight:600;cursor:pointer;}
@@ -2622,6 +2625,17 @@ body.holo2 .holo-reveal-progress-fill{background:linear-gradient(90deg,transpare
   * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
 }
 
+/* ── RGB Rainbow Bar Glow — drag-select on Solar/EMS bar charts ── */
+@keyframes rgbBarGlow {
+  0%   { border-color: hsl(0,90%,55%);   box-shadow: 0 0 12px 3px hsl(0,90%,55%,0.5); }
+  16%  { border-color: hsl(60,90%,55%);  box-shadow: 0 0 12px 3px hsl(60,90%,55%,0.5); }
+  33%  { border-color: hsl(120,90%,45%); box-shadow: 0 0 12px 3px hsl(120,90%,45%,0.5); }
+  50%  { border-color: hsl(180,90%,45%); box-shadow: 0 0 12px 3px hsl(180,90%,45%,0.5); }
+  66%  { border-color: hsl(240,90%,65%); box-shadow: 0 0 12px 3px hsl(240,90%,65%,0.5); }
+  83%  { border-color: hsl(300,90%,60%); box-shadow: 0 0 12px 3px hsl(300,90%,60%,0.5); }
+  100% { border-color: hsl(0,90%,55%);   box-shadow: 0 0 12px 3px hsl(0,90%,55%,0.5); }
+}
+
 </style>
 </head>
 <body>
@@ -3310,9 +3324,9 @@ body.holo2 .holo-reveal-progress-fill{background:linear-gradient(90deg,transpare
             <th style="padding:8px 10px;text-align:right;font-size:0.72rem;color:var(--solar-avo);text-transform:uppercase;">kWh/kWp</th>
             <th style="padding:8px 10px;text-align:right;font-size:0.72rem;color:var(--text3);text-transform:uppercase;">Days</th>
             <th style="padding:8px 10px;text-align:right;font-size:0.72rem;color:var(--success);text-transform:uppercase;">Best kWh</th>
-            <th style="padding:8px 10px;text-align:right;font-size:0.72rem;color:var(--text3);text-transform:uppercase;">Date</th>
+            <th style="padding:8px 10px;text-align:right;font-size:0.72rem;color:var(--success);text-transform:uppercase;">Best Day Date</th>
             <th style="padding:8px 10px;text-align:right;font-size:0.72rem;color:var(--danger);text-transform:uppercase;">Worst kWh</th>
-            <th style="padding:8px 10px;text-align:right;font-size:0.72rem;color:var(--text3);text-transform:uppercase;">Date</th>
+            <th style="padding:8px 10px;text-align:right;font-size:0.72rem;color:var(--danger);text-transform:uppercase;">Worst Day Date</th>
             <th style="padding:8px 10px;text-align:right;font-size:0.72rem;color:var(--accent);text-transform:uppercase;">Cumulative</th>
             <th style="padding:8px 10px;text-align:right;font-size:0.72rem;color:var(--text3);text-transform:uppercase;">% Total</th>
           </tr></thead><tbody id="s-avo-monthly-tbody"></tbody><tfoot id="s-avo-monthly-tfoot"></tfoot></table>
@@ -3357,8 +3371,9 @@ body.holo2 .holo-reveal-progress-fill{background:linear-gradient(90deg,transpare
             <th style="padding:8px 10px;text-align:right;font-size:0.72rem;color:var(--solar-avo);text-transform:uppercase;">kWh/kWp</th>
             <th style="padding:8px 10px;text-align:right;font-size:0.72rem;color:var(--text3);text-transform:uppercase;">Days</th>
             <th style="padding:8px 10px;text-align:right;font-size:0.72rem;color:var(--success);text-transform:uppercase;">Best Day</th>
-            <th style="padding:8px 10px;text-align:right;font-size:0.72rem;color:var(--text3);text-transform:uppercase;">Date</th>
+            <th style="padding:8px 10px;text-align:right;font-size:0.72rem;color:var(--success);text-transform:uppercase;">Best Day Date</th>
             <th style="padding:8px 10px;text-align:right;font-size:0.72rem;color:var(--danger);text-transform:uppercase;">Worst Day</th>
+            <th style="padding:8px 10px;text-align:right;font-size:0.72rem;color:var(--danger);text-transform:uppercase;">Worst Day Date</th>
             <th style="padding:8px 10px;text-align:right;font-size:0.72rem;color:var(--text3);text-transform:uppercase;">Rank</th>
           </tr></thead><tbody id="s-avo-inv-perf-tbody"></tbody></table>
         </div>
@@ -3479,8 +3494,9 @@ body.holo2 .holo-reveal-progress-fill{background:linear-gradient(90deg,transpare
             <th style="padding:8px 10px;text-align:right;font-size:0.72rem;color:var(--solar-vikram);text-transform:uppercase;">Ph2 kWh/kWp</th>
             <th style="padding:8px 10px;text-align:right;font-size:0.72rem;color:var(--text3);text-transform:uppercase;">Days</th>
             <th style="padding:8px 10px;text-align:right;font-size:0.72rem;color:var(--success);text-transform:uppercase;">Best kWh</th>
-            <th style="padding:8px 10px;text-align:right;font-size:0.72rem;color:var(--text3);text-transform:uppercase;">Date</th>
+            <th style="padding:8px 10px;text-align:right;font-size:0.72rem;color:var(--success);text-transform:uppercase;">Best Day Date</th>
             <th style="padding:8px 10px;text-align:right;font-size:0.72rem;color:var(--danger);text-transform:uppercase;">Worst kWh</th>
+            <th style="padding:8px 10px;text-align:right;font-size:0.72rem;color:var(--danger);text-transform:uppercase;">Worst Day Date</th>
             <th style="padding:8px 10px;text-align:right;font-size:0.72rem;color:var(--accent);text-transform:uppercase;">Cumulative</th>
             <th style="padding:8px 10px;text-align:right;font-size:0.72rem;color:var(--text3);text-transform:uppercase;">% Total</th>
           </tr></thead><tbody id="s-vik-monthly-tbody"></tbody><tfoot id="s-vik-monthly-tfoot"></tfoot></table>
@@ -3525,7 +3541,9 @@ body.holo2 .holo-reveal-progress-fill{background:linear-gradient(90deg,transpare
             <th style="padding:8px 10px;text-align:right;font-size:0.72rem;color:var(--text3);">Avg Daily</th>
             <th style="padding:8px 10px;text-align:right;font-size:0.72rem;color:var(--solar-vikram);">kWh/kWp</th>
             <th style="padding:8px 10px;text-align:right;font-size:0.72rem;color:var(--success);">Best Day</th>
+            <th style="padding:8px 10px;text-align:right;font-size:0.72rem;color:var(--success);">Best Day Date</th>
             <th style="padding:8px 10px;text-align:right;font-size:0.72rem;color:var(--danger);">Worst Day</th>
+            <th style="padding:8px 10px;text-align:right;font-size:0.72rem;color:var(--danger);">Worst Day Date</th>
             <th style="padding:8px 10px;text-align:right;font-size:0.72rem;color:var(--text3);">Rank</th>
           </tr></thead><tbody id="s-vik-inv-perf-tbody-ph1"></tbody></table>
         </div>
@@ -3538,7 +3556,9 @@ body.holo2 .holo-reveal-progress-fill{background:linear-gradient(90deg,transpare
             <th style="padding:8px 10px;text-align:right;font-size:0.72rem;color:var(--text3);">Avg Daily</th>
             <th style="padding:8px 10px;text-align:right;font-size:0.72rem;color:var(--solar-vikram);">kWh/kWp</th>
             <th style="padding:8px 10px;text-align:right;font-size:0.72rem;color:var(--success);">Best Day</th>
+            <th style="padding:8px 10px;text-align:right;font-size:0.72rem;color:var(--success);">Best Day Date</th>
             <th style="padding:8px 10px;text-align:right;font-size:0.72rem;color:var(--danger);">Worst Day</th>
+            <th style="padding:8px 10px;text-align:right;font-size:0.72rem;color:var(--danger);">Worst Day Date</th>
             <th style="padding:8px 10px;text-align:right;font-size:0.72rem;color:var(--text3);">Rank</th>
           </tr></thead><tbody id="s-vik-inv-perf-tbody-ph2"></tbody></table>
         </div>
@@ -3555,7 +3575,6 @@ body.holo2 .holo-reveal-progress-fill{background:linear-gradient(90deg,transpare
       </div>
     </div>
   </div>
-</div>
 </div>
 
   <!-- COMPARE Section -->
@@ -3607,7 +3626,6 @@ body.holo2 .holo-reveal-progress-fill{background:linear-gradient(90deg,transpare
       </div>
     </div>
   </div>
-</div>
 </div>
 
 
@@ -3826,6 +3844,23 @@ body.holo2 .holo-reveal-progress-fill{background:linear-gradient(90deg,transpare
 
     <div style="position:relative;height:320px;">
       <canvas id="ems-daily-chart"></canvas>
+      <!-- Drag-select overlay -->
+      <div id="ems-daily-drag-overlay" style="position:absolute;top:0;left:0;width:100%;height:100%;pointer-events:none;z-index:10;">
+        <div id="ems-daily-select-rect" style="position:absolute;background:rgba(14,165,233,0.12);border:1.5px dashed #0ea5e9;display:none;pointer-events:none;"></div>
+      </div>
+    </div>
+    <!-- Floating selection summary -->
+    <div id="ems-daily-float-window" style="display:none;margin-top:10px;background:linear-gradient(135deg,rgba(14,165,233,0.1),rgba(99,102,241,0.08));border:1.5px solid rgba(14,165,233,0.35);border-radius:10px;padding:12px 16px;">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
+        <span style="font-size:0.72rem;font-weight:700;color:#0ea5e9;text-transform:uppercase;letter-spacing:0.5px;">📌 Selection Summary</span>
+        <span id="ems-daily-float-range" style="font-size:0.72rem;color:var(--text3);"></span>
+        <button onclick="emsDailyClearSelection()" style="font-size:0.68rem;padding:2px 8px;border:1px solid rgba(14,165,233,0.4);border-radius:6px;background:transparent;color:#0ea5e9;cursor:pointer;">✕ Clear</button>
+      </div>
+      <div id="ems-daily-float-content" style="display:flex;flex-wrap:wrap;gap:8px;"></div>
+    </div>
+    <!-- Total / Avg summary bar -->
+    <div id="ems-daily-summary" style="display:none;margin-top:10px;border-top:1px solid var(--border);padding-top:10px;">
+      <div id="ems-daily-summary-content" style="display:flex;flex-wrap:wrap;gap:10px;"></div>
     </div>
     <div id="ems-daily-no-data" style="display:none;text-align:center;padding:40px;color:var(--text3);font-size:0.85rem;">No data — select machines above and ensure GSheet is loaded</div>
   </div>
@@ -5675,7 +5710,7 @@ function emsV2RenderDaily() {
           backgroundColor: shiftColors[shift] + (isBar?'cc':'00'),
           borderColor: shiftColors[shift], borderWidth: 2,
           fill: false, tension: 0.3, pointRadius: sortedDates.length > 60 ? 1 : 3,
-          stack: isBar ? shift : undefined
+          stack: isBar ? 'combined' : undefined
         });
       }
     } else {
@@ -5717,6 +5752,447 @@ function emsV2RenderDaily() {
         x: { stacked: isBar && !isSep, ticks:{ color:'#888', font:{size:10}, maxRotation:45, autoSkip:true, maxTicksLimit:31 }, grid:{color:'rgba(128,128,128,0.1)'} },
         y: { stacked: isBar && !isSep, ticks:{ color:'#888', font:{size:10}, callback: v => v>=1000?(v/1000).toFixed(0)+'k':v }, grid:{color:'rgba(128,128,128,0.1)'}, title:{display:true,text:'kWh',color:'#888',font:{size:11}} }
       }
+    }
+  });
+
+  // Build Total/Avg summary below chart
+  emsRenderDailySummary(datasets, sortedDates, labels);
+
+  // Attach drag-select to the new chart instance (universal RGB drag-select)
+  attachChartDragSelect('ems-daily-chart',()=>EMS2.dailyChartInst,labels,datasets,{unit:'kWh',floatId:'ems-daily-float-window',barGlow:isBar});
+}
+
+/* ── EMS Daily Summary (Total + Avg per machine) ── */
+function emsRenderDailySummary(datasets, sortedDates, labels) {
+  const el = document.getElementById('ems-daily-summary');
+  const cont = document.getElementById('ems-daily-summary-content');
+  if(!el||!cont) return;
+  if(!datasets||!datasets.length||!sortedDates.length){el.style.display='none';return;}
+  el.style.display='block';
+  const nDays = sortedDates.length;
+  let html='';
+  // Per-dataset total + avg
+  datasets.forEach(ds=>{
+    const vals = (ds.data||[]).filter(v=>v!=null&&v!==0);
+    if(!vals.length) return;
+    const total = vals.reduce((a,b)=>a+b,0);
+    const avg = total/nDays;
+    const color = ds.borderColor||'#0ea5e9';
+    html+=`<div style="background:var(--surface2);border-radius:8px;padding:8px 12px;border-left:3px solid ${color};min-width:160px;flex:1;">
+      <div style="font-size:0.68rem;font-weight:700;color:${color};margin-bottom:4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${ds.label}</div>
+      <div style="display:flex;gap:14px;">
+        <div><div style="font-size:0.62rem;color:var(--text3);">TOTAL</div><div style="font-size:0.88rem;font-weight:700;color:var(--text);">${total>=1000?(total/1000).toFixed(1)+'k':total.toFixed(0)} kWh</div></div>
+        <div><div style="font-size:0.62rem;color:var(--text3);">AVG/DAY</div><div style="font-size:0.88rem;font-weight:700;color:var(--text);">${avg.toFixed(1)} kWh</div></div>
+      </div>
+    </div>`;
+  });
+  // Grand total if multiple datasets
+  if(datasets.length>1){
+    const allVals = sortedDates.map((_,di)=>datasets.reduce((s,ds)=>s+(ds.data[di]||0),0));
+    const grand = allVals.reduce((a,b)=>a+b,0);
+    const grandAvg = grand/nDays;
+    html+=`<div style="background:var(--surface2);border-radius:8px;padding:8px 12px;border-left:3px solid #6366f1;min-width:160px;flex:1;">
+      <div style="font-size:0.68rem;font-weight:700;color:#6366f1;margin-bottom:4px;">GRAND TOTAL (${nDays} days)</div>
+      <div style="display:flex;gap:14px;">
+        <div><div style="font-size:0.62rem;color:var(--text3);">TOTAL</div><div style="font-size:0.88rem;font-weight:700;color:var(--text);">${grand>=1000?(grand/1000).toFixed(1)+'k':grand.toFixed(0)} kWh</div></div>
+        <div><div style="font-size:0.62rem;color:var(--text3);">AVG/DAY</div><div style="font-size:0.88rem;font-weight:700;color:var(--text);">${grandAvg.toFixed(1)} kWh</div></div>
+      </div>
+    </div>`;
+  }
+  cont.innerHTML=html;
+}
+
+/* ── EMS Daily Drag-Select (mouse drag + mobile tap multi-point) ── */
+let _emsDragState={active:false,startX:0,startIdx:-1,endIdx:-1};
+let _emsDragDatasets=[], _emsDragDates=[], _emsDragLabels=[];
+
+function emsDailyClearSelection(){
+  _emsDragState={active:false,startX:0,startIdx:-1,endIdx:-1};
+  const fw=document.getElementById('ems-daily-float-window');
+  const rect=document.getElementById('ems-daily-select-rect');
+  if(fw)fw.style.display='none';
+  if(rect)rect.style.display='none';
+}
+
+function emsDailyAttachDragSelect(sortedDates, labels, datasets){
+  _emsDragDates=sortedDates; _emsDragLabels=labels; _emsDragDatasets=datasets;
+  emsDailyClearSelection();
+  const c=document.getElementById('ems-daily-chart');
+  if(!c) return;
+  if(window._emsDragAbort) window._emsDragAbort.abort();
+  window._emsDragAbort=new AbortController();
+  const sig=window._emsDragAbort.signal;
+  let dragging=false;
+
+  function getIdxFromX(clientX){
+    const inst=EMS2.dailyChartInst; if(!inst) return -1;
+    const rect=c.getBoundingClientRect();
+    const x=clientX-rect.left;
+    const area=inst.chartArea;
+    if(!area) return -1;
+    const n=sortedDates.length; if(!n) return -1;
+    const frac=Math.max(0,Math.min(1,(x-area.left)/(area.right-area.left)));
+    return Math.min(n-1,Math.max(0,Math.round(frac*(n-1))));
+  }
+
+  function showFloat(i0,i1){
+    const from=Math.min(i0,i1), to=Math.max(i0,i1);
+    if(from<0||to<0||from>sortedDates.length-1) return;
+    const fw=document.getElementById('ems-daily-float-window');
+    const fcont=document.getElementById('ems-daily-float-content');
+    const frank=document.getElementById('ems-daily-float-range');
+    if(!fw||!fcont) return;
+    const nDays=to-from+1;
+    if(frank) frank.textContent=`${labels[from]}${from!==to?' → '+labels[to]:''} · ${nDays} day${nDays>1?'s':''}`;
+    let html='';
+    datasets.forEach(ds=>{
+      const slice=ds.data.slice(from,to+1).filter(v=>v!=null);
+      if(!slice.length) return;
+      const total=slice.reduce((a,b)=>a+b,0);
+      const avg=total/nDays;
+      const color=ds.borderColor||'#0ea5e9';
+      html+=`<div style="background:var(--surface);border-radius:8px;padding:7px 11px;border-left:3px solid ${color};min-width:140px;">
+        <div style="font-size:0.65rem;font-weight:700;color:${color};margin-bottom:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:160px;">${ds.label}</div>
+        <div style="display:flex;gap:12px;">
+          <div><div style="font-size:0.58rem;color:var(--text3);">TOTAL</div><div style="font-size:0.82rem;font-weight:700;">${total>=1000?(total/1000).toFixed(2)+'k':total.toFixed(1)} kWh</div></div>
+          <div><div style="font-size:0.58rem;color:var(--text3);">AVG/DAY</div><div style="font-size:0.82rem;font-weight:700;">${avg.toFixed(1)} kWh</div></div>
+        </div>
+      </div>`;
+    });
+    if(datasets.length>1){
+      const allT=sortedDates.slice(from,to+1).map((_,di)=>datasets.reduce((s,ds)=>s+(ds.data[from+di]||0),0));
+      const grand=allT.reduce((a,b)=>a+b,0);
+      html+=`<div style="background:var(--surface);border-radius:8px;padding:7px 11px;border-left:3px solid #6366f1;min-width:140px;">
+        <div style="font-size:0.65rem;font-weight:700;color:#6366f1;margin-bottom:3px;">COMBINED</div>
+        <div style="display:flex;gap:12px;">
+          <div><div style="font-size:0.58rem;color:var(--text3);">TOTAL</div><div style="font-size:0.82rem;font-weight:700;">${grand>=1000?(grand/1000).toFixed(2)+'k':grand.toFixed(1)} kWh</div></div>
+          <div><div style="font-size:0.58rem;color:var(--text3);">AVG/DAY</div><div style="font-size:0.82rem;font-weight:700;">${(grand/nDays).toFixed(1)} kWh</div></div>
+        </div>
+      </div>`;
+    }
+    fcont.innerHTML=html;
+    fw.style.display='block';
+  }
+
+  // Mouse events
+  c.addEventListener('mousedown',e=>{
+    dragging=true;
+    _emsDragState.startIdx=getIdxFromX(e.clientX);
+    _emsDragState.endIdx=_emsDragState.startIdx;
+  },{signal:sig});
+  c.addEventListener('mousemove',e=>{
+    if(!dragging) return;
+    _emsDragState.endIdx=getIdxFromX(e.clientX);
+    showFloat(_emsDragState.startIdx,_emsDragState.endIdx);
+  },{signal:sig});
+  document.addEventListener('mouseup',()=>{
+    if(dragging){dragging=false;}
+  },{signal:sig});
+
+  // Touch events (mobile multi-tap = tap to add/extend selection)
+  let touchStartIdx=-1;
+  c.addEventListener('touchstart',e=>{
+    if(e.touches.length===1){
+      touchStartIdx=getIdxFromX(e.touches[0].clientX);
+    }
+  },{passive:true,signal:sig});
+  c.addEventListener('touchend',e=>{
+    const idx=getIdxFromX((e.changedTouches[0]||{}).clientX||0);
+    if(touchStartIdx>=0){
+      if(_emsDragState.startIdx<0){
+        _emsDragState.startIdx=touchStartIdx; _emsDragState.endIdx=idx;
+      } else {
+        _emsDragState.startIdx=Math.min(_emsDragState.startIdx,touchStartIdx,idx);
+        _emsDragState.endIdx=Math.max(_emsDragState.endIdx,touchStartIdx,idx);
+      }
+      showFloat(_emsDragState.startIdx,_emsDragState.endIdx);
+    }
+  },{passive:true,signal:sig});
+}
+
+/* ══════════════════════════════════════════════════════════════════
+   UNIVERSAL CHART DRAG-SELECT
+   Works on any Chart.js chart with index-based x-axis (bar / line with labels array).
+   Highlights selected points in dynamic RGB colours and shows a floating summary panel.
+   ══════════════════════════════════════════════════════════════════ */
+
+// Registry: canvasId → AbortController (so re-renders cleanly detach old listeners)
+const _uDragAborts = {};
+
+/**
+ * Attaches drag-select to a Chart.js canvas with index-based labels.
+ * @param {string}   canvasId      - ID of the <canvas> element
+ * @param {function} getChart      - () => Chart instance (called at event time so it's always fresh)
+ * @param {string[]} labels        - x-axis label array
+ * @param {object[]} datasets      - Chart.js dataset objects (must have .data and .label)
+ * @param {object}   [opts]        - { unit: 'kWh'|'°C'|'min'|'auto', accentColor: '#hex', floatId: 'my-float-id' }
+ */
+function attachChartDragSelect(canvasId, getChart, labels, datasets, opts = {}) {
+  const canvas = document.getElementById(canvasId);
+  if (!canvas) return;
+
+  // Kill any previous drag-select loop for this canvas before re-attaching
+  clearChartDragSelect(canvasId, opts.floatId || ('uds-float-' + canvasId));
+
+  // Abort any previous listener set for this canvas
+  if (_uDragAborts[canvasId]) _uDragAborts[canvasId].abort();
+  const abort = new AbortController();
+  _uDragAborts[canvasId] = abort;
+  const sig = abort.signal;
+
+  const unit       = opts.unit       || 'auto';
+  const floatId    = opts.floatId    || ('uds-float-' + canvasId);
+  const noCombined = opts.noCombined || false;
+  const barGlow    = opts.barGlow    || false;
+
+  // Create or reuse floating panel
+  let fw = document.getElementById(floatId);
+  if (!fw) {
+    fw = document.createElement('div');
+    fw.id = floatId;
+    fw.style.cssText = 'display:none;margin-top:10px;border-radius:12px;padding:12px 16px;border:1.5px solid rgba(99,102,241,0.35);background:linear-gradient(135deg,rgba(99,102,241,0.10),rgba(16,185,129,0.07));position:relative;z-index:5;';
+    // Insert right after the canvas's parent .chart-wrap (or after canvas itself)
+    const wrap = canvas.closest('.chart-wrap') || canvas.parentElement;
+    if (wrap && wrap.parentElement) wrap.parentElement.insertBefore(fw, wrap.nextSibling);
+    else canvas.parentElement && canvas.parentElement.appendChild(fw);
+  }
+
+  // State
+  let dragging = false;
+  let startIdx = -1, endIdx = -1;
+
+  function getIdxFromX(clientX) {
+    const chart = getChart(); if (!chart) return -1;
+    const rect = canvas.getBoundingClientRect();
+    const x = clientX - rect.left;
+    const area = chart.chartArea; if (!area) return -1;
+    const n = labels.length; if (!n) return -1;
+    const frac = Math.max(0, Math.min(1, (x - area.left) / (area.right - area.left)));
+    return Math.min(n - 1, Math.max(0, Math.round(frac * (n - 1))));
+  }
+
+  /** Dynamic RGB colour for the i-th selected element with animated hue offset */
+  function selColor(i, total, hueOffset) {
+    const hue = ((i / Math.max(total - 1, 1)) * 360 + (hueOffset || 0)) % 360;
+    return `hsl(${hue},100%,55%)`;
+  }
+
+  // rAF animation state for this canvas
+  let _rgbRafId = null;
+  let _rgbFrom = -1, _rgbTo = -1;
+
+  function _applyRainbow(hueOffset) {
+    const chart = getChart(); if (!chart) return;
+    const from = _rgbFrom, to = _rgbTo;
+    const nPts = to - from + 1;
+    chart.data.datasets.forEach(ds => {
+      if (!ds.data) return;
+      const len = ds.data.length;
+      const isBar = ds.type === 'bar' || (!ds.type && chart.config.type === 'bar');
+      const pColors = [], bgColors = [];
+      for (let k = 0; k < len; k++) {
+        if (k >= from && k <= to) {
+          const c = selColor(k - from, nPts, hueOffset);
+          pColors.push(c);
+          bgColors.push(c);
+        } else {
+          pColors.push(Array.isArray(ds._origBorderColor) ? (ds._origBorderColor[k] || ds._origBorderColor[0]) : (ds._origBorderColor || 'rgba(150,150,150,0.3)'));
+          bgColors.push(Array.isArray(ds._origBgColor) ? (ds._origBgColor[k] || ds._origBgColor[0]) : (ds._origBgColor || 'rgba(150,150,150,0.15)'));
+        }
+      }
+      ds.pointBackgroundColor = pColors;
+      ds.pointBorderColor = pColors;
+      ds.pointRadius = Array.from({length: len}, (_, k) => (k >= from && k <= to) ? 5 : (ds.type === 'line' || ds.type === 'scatter' ? 3 : 0));
+      if (isBar) {
+        ds.backgroundColor = bgColors;
+        ds.borderColor = pColors;
+      }
+    });
+    chart.update('none');
+  }
+
+  function _startRainbowLoop(from, to) {
+    _rgbFrom = from; _rgbTo = to;
+    if (_rgbRafId) cancelAnimationFrame(_rgbRafId);
+    const startTs = performance.now();
+    const CYCLE_MS = 1800; // one full hue rotation
+    function tick(now) {
+      const elapsed = now - startTs;
+      const hueOffset = (elapsed / CYCLE_MS) * 360;
+      _applyRainbow(hueOffset);
+      _rgbRafId = requestAnimationFrame(tick);
+    }
+    _rgbRafId = requestAnimationFrame(tick);
+  }
+
+  function _stopRainbowLoop() {
+    if (_rgbRafId) { cancelAnimationFrame(_rgbRafId); _rgbRafId = null; }
+    _rgbFrom = -1; _rgbTo = -1;
+  }
+  // Expose stop function on both canvas and float panel so clearChartDragSelect always finds it
+  canvas._stopRgbLoop = _stopRainbowLoop;
+  const _fwEl = document.getElementById(floatId);
+  if (_fwEl) _fwEl._stopRgbLoop = _stopRainbowLoop;
+
+  /** Format a numeric value with unit detection */
+  function fmtVal(v, ds) {
+    if (unit === 'auto') {
+      const lbl = (ds.label || '').toLowerCase();
+      if (lbl.includes('kwh/kwp') || lbl.includes('kwp')) return v.toFixed(3) + ' kWh/kWp';
+      if (lbl.includes('kwh') || lbl.includes('kWh')) return (v >= 1000 ? (v/1000).toFixed(2) + 'k' : v.toFixed(1)) + ' kWh';
+      if (lbl.includes('°c') || lbl.includes('temp')) return v.toFixed(1) + '°C';
+      if (lbl.includes('min') || lbl.includes('dur')) return v.toFixed(1) + ' min';
+      return v.toFixed(2);
+    }
+    if (unit === 'kWh')   return (v >= 1000 ? (v/1000).toFixed(2) + 'k' : v.toFixed(1)) + ' kWh';
+    if (unit === 'kwp')   return v.toFixed(3) + ' kWh/kWp';
+    if (unit === '°C')    return v.toFixed(1) + '°C';
+    if (unit === 'min')   return v.toFixed(1) + ' min';
+    return v.toFixed(2);
+  }
+
+  function showFloat(i0, i1) {
+    const from = Math.min(i0, i1), to = Math.max(i0, i1);
+    if (from < 0 || to < 0 || from > labels.length - 1) return;
+    const nPts = to - from + 1;
+
+    // ── Stash original colours once, then start animated rainbow loop ──
+    const chart = getChart();
+    if (chart) {
+      chart.data.datasets.forEach(ds => {
+        if (!ds.data) return;
+        if (ds._origBorderColor === undefined) ds._origBorderColor = ds.borderColor;
+        if (ds._origBgColor    === undefined) ds._origBgColor    = ds.backgroundColor;
+      });
+      _startRainbowLoop(from, to);
+    }
+
+    // ── Build float panel ──
+    const rangeLabel = `${labels[from]}${from !== to ? ' → ' + labels[to] : ''} · ${nPts} point${nPts > 1 ? 's' : ''}`;
+    let html = `<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:9px;flex-wrap:wrap;gap:6px;">
+      <span style="font-size:0.68rem;font-weight:700;color:#818cf8;text-transform:uppercase;letter-spacing:0.5px;">📌 ${rangeLabel}</span>
+      <button onclick="clearChartDragSelect('${canvasId}','${floatId}')" style="font-size:0.68rem;padding:2px 8px;border:1px solid rgba(129,140,248,0.4);border-radius:6px;background:transparent;color:#818cf8;cursor:pointer;">✕ Clear</button>
+    </div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap;">`;
+
+    const visDs = datasets.filter(ds => ds.data && ds.data.length > from);
+    visDs.forEach((ds, si) => {
+      const slice = ds.data.slice(from, to + 1).filter(v => v != null && !isNaN(v));
+      if (!slice.length) return;
+      const total = slice.reduce((a, b) => a + b, 0);
+      const avg   = total / slice.length;
+      const max   = Math.max(...slice);
+      const min   = Math.min(...slice);
+      const color = Array.isArray(ds.borderColor) ? ds.borderColor[Math.floor(ds.borderColor.length/2)] : (ds.borderColor || '#818cf8');
+      html += `<div style="background:var(--surface);border-radius:8px;padding:7px 11px;border-left:3px solid ${color};min-width:130px;flex:1;">
+        <div style="font-size:0.63rem;font-weight:700;color:${color};margin-bottom:4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:180px;">${ds.label || 'Dataset ' + (si+1)}</div>
+        <div style="display:flex;gap:10px;flex-wrap:wrap;">
+          ${noCombined ? '' : `<div><div style="font-size:0.57rem;color:var(--text3);">TOTAL</div><div style="font-size:0.8rem;font-weight:700;">${fmtVal(total, ds)}</div></div>`}
+          <div><div style="font-size:0.57rem;color:var(--text3);">AVG</div><div style="font-size:0.8rem;font-weight:700;">${fmtVal(avg, ds)}</div></div>
+          <div><div style="font-size:0.57rem;color:var(--text3);">MAX</div><div style="font-size:0.8rem;font-weight:700;color:#f59e0b;">${fmtVal(max, ds)}</div></div>
+          <div><div style="font-size:0.57rem;color:var(--text3);">MIN</div><div style="font-size:0.8rem;font-weight:700;color:#6366f1;">${fmtVal(min, ds)}</div></div>
+        </div>
+      </div>`;
+    });
+
+    // Combined row when multiple datasets (suppressed for dryer temperature — meaningless sum)
+    if (visDs.length > 1 && !noCombined) {
+      const combined = Array.from({length: nPts}, (_, k) =>
+        visDs.reduce((s, ds) => s + (ds.data[from + k] || 0), 0)
+      );
+      const grand = combined.reduce((a, b) => a + b, 0);
+      const gavg  = grand / combined.length;
+      html += `<div style="background:var(--surface);border-radius:8px;padding:7px 11px;border-left:3px solid #6366f1;min-width:130px;flex:1;">
+        <div style="font-size:0.63rem;font-weight:700;color:#6366f1;margin-bottom:4px;">COMBINED</div>
+        <div style="display:flex;gap:10px;flex-wrap:wrap;">
+          <div><div style="font-size:0.57rem;color:var(--text3);">TOTAL</div><div style="font-size:0.8rem;font-weight:700;">${fmtVal(grand, visDs[0])}</div></div>
+          <div><div style="font-size:0.57rem;color:var(--text3);">AVG</div><div style="font-size:0.8rem;font-weight:700;">${fmtVal(gavg, visDs[0])}</div></div>
+        </div>
+      </div>`;
+    }
+
+    html += '</div>';
+    fw.innerHTML = html;
+    fw.style.display = 'block';
+    // Rainbow glow pulse always — bar or line
+    fw.style.animation = 'rgbBarGlow 2s linear infinite';
+    fw.style.borderColor = 'transparent';
+    fw._stopRgbLoop = _stopRainbowLoop; // keep stop fn fresh after innerHTML rebuild
+  }
+
+  function clearHighlights() {
+    _stopRainbowLoop();
+    const chart = getChart(); if (!chart) return;
+    chart.data.datasets.forEach(ds => {
+      delete ds.pointBackgroundColor;
+      delete ds.pointBorderColor;
+      delete ds.pointRadius;
+      if (ds._origBorderColor !== undefined) { ds.borderColor = ds._origBorderColor; delete ds._origBorderColor; }
+      if (ds._origBgColor    !== undefined) { ds.backgroundColor = ds._origBgColor; delete ds._origBgColor; }
+    });
+    chart.update('none');
+  }
+
+  // ── Mouse events ──
+  canvas.addEventListener('mousedown', e => {
+    dragging = true;
+    startIdx = getIdxFromX(e.clientX);
+    endIdx   = startIdx;
+  }, { signal: sig });
+
+  canvas.addEventListener('mousemove', e => {
+    if (!dragging) return;
+    endIdx = getIdxFromX(e.clientX);
+    if (Math.abs(endIdx - startIdx) >= 1) showFloat(startIdx, endIdx);
+  }, { signal: sig });
+
+  document.addEventListener('mouseup', () => {
+    if (dragging) {
+      dragging = false;
+      if (startIdx >= 0 && endIdx >= 0 && Math.abs(endIdx - startIdx) >= 1) {
+        showFloat(startIdx, endIdx);
+      }
+    }
+  }, { signal: sig });
+
+  // ── Touch events ──
+  let touchStartIdx = -1;
+  canvas.addEventListener('touchstart', e => {
+    if (e.touches.length === 1) touchStartIdx = getIdxFromX(e.touches[0].clientX);
+  }, { passive: true, signal: sig });
+
+  canvas.addEventListener('touchend', e => {
+    const idx = getIdxFromX((e.changedTouches[0] || {}).clientX || 0);
+    if (touchStartIdx >= 0) {
+      if (startIdx < 0) { startIdx = touchStartIdx; endIdx = idx; }
+      else { startIdx = Math.min(startIdx, touchStartIdx, idx); endIdx = Math.max(endIdx, touchStartIdx, idx); }
+      if (Math.abs(endIdx - startIdx) >= 1) showFloat(startIdx, endIdx);
+    }
+  }, { passive: true, signal: sig });
+}
+
+/** Clear drag selection highlights and hide float panel */
+function clearChartDragSelect(canvasId, floatId) {
+  const fw = document.getElementById(floatId || ('uds-float-' + canvasId));
+  if (fw) {
+    if (fw._stopRgbLoop) fw._stopRgbLoop(); // stop rAF via float panel ref (survives chart type switch)
+    fw.style.display = 'none'; fw.style.animation = ''; fw.style.borderColor = '';
+  }
+  const canvas = document.getElementById(canvasId);
+  if (canvas && canvas._stopRgbLoop) canvas._stopRgbLoop(); // fallback via canvas ref
+  // Search all Chart.js instances and fully restore original colors
+  Object.values(Chart.instances || {}).forEach(chart => {
+    if (chart.canvas && chart.canvas.id === canvasId) {
+      chart.data.datasets.forEach(ds => {
+        delete ds.pointBackgroundColor;
+        delete ds.pointBorderColor;
+        delete ds.pointRadius;
+        if (ds._origBorderColor !== undefined) { ds.borderColor = ds._origBorderColor; delete ds._origBorderColor; }
+        if (ds._origBgColor    !== undefined) { ds.backgroundColor = ds._origBgColor; delete ds._origBgColor; }
+        if (ds._origBarBg      !== undefined) { ds.backgroundColor = ds._origBarBg; delete ds._origBarBg; }
+        if (ds._origBarBorder  !== undefined) { ds.borderColor = ds._origBarBorder; delete ds._origBarBorder; }
+      });
+      chart.update('none');
     }
   });
 }
@@ -5871,6 +6347,7 @@ function emsV2RenderHourly() {
       }
     }
   });
+  attachChartDragSelect('ems-hourly-chart',()=>EMS2.hourlyChartInst,labels,datasets,{unit:'kWh',floatId:'uds-float-ems-hourly-chart',barGlow:EMS2.hourlyChartType==='bar'});
 }
 
 function emsV2ParseSlot(slot) {
@@ -7778,6 +8255,8 @@ function rRender(){
   if(k3)datasets.push(mkDs('Kettle 3 ',d3,h3,'rgb(16,185,129)'));
   const rDs=rChartType==='bar'?datasets.map(ds=>({...ds,type:'bar',backgroundColor:ds.borderColor.replace('rgb(','rgba(').replace(')',',0.6)'),borderRadius:4,pointRadius:0})):datasets;
   rChart=new Chart(ctx,{type:rChartType,data:{labels:ts,datasets:rDs},options:{responsive:true,maintainAspectRatio:false,animation:{duration:300},interaction:{mode:'index',intersect:false},plugins:{legend:{display:true,position:'top',labels:{color:textColor,font:{size:11,family:'Space Grotesk'},usePointStyle:true}},tooltip:{callbacks:{title:c=>new Date(c[0].parsed.x).toLocaleString(),label:c=>c.dataset.label+': '+(c.parsed.y===null?'no data':c.parsed.y.toFixed(2)+'°C')}}},scales:{x:{type:'time',time:{unit:'hour',displayFormats:{hour:'MMM d, HH:mm'}},ticks:{color:textColor,maxRotation:30,font:{size:9},maxTicksLimit:12},grid:{color:gridColor}},y:{title:{display:true,text:'Temperature (°C)',color:textColor},ticks:{color:textColor,callback:v=>v+'°C',font:{size:10}},grid:{color:gridColor}}},onClick:(e,els)=>{if(!els.length)return;const idx=els[0].index;const t=new Date(ts[idx]);if(isNaN(t))return;rHandleClick(t);}}});
+  const _rTimeLabels=ts.map(t=>new Date(t).toLocaleString('en-GB',{month:'short',day:'2-digit',hour:'2-digit',minute:'2-digit'}));
+  attachChartDragSelect('r-chart',()=>rChart,_rTimeLabels,rDs,{unit:'°C',floatId:'uds-float-r-chart'});
 }
 function rSetTitle(t){document.getElementById('r-graphTitle').value=t;}
 function rResinChanged(){document.getElementById('r-resinOther').classList.toggle('show',document.getElementById('r-resinType').value==='Others');}
@@ -8447,6 +8926,8 @@ function dRenderChart(){
   document.getElementById('d-zeroCount').textContent=zeroCnt;const canvas=document.getElementById('d-chart');if(dChart){dChart.destroy();dChart=null;}if(!datasets.length)return;
   const ctx=canvas.getContext('2d');const gridColor=isDark?'rgba(255,255,255,0.04)':'rgba(0,0,0,0.04)';const textColor=isDark?'#6e8aac':'#5a677f';
   dChart=new Chart(ctx,{type:dChartType,data:{datasets:dChartType==='bar'?datasets.map(ds=>({...ds,type:'bar',backgroundColor:ds.borderColor+'44',borderRadius:3,pointRadius:0,borderWidth:1.5,tension:0})):datasets},options:{responsive:true,maintainAspectRatio:false,animation:{duration:300},interaction:{mode:'index',intersect:false},plugins:{legend:{display:true,position:'top',labels:{color:textColor,font:{size:9,family:'Space Grotesk'},boxWidth:10,usePointStyle:true}},tooltip:{callbacks:{title:c=>new Date(c[0].parsed.x).toLocaleString(),label:c=>c.dataset.label+': '+(c.parsed.y===null?'--':c.parsed.y.toFixed(1)+'°C')}}},scales:{x:{type:'time',time:{unit:'hour',displayFormats:{hour:'MMM d, HH:mm'}},ticks:{color:textColor,maxRotation:30,font:{size:9},maxTicksLimit:12},grid:{color:gridColor}},y:{title:{display:true,text:'Temperature (°C)',color:textColor},ticks:{color:textColor,callback:v=>v+'°C',font:{size:9}},grid:{color:gridColor}}}}});
+  // Build flat label array from the first dataset's x values for drag-select
+  if(datasets.length){const _dDs0=datasets[0];const _dLabels=(_dDs0.data||[]).map(pt=>new Date(pt.x).toLocaleString('en-GB',{month:'short',day:'2-digit',hour:'2-digit',minute:'2-digit'}));const _dFlatDs=datasets.map(ds=>({...ds,data:(ds.data||[]).map(pt=>pt.y)}));attachChartDragSelect('d-chart',()=>dChart,_dLabels,_dFlatDs,{unit:'°C',floatId:'uds-float-d-chart',noCombined:true});}
 }
 function dRenderBars(){
   if(!dAllData.length)return;const grid=document.getElementById('d-barGrid');grid.innerHTML='';dBarCharts.forEach(c=>{try{c.destroy();}catch(e){}});dBarCharts=[];
@@ -9332,6 +9813,9 @@ function sSwitchTab(tab){
   document.getElementById('s-avo').classList.toggle('active',tab==='avo');
   document.getElementById('s-vikram').classList.toggle('active',tab==='vikram');
   document.getElementById('s-compare').classList.toggle('active',tab==='compare');
+  // Show/hide drive info only on AVO/Vikram tabs
+  const driveInfo=document.querySelector('.solar-drive-info');
+  if(driveInfo)driveInfo.style.display=(tab==='compare'?'none':'');
   // Refresh weather pin for new tab
   if(tab==='avo'&&sAVOData)sUpdateWeatherPin(sAVOData,'avo');
   if(tab==='vikram'&&sVikramData)sUpdateWeatherPin(sVikramData,'vikram');
@@ -9595,6 +10079,7 @@ function sRenderAVOMainChart(){
   const hasY2=datasets.some(ds=>ds.yAxisID==='y2');
   const chartType=datasets[0]?.type||mainType;
   sAVOChart=new Chart(canvas.getContext('2d'),{type:chartType,data:{labels,datasets},options:{responsive:true,maintainAspectRatio:false,animation:{duration:400},interaction:{mode:'index',intersect:false},plugins:{legend:{display:true,position:'top',labels:{color:textColor,font:{size:11,family:'Space Grotesk'},usePointStyle:true}},tooltip:{callbacks:{label:c=>{if(c.dataset.yAxisID==='y2')return`kWh/kWp: ${c.parsed.y.toFixed(3)}`;if(c.dataset.label?.includes('kWh/kWp'))return`kWh/kWp: ${c.parsed.y.toFixed(3)}`;return c.dataset.label+': '+c.parsed.y.toFixed(0)+' kWh';},afterBody:ctx=>{const i=ctx[0]?.dataIndex;if(i==null)return[];const note=d.remarks?.[i];return note?[`📝 ${note}`]:[];}}}},scales:{x:{ticks:{color:textColor,font:{size:9},maxRotation:45},grid:{color:gridColor}},y:{title:{display:true,text:showKwh?'Generation (kWh)':'kWh/kWp',color:textColor},ticks:{color:textColor,font:{size:9}},grid:{color:gridColor}},y2:{position:'right',title:{display:hasY2,text:'kWh/kWp',color:'#06b6d4'},ticks:{color:'#06b6d4',font:{size:9}},grid:{display:false},display:hasY2}}}});
+  attachChartDragSelect('s-avo-chart',()=>sAVOChart,labels,datasets,{unit:'auto',floatId:'uds-float-s-avo-chart',barGlow:mainType==='bar'});
 }
 
 let sAVOInvMode='kwh'; // 'kwh' or 'kwp'
@@ -9612,6 +10097,7 @@ function sRenderAVOInvChart(){
   const isKwp=sAVOInvMode==='kwp';
   const datasets=d.inverterNames.map((name,i)=>{if(toggles[i]&&!toggles[i].checked)return null;const color=CHART_COLORS_12[i%CHART_COLORS_12.length];const kwp=d.inverterKwp?.[i]||AVO_INV_KWP[i]||1;const data=isKwp?d.perInverter[i].map(v=>+(v/kwp).toFixed(4)):d.perInverter[i];return{label:name,data,type:'bar',backgroundColor:color+'cc',borderColor:color,borderWidth:1.5,borderRadius:3};}).filter(Boolean);
   sAVOInvChart=new Chart(canvas.getContext('2d'),{type:'bar',data:{labels,datasets},options:{responsive:true,maintainAspectRatio:false,animation:{duration:400},interaction:{mode:'index',intersect:false},plugins:{legend:{display:true,position:'top',labels:{color:textColor,font:{size:10,family:'Space Grotesk'},usePointStyle:true}},tooltip:{callbacks:{label:c=>c.dataset.label+': '+c.parsed.y.toFixed(isKwp?3:0)+(isKwp?' kWh/kWp':' kWh'),afterBody:ctx=>{const i=ctx[0]?.dataIndex;if(i==null)return[];const note=d.remarks?.[i];return note?[`📝 ${note}`]:[];}}}},scales:{x:{stacked:true,ticks:{color:textColor,font:{size:9},maxRotation:45},grid:{color:gridColor}},y:{stacked:true,title:{display:true,text:isKwp?'kWh/kWp':'kWh',color:textColor},ticks:{color:textColor,font:{size:9}},grid:{color:gridColor}}}}});
+  attachChartDragSelect('s-avo-inv-chart',()=>sAVOInvChart,labels,datasets,{unit:'auto',floatId:'uds-float-s-avo-inv-chart',barGlow:true});
 }
 
 /* ── Vikram Excel parsing ── */
@@ -9815,6 +10301,7 @@ function sRenderVikramMainChart(){
   const hasY2=datasets.some(ds=>ds.yAxisID==='y2');
   const chartType=datasets[0]?.type||vikType;
   sVikChart=new Chart(canvas.getContext('2d'),{type:chartType,data:{labels,datasets},options:{responsive:true,maintainAspectRatio:false,animation:{duration:400},interaction:{mode:'index',intersect:false},plugins:{legend:{display:true,position:'top',labels:{color:textColor,font:{size:11,family:'Space Grotesk'},usePointStyle:true}},tooltip:{callbacks:{label:c=>{if(c.dataset.yAxisID==='y2')return`kWh/kWp: ${c.parsed.y.toFixed(3)}`;if(c.dataset.label?.includes('kWh/kWp'))return`kWh/kWp: ${c.parsed.y.toFixed(3)}`;return c.dataset.label+': '+c.parsed.y.toFixed(0)+' kWh';},afterBody:ctx=>{const i=ctx[0]?.dataIndex;if(i==null)return[];const note=d.remarks?.[i];return note?[`📝 ${note}`]:[];}}}},scales:{x:{ticks:{color:textColor,font:{size:9},maxRotation:45},grid:{color:gridColor}},y:{title:{display:true,text:showKwh?'Generation (kWh)':'kWh/kWp',color:textColor},ticks:{color:textColor,font:{size:9}},grid:{color:gridColor}},y2:{position:'right',title:{display:hasY2,text:'kWh/kWp',color:'#06b6d4'},ticks:{color:'#06b6d4',font:{size:9}},grid:{display:false},display:hasY2}}}});
+  attachChartDragSelect('s-vik-chart',()=>sVikChart,labels,datasets,{unit:'auto',floatId:'uds-float-s-vik-chart',barGlow:vikType==='bar'});
 }
 
 function sRenderVikramPhaseChart(){
@@ -9826,6 +10313,8 @@ function sRenderVikramPhaseChart(){
   const textColor=isDark?'#6e8aac':'#5a677f';const gridColor=isDark?'rgba(255,255,255,0.05)':'rgba(0,0,0,0.04)';
   const labels=d.dates.map(dt=>dt.toLocaleDateString('en-GB',{day:'2-digit',month:'short'}));
   sVikPhaseChart=new Chart(canvas.getContext('2d'),{type:'bar',data:{labels,datasets:[{label:'Phase 1 (590.72 kWp)',data:d.phase1,backgroundColor:'rgba(16,185,129,0.75)',borderColor:'#10b981',borderWidth:1.5,borderRadius:4},{label:'Phase 2 (465.28 kWp)',data:d.phase2,backgroundColor:'rgba(245,158,11,0.7)',borderColor:'#f59e0b',borderWidth:1.5,borderRadius:4}]},options:{responsive:true,maintainAspectRatio:false,animation:{duration:400},interaction:{mode:'index',intersect:false},plugins:{legend:{display:true,position:'top',labels:{color:textColor,font:{size:11,family:'Space Grotesk'},usePointStyle:true}},tooltip:{callbacks:{afterBody:ctx=>{const i=ctx[0]?.dataIndex;if(i==null)return[];const note=d.remarks?.[i];return note?[`📝 ${note}`]:[];}}}},scales:{x:{ticks:{color:textColor,font:{size:9},maxRotation:45},grid:{color:gridColor}},y:{title:{display:true,text:'kWh',color:textColor},ticks:{color:textColor,font:{size:9}},grid:{color:gridColor}}}}});
+  const _vikPhaseDs=[{label:'Phase 1 (590.72 kWp)',data:d.phase1,borderColor:'#10b981'},{label:'Phase 2 (465.28 kWp)',data:d.phase2,borderColor:'#f59e0b'}];
+  attachChartDragSelect('s-vik-phase-chart',()=>sVikPhaseChart,labels,_vikPhaseDs,{unit:'kWh',floatId:'uds-float-s-vik-phase-chart',barGlow:true});
 }
 
 let sVikInvMode='kwh';
@@ -9847,6 +10336,7 @@ function sRenderVikramInvChart(){
   const isKwp=sVikInvMode==='kwp';
   const datasets=invArr.map((inv,i)=>{const kwp=invKwp[i]||1;const data=isKwp?inv.map(v=>+(v/kwp).toFixed(4)):inv;return{label:invNames[i]||`Inv${i+1}`,data,type:'bar',backgroundColor:colors[i%colors.length]+'cc',borderColor:colors[i%colors.length],borderWidth:1.5,borderRadius:3};});
   sVikInvChart=new Chart(canvas.getContext('2d'),{type:'bar',data:{labels,datasets},options:{responsive:true,maintainAspectRatio:false,animation:{duration:400},interaction:{mode:'index',intersect:false},plugins:{legend:{display:true,position:'top',labels:{color:textColor,font:{size:9,family:'Space Grotesk'},usePointStyle:true,boxWidth:12}},tooltip:{callbacks:{label:c=>c.dataset.label+': '+c.parsed.y.toFixed(isKwp?3:0)+(isKwp?' kWh/kWp':' kWh'),afterBody:ctx=>{const i=ctx[0]?.dataIndex;if(i==null)return[];const note=d.remarks?.[i];return note?[`📝 ${note}`]:[];}}}},scales:{x:{stacked:true,ticks:{color:textColor,font:{size:9},maxRotation:45},grid:{color:gridColor}},y:{stacked:true,title:{display:true,text:isKwp?'kWh/kWp':'kWh',color:textColor},ticks:{color:textColor,font:{size:9}},grid:{color:gridColor}}}}});
+  attachChartDragSelect('s-vik-inv-chart',()=>sVikInvChart,labels,datasets,{unit:'auto',floatId:'uds-float-s-vik-inv-chart',barGlow:true});
 }
 
 
@@ -9988,7 +10478,7 @@ function sRenderAVOMonthly(){
     var tr=document.createElement('tr');tr.style.borderBottom='1px solid var(--border)';
     var bC=m.bestDate?m.bestDate.toLocaleDateString('en-GB',{day:'2-digit',month:'short',year:'numeric'}):'';
     var wC=m.worstDate?m.worstDate.toLocaleDateString('en-GB',{day:'2-digit',month:'short',year:'numeric'}):'';
-    tr.innerHTML='<td style="padding:7px 10px;font-weight:700;color:'+MPAL[mi%12]+';">'+m.label+'</td><td style="padding:7px 10px;text-align:right;font-weight:700;">'+m.total.toFixed(1)+'</td><td style="padding:7px 10px;text-align:right;">'+m.avg.toFixed(1)+'</td><td style="padding:7px 10px;text-align:right;color:var(--solar-avo);font-weight:600;">'+m.kwpTotal.toFixed(3)+'</td><td style="padding:7px 10px;text-align:right;">'+m.days+'</td><td style="padding:7px 10px;text-align:right;color:'+sGradientColor(0.9)+';font-weight:600;">'+m.best.toFixed(1)+'</td><td style="padding:7px 10px;text-align:right;font-size:0.78rem;color:var(--text2);">'+bC+'</td><td style="padding:7px 10px;text-align:right;color:'+sGradientColor(0.08)+';font-weight:600;">'+m.worst.toFixed(1)+'</td><td style="padding:7px 10px;text-align:right;font-size:0.78rem;color:var(--text2);">'+wC+'</td><td style="padding:7px 10px;text-align:right;color:var(--accent);font-weight:600;">'+cumKwh.toFixed(0)+'</td><td style="padding:7px 10px;text-align:right;">'+pct+'%</td>';
+    tr.innerHTML='<td style="padding:7px 10px;font-weight:700;color:'+MPAL[mi%12]+';">'+m.label+'</td><td style="padding:7px 10px;text-align:right;font-weight:700;">'+m.total.toFixed(1)+'</td><td style="padding:7px 10px;text-align:right;">'+m.avg.toFixed(1)+'</td><td style="padding:7px 10px;text-align:right;color:var(--solar-avo);font-weight:600;">'+m.kwpTotal.toFixed(3)+'</td><td style="padding:7px 10px;text-align:right;">'+m.days+'</td><td style="padding:7px 10px;text-align:right;color:'+sGradientColor(0.9)+';font-weight:600;">'+m.best.toFixed(1)+'</td><td style="padding:7px 10px;text-align:right;font-size:0.78rem;color:var(--success);">'+bC+'</td><td style="padding:7px 10px;text-align:right;color:'+sGradientColor(0.08)+';font-weight:600;">'+m.worst.toFixed(1)+'</td><td style="padding:7px 10px;text-align:right;font-size:0.78rem;color:var(--danger);">'+wC+'</td><td style="padding:7px 10px;text-align:right;color:var(--accent);font-weight:600;">'+cumKwh.toFixed(0)+'</td><td style="padding:7px 10px;text-align:right;">'+pct+'%</td>';
     tbody.appendChild(tr);
   });
   if(tfoot)tfoot.innerHTML='<tr style="background:var(--surface2);font-weight:700;border-top:2px solid var(--border);"><td style="padding:7px 10px;">TOTAL</td><td style="padding:7px 10px;text-align:right;color:var(--solar-avo);">'+grandTotal.toFixed(1)+'</td><td style="padding:7px 10px;text-align:right;">'+(grandTotal/n).toFixed(1)+'</td><td style="padding:7px 10px;text-align:right;color:var(--solar-avo);">'+(grandTotal/AVO_TOTAL_KWP).toFixed(3)+'</td><td style="padding:7px 10px;text-align:right;">'+n+'</td><td colspan="6"></td></tr>';
@@ -10075,6 +10565,7 @@ function sRenderAVOInvPerf(d){
   var iB=d.inverterNames.map(function(_,i){return Math.max.apply(null,d.perInverter[i]);});
   var iW=d.inverterNames.map(function(_,i){var f=d.perInverter[i].filter(function(v){return v>0;});return f.length?Math.min.apply(null,f):null;});
   var iBD=d.inverterNames.map(function(_,i){var idx=d.perInverter[i].indexOf(Math.max.apply(null,d.perInverter[i]));return d.dates[idx];});
+  var iWD=d.inverterNames.map(function(_,i){var f=d.perInverter[i].filter(function(v){return v>0;});if(!f.length)return null;var wv=Math.min.apply(null,f);var idx=d.perInverter[i].indexOf(wv);return d.dates[idx];});
   var sorted=[].concat(d.inverterNames.map(function(_,i){return i;})).sort(function(a,b){return iK[b]-iK[a];});
   var rankArr=d.inverterNames.map(function(_,i){return sorted.indexOf(i)+1;});
   var mnK=Math.min.apply(null,iK),mxK=Math.max.apply(null,iK);
@@ -10083,6 +10574,7 @@ function sRenderAVOInvPerf(d){
     var rC=rankArr[i]===1?'#10b981':rankArr[i]===d.inverterNames.length?'#ef4444':'var(--text2)';
     var tr=document.createElement('tr');tr.style.borderBottom='1px solid var(--border)';
     var bds=iBD[i]?iBD[i].toLocaleDateString('en-GB',{day:'2-digit',month:'short',year:'numeric'}):'--';
+    var wds=iWD[i]?iWD[i].toLocaleDateString('en-GB',{day:'2-digit',month:'short',year:'numeric'}):'--';
     tr.innerHTML='<td style="padding:7px 10px;font-weight:700;color:'+CHART_COLORS_12[i%12]+';">'+nm+'</td>'
       +'<td style="padding:7px 10px;text-align:right;">'+(d.inverterKwp[i]||AVO_INV_KWP[i])+'</td>'
       +'<td style="padding:7px 10px;text-align:right;font-weight:600;">'+iT[i].toFixed(1)+'</td>'
@@ -10092,6 +10584,7 @@ function sRenderAVOInvPerf(d){
       +'<td style="padding:7px 10px;text-align:right;color:'+sGradientColor(0.9)+';font-weight:600;">'+iB[i].toFixed(1)+'</td>'
       +'<td style="padding:7px 10px;text-align:right;font-size:0.78rem;color:var(--text2);">'+bds+'</td>'
       +'<td style="padding:7px 10px;text-align:right;color:'+sGradientColor(0.08)+';font-weight:600;">'+(iW[i]!=null?iW[i].toFixed(1):'--')+'</td>'
+      +'<td style="padding:7px 10px;text-align:right;font-size:0.78rem;color:var(--text2);">'+wds+'</td>'
       +'<td style="padding:7px 10px;text-align:right;font-weight:800;color:'+rC+';">'+rankArr[i]+'</td>';
     tbody.appendChild(tr);
   });
@@ -10124,10 +10617,10 @@ function sRenderVikramMonthly(){
     var tr=document.createElement('tr');tr.style.borderBottom='1px solid var(--border)';
     var bC=m.bestDate?m.bestDate.toLocaleDateString('en-GB',{day:'2-digit',month:'short',year:'numeric'}):'';
     var wC=m.worstDate?m.worstDate.toLocaleDateString('en-GB',{day:'2-digit',month:'short',year:'numeric'}):'';
-    tr.innerHTML='<td style="padding:7px 10px;font-weight:700;color:'+VMPAL[mi%12]+';">'+m.label+'</td><td style="padding:7px 10px;text-align:right;font-weight:700;">'+m.total.toFixed(1)+'</td><td style="padding:7px 10px;text-align:right;">'+m.avg.toFixed(1)+'</td><td style="padding:7px 10px;text-align:right;color:var(--solar-vikram);font-weight:600;">'+m.ph1Kwp.toFixed(3)+'</td><td style="padding:7px 10px;text-align:right;color:var(--solar-vikram);font-weight:600;">'+m.ph2Kwp.toFixed(3)+'</td><td style="padding:7px 10px;text-align:right;">'+m.days+'</td><td style="padding:7px 10px;text-align:right;color:'+sGradientColor(0.9)+';font-weight:600;">'+m.best.toFixed(1)+'</td><td style="padding:7px 10px;text-align:right;font-size:0.78rem;">'+bC+'</td><td style="padding:7px 10px;text-align:right;color:'+sGradientColor(0.08)+';font-weight:600;">'+m.worst.toFixed(1)+'</td><td style="padding:7px 10px;text-align:right;color:var(--accent);font-weight:600;">'+cumKwh.toFixed(0)+'</td><td style="padding:7px 10px;text-align:right;">'+pct+'%</td>';
+    tr.innerHTML='<td style="padding:7px 10px;font-weight:700;color:'+VMPAL[mi%12]+';">'+m.label+'</td><td style="padding:7px 10px;text-align:right;font-weight:700;">'+m.total.toFixed(1)+'</td><td style="padding:7px 10px;text-align:right;">'+m.avg.toFixed(1)+'</td><td style="padding:7px 10px;text-align:right;color:var(--solar-vikram);font-weight:600;">'+m.ph1Kwp.toFixed(3)+'</td><td style="padding:7px 10px;text-align:right;color:var(--solar-vikram);font-weight:600;">'+m.ph2Kwp.toFixed(3)+'</td><td style="padding:7px 10px;text-align:right;">'+m.days+'</td><td style="padding:7px 10px;text-align:right;color:'+sGradientColor(0.9)+';font-weight:600;">'+m.best.toFixed(1)+'</td><td style="padding:7px 10px;text-align:right;font-size:0.78rem;color:var(--success);">'+bC+'</td><td style="padding:7px 10px;text-align:right;color:'+sGradientColor(0.08)+';font-weight:600;">'+m.worst.toFixed(1)+'</td><td style="padding:7px 10px;text-align:right;font-size:0.78rem;color:var(--danger);">'+wC+'</td><td style="padding:7px 10px;text-align:right;color:var(--accent);font-weight:600;">'+cumKwh.toFixed(0)+'</td><td style="padding:7px 10px;text-align:right;">'+pct+'%</td>';
     tbody.appendChild(tr);
   });
-  if(tfoot)tfoot.innerHTML='<tr style="background:var(--surface2);font-weight:700;border-top:2px solid var(--border);"><td style="padding:7px 10px;">TOTAL</td><td style="padding:7px 10px;text-align:right;color:var(--solar-vikram);">'+grandTotal.toFixed(1)+'</td><td style="padding:7px 10px;text-align:right;">'+(grandTotal/n).toFixed(1)+'</td><td style="padding:7px 10px;text-align:right;color:var(--solar-vikram);">'+(d.phase1.reduce(function(a,b){return a+b;},0)/VP1).toFixed(3)+'</td><td style="padding:7px 10px;text-align:right;color:var(--solar-vikram);">'+(d.phase2.reduce(function(a,b){return a+b;},0)/VP2).toFixed(3)+'</td><td style="padding:7px 10px;text-align:right;">'+n+'</td><td colspan="5"></td></tr>';
+  if(tfoot)tfoot.innerHTML='<tr style="background:var(--surface2);font-weight:700;border-top:2px solid var(--border);"><td style="padding:7px 10px;">TOTAL</td><td style="padding:7px 10px;text-align:right;color:var(--solar-vikram);">'+grandTotal.toFixed(1)+'</td><td style="padding:7px 10px;text-align:right;">'+(grandTotal/n).toFixed(1)+'</td><td style="padding:7px 10px;text-align:right;color:var(--solar-vikram);">'+(d.phase1.reduce(function(a,b){return a+b;},0)/VP1).toFixed(3)+'</td><td style="padding:7px 10px;text-align:right;color:var(--solar-vikram);">'+(d.phase2.reduce(function(a,b){return a+b;},0)/VP2).toFixed(3)+'</td><td style="padding:7px 10px;text-align:right;">'+n+'</td><td colspan="6"></td></tr>';
   sDestroyChart('vm-b');var vc1=document.getElementById('s-vik-monthly-bar-chart');
   if(vc1){var lbl=monthData.map(function(m){return m.label;});var vls=monthData.map(function(m){return m.total;});var vikKwpVls=monthData.map(function(m){return m.total/(VP1+VP2);});_sMC['vm-b']=new Chart(vc1.getContext('2d'),{type:'bar',data:{labels:lbl,datasets:[{label:'Total kWh',data:vls,backgroundColor:sDailyGradientColors(vls,0.75),borderColor:sDailyGradientColors(vls,1),borderWidth:1.5,borderRadius:5,yAxisID:'y'},{label:'kWh/kWp',data:vikKwpVls,type:'line',borderColor:'#8b5cf6',backgroundColor:'rgba(139,92,246,0.15)',fill:false,tension:0.4,pointRadius:4,pointHoverRadius:6,borderWidth:2.5,yAxisID:'y2'}]},options:{responsive:true,maintainAspectRatio:false,interaction:{mode:'index',intersect:false},plugins:{legend:{display:true,position:'top',labels:{color:tc,font:{size:9},usePointStyle:true,boxWidth:10}}},scales:{x:{ticks:{color:tc,font:{size:9}}},y:{title:{display:true,text:'kWh',color:tc},ticks:{color:tc,font:{size:9}},grid:{color:gc}},y2:{position:'right',title:{display:true,text:'kWh/kWp',color:'#8b5cf6'},ticks:{color:'#8b5cf6',font:{size:9}},grid:{display:false}}}}});}
   sDestroyChart('vm-kwp');var vc1b=document.getElementById('s-vik-monthly-kwp-chart');
@@ -10205,10 +10698,12 @@ function sRenderVikramInvPerf(d,VP1,VP2){
     var ratios=invNames.map(function(_,i){return totals[i]/(invKwp[i]||1);});
     var best=invNames.map(function(_,i){return Math.max.apply(null,perInvArr[i]);});
     var worst=invNames.map(function(_,i){var f=perInvArr[i].filter(function(v){return v>0;});return f.length?Math.min.apply(null,f):null;});
+    var bestDates=invNames.map(function(_,i){var idx=perInvArr[i].indexOf(Math.max.apply(null,perInvArr[i]));return d.dates[idx];});
+    var worstDates=invNames.map(function(_,i){var f=perInvArr[i].filter(function(v){return v>0;});if(!f.length)return null;var wv=Math.min.apply(null,f);var idx=perInvArr[i].indexOf(wv);return d.dates[idx];});
     var sorted=[].concat(invNames.map(function(_,i){return i;})).sort(function(a,b){return ratios[b]-ratios[a];});
     var rankArr=invNames.map(function(_,i){return sorted.indexOf(i)+1;});
     var mn=Math.min.apply(null,ratios),mx=Math.max.apply(null,ratios);
-    invNames.forEach(function(nm,i){var rC=rankArr[i]===1?'#10b981':rankArr[i]===invNames.length?'#ef4444':'var(--text2)';var tr=document.createElement('tr');tr.style.borderBottom='1px solid var(--border)';tr.innerHTML='<td style="padding:6px 10px;font-weight:700;color:'+CHART_COLORS_12[i%12]+';">'+nm+'</td><td style="padding:6px 10px;text-align:right;">'+invKwp[i]+'</td><td style="padding:6px 10px;text-align:right;font-weight:600;">'+totals[i].toFixed(1)+'</td><td style="padding:6px 10px;text-align:right;">'+(totals[i]/n).toFixed(1)+'</td><td style="padding:6px 10px;text-align:right;font-weight:700;color:'+sInvColor(ratios[i],mn,mx)+';">'+ratios[i].toFixed(3)+'</td><td style="padding:6px 10px;text-align:right;color:'+sGradientColor(0.9)+';font-weight:600;">'+best[i].toFixed(1)+'</td><td style="padding:6px 10px;text-align:right;color:'+sGradientColor(0.08)+';font-weight:600;">'+(worst[i]!=null?worst[i].toFixed(1):'--')+'</td><td style="padding:6px 10px;text-align:right;font-weight:800;color:'+rC+';">'+rankArr[i]+'</td>';tbody.appendChild(tr);});
+    invNames.forEach(function(nm,i){var rC=rankArr[i]===1?'#10b981':rankArr[i]===invNames.length?'#ef4444':'var(--text2)';var tr=document.createElement('tr');tr.style.borderBottom='1px solid var(--border)';var bds=bestDates[i]?bestDates[i].toLocaleDateString('en-GB',{day:'2-digit',month:'short',year:'numeric'}):'--';var wds=worstDates[i]?worstDates[i].toLocaleDateString('en-GB',{day:'2-digit',month:'short',year:'numeric'}):'--';tr.innerHTML='<td style="padding:6px 10px;font-weight:700;color:'+CHART_COLORS_12[i%12]+';">'+nm+'</td><td style="padding:6px 10px;text-align:right;">'+invKwp[i]+'</td><td style="padding:6px 10px;text-align:right;font-weight:600;">'+totals[i].toFixed(1)+'</td><td style="padding:6px 10px;text-align:right;">'+(totals[i]/n).toFixed(1)+'</td><td style="padding:6px 10px;text-align:right;font-weight:700;color:'+sInvColor(ratios[i],mn,mx)+';">'+ratios[i].toFixed(3)+'</td><td style="padding:6px 10px;text-align:right;color:'+sGradientColor(0.9)+';font-weight:600;">'+best[i].toFixed(1)+'</td><td style="padding:6px 10px;text-align:right;font-size:0.78rem;color:var(--text2);">'+bds+'</td><td style="padding:6px 10px;text-align:right;color:'+sGradientColor(0.08)+';font-weight:600;">'+(worst[i]!=null?worst[i].toFixed(1):'--')+'</td><td style="padding:6px 10px;text-align:right;font-size:0.78rem;color:var(--text2);">'+wds+'</td><td style="padding:6px 10px;text-align:right;font-weight:800;color:'+rC+';">'+rankArr[i]+'</td>';tbody.appendChild(tr);});
   }
   buildTb('s-vik-inv-perf-tbody-ph1',VIK_PH1_NAMES,VIK_PH1_KWP,d.perInv.ph1);
   buildTb('s-vik-inv-perf-tbody-ph2',VIK_PH2_NAMES,VIK_PH2_KWP,d.perInv.ph2);
@@ -10266,6 +10761,9 @@ function sRenderCompare(){
   const allDates=[...allDatesSet].sort();
   const avoMap=Object.fromEntries(avoDates.map((d,i)=>[d.toISOString().slice(0,10),avoTotals[i]]));
   const vikMap=Object.fromEntries(vikDates.map((d,i)=>[d.toISOString().slice(0,10),vikTotals[i]]));
+  const avoRemarkMap=sAVOData?Object.fromEntries(avoIdxs.map((idx,i)=>[avoDates[i].toISOString().slice(0,10),sAVOData.remarks?.[idx]||''])):{};
+  const vikRemarkMap=sVikramData?Object.fromEntries(vikIdxs.map((idx,i)=>[vikDates[i].toISOString().slice(0,10),sVikramData.remarks?.[idx]||''])):{};
+
   const avoVals=allDates.map(d=>avoMap[d]!=null?(isKwp?+(avoMap[d]/AVO_KWP).toFixed(4):avoMap[d]):null);
   const vikVals=allDates.map(d=>vikMap[d]!=null?(isKwp?+(vikMap[d]/VIK_KWP).toFixed(4):vikMap[d]):null);
   const dailyLabels=allDates.map(d=>{const dt=new Date(d);return dt.toLocaleDateString('en-GB',{day:'2-digit',month:'short'});});
@@ -10280,7 +10778,8 @@ function sRenderCompare(){
     const isStacked=!isLine&&cmpStack==='stacked';
     const avoDs={label:'AVO ('+AVO_KWP.toFixed(0)+' kWp)',data:avoVals,borderColor:avoColor,backgroundColor:isLine?'rgba(16,185,129,0.12)':avoColor+'bb',fill:isLine,tension:0.3,pointRadius:isLine?2:0,pointHoverRadius:5,borderWidth:2,borderRadius:isLine?0:4,type:isLine?'line':'bar',spanGaps:true,yAxisID:'y'};
     const vikDs={label:'Vikram ('+VIK_KWP.toFixed(0)+' kWp)',data:vikVals,borderColor:vikColor,backgroundColor:isLine?'rgba(139,92,246,0.10)':vikColor+'bb',fill:isLine,tension:0.3,pointRadius:isLine?2:0,pointHoverRadius:5,borderWidth:2,borderRadius:isLine?0:4,type:isLine?'line':'bar',spanGaps:true,yAxisID:'y'};
-    _cmpDailyChart=new Chart(dc.getContext('2d'),{type:isLine?'line':'bar',data:{labels:dailyLabels,datasets:[avoDs,vikDs]},options:{responsive:true,maintainAspectRatio:false,animation:{duration:350},interaction:{mode:'index',intersect:false},plugins:{legend:{display:true,position:'top',labels:{color:tc,font:{size:10},usePointStyle:true}},tooltip:{callbacks:{label:c=>c.dataset.label+': '+c.parsed.y.toFixed(isKwp?3:0)+' '+yLabel}}},scales:{x:{stacked:isStacked,ticks:{color:tc,font:{size:8},maxRotation:45},grid:{color:gc}},y:{stacked:isStacked,title:{display:true,text:yLabel,color:tc},ticks:{color:tc,font:{size:9}},grid:{color:gc}}}}});
+    _cmpDailyChart=new Chart(dc.getContext('2d'),{type:isLine?'line':'bar',data:{labels:dailyLabels,datasets:[avoDs,vikDs]},options:{responsive:true,maintainAspectRatio:false,animation:{duration:350},interaction:{mode:'index',intersect:false},plugins:{legend:{display:true,position:'top',labels:{color:tc,font:{size:10},usePointStyle:true}},tooltip:{callbacks:{label:c=>c.dataset.label+': '+c.parsed.y.toFixed(isKwp?3:0)+' '+yLabel,afterBody:items=>{const dateKey=allDates[items[0]?.dataIndex];const ar=avoRemarkMap[dateKey];const vr=vikRemarkMap[dateKey];const lines=[];if(ar)lines.push('AVO Note: '+ar);if(vr)lines.push('Vikram Note: '+vr);return lines;}}}},scales:{x:{stacked:isStacked,ticks:{color:tc,font:{size:8},maxRotation:45},grid:{color:gc}},y:{stacked:isStacked,title:{display:true,text:yLabel,color:tc},ticks:{color:tc,font:{size:9}},grid:{color:gc}}}}});
+    attachChartDragSelect('cmp-daily-chart',()=>_cmpDailyChart,dailyLabels,[avoDs,vikDs],{unit:'auto',floatId:'uds-float-cmp-daily-chart',barGlow:!isLine});
   }
 
   /* ── Monthly comparison ── */
