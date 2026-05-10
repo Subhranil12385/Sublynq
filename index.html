@@ -8798,19 +8798,18 @@ async function dFetchDriveCsv(filename,folderId){
 function dParseCsv(csvText){
   if(!csvText)return[];const lines=csvText.split('\n').filter(l=>l.trim());if(lines.length<2)return[];
   const headers=lines[0].split(',').map(h=>h.trim().replace(/^"|"$/g,''));const rows=[];
-  for(let i=1;i<lines.length;i++){const cells=dSplitCsvLine(lines[i]);if(cells.length<2)continue;const obj={};headers.forEach((h,idx)=>{obj[h]=cells[idx]||'';});const tsKey=headers.find(k=>/timestamp|time|date/i.test(k))||headers[0];obj.ts=obj[tsKey]||cells[0];for(let d=1;d<=4;d++){for(let c=1;c<=8;c++){const patterns=[`Dryer ${d} Chamber ${c}`,`dryer ${d} chamber ${c}`,`D${d}C${c}`,`d${d}c${c}`,`Dryer${d}Ch${c}`];let found=false;for(const pat of patterns){const key=headers.find(k=>k.toLowerCase()===pat.toLowerCase());if(key!==undefined){obj[`d${d}c${c}`]=parseFloat(obj[key])||0;found=true;break;}}if(!found){const idx=1+(d-1)*8+(c-1);obj[`d${d}c${c}`]=parseFloat(cells[idx])||0;}}}  // 🔥 ADD THIS SWAP FOR DRYER 2, CHAMBER 5 AND 6
-    // Swap d2c5 with d2c6
-    const dryer2c5 = obj[`d2c5`];
-    const dryer2c6 = obj[`d2c6`];
-    if(dryer2c5 !== undefined && dryer2c6 !== undefined) {
-      obj[`d2c5`] = dryer2c6;
-      obj[`d2c6`] = dryer2c5;
-    }
+  for(let i=1;i<lines.length;i++){const cells=dSplitCsvLine(lines[i]);if(cells.length<2)continue;const obj={};headers.forEach((h,idx)=>{obj[h]=cells[idx]||'';});const tsKey=headers.find(k=>/timestamp|time|date/i.test(k))||headers[0];obj.ts=obj[tsKey]||cells[0];for(let d=1;d<=4;d++){for(let c=1;c<=8;c++){const patterns=[`Dryer ${d} Chamber ${c}`,`dryer ${d} chamber ${c}`,`D${d}C${c}`,`d${d}c${c}`,`Dryer${d}Ch${c}`];let found=false;for(const pat of patterns){const key=headers.find(k=>k.toLowerCase()===pat.toLowerCase());if(key!==undefined){obj[`d${d}c${c}`]=parseFloat(obj[key])||0;found=true;break;}}if(!found){const idx=1+(d-1)*8+(c-1);obj[`d${d}c${c}`]=parseFloat(cells[idx])||0;}}}  
+
+
+
     
     rows.push(obj); 
   } 
   return rows;
 }
+
+
+
 function dSplitCsvLine(line){const result=[];let cur='';let inQ=false;for(let i=0;i<line.length;i++){const ch=line[i];if(ch==='"'){inQ=!inQ;}else if(ch===','&&!inQ){result.push(cur.trim().replace(/^"|"$/g,''));cur='';}else{cur+=ch;}}result.push(cur.trim().replace(/^"|"$/g,''));return result;}
 async function dLoadDataRange(startDt, endDt, bg){
   if(!bg)dDeactivateLive(); // stop live when user loads archive data
