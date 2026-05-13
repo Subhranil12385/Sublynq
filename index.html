@@ -11114,14 +11114,14 @@ function sRehydrateVikram(rows){
     
     // Date object from GAS
     if (dateValue instanceof Date) {
-      dt = new Date(dateValue.getFullYear(), dateValue.getMonth(), dateValue.getDate());
+      dt = new Date(Date.UTC(dateValue.getFullYear(), dateValue.getMonth(), dateValue.getDate()));
       console.log('Parsed as Date object:', dt);
     }
     // String in DD/MM/YYYY format
     else if (typeof dateValue === 'string' && dateValue.match(/\d{1,2}\/\d{1,2}\/\d{4}/)) {
       const parts = dateValue.match(/(\d{1,2})\/(\d{1,2})\/(\d{4})/);
       if (parts) {
-        dt = new Date(parseInt(parts[3]), parseInt(parts[2]) - 1, parseInt(parts[1]));
+        dt = new Date(Date.UTC(parseInt(parts[3]), parseInt(parts[2]) - 1, parseInt(parts[1])));
         console.log('Parsed as DD/MM/YYYY:', dt);
       }
     }
@@ -11129,13 +11129,14 @@ function sRehydrateVikram(rows){
     else if (typeof dateValue === 'string' && dateValue.match(/\d{4}-\d{2}-\d{2}/)) {
       const parts = dateValue.match(/(\d{4})-(\d{2})-(\d{2})/);
       if (parts) {
-        dt = new Date(parseInt(parts[1]), parseInt(parts[2]) - 1, parseInt(parts[3]));
+        dt = new Date(Date.UTC(parseInt(parts[1]), parseInt(parts[2]) - 1, parseInt(parts[3])));
         console.log('Parsed as ISO:', dt);
       }
     }
     // Excel serial number
     else if (typeof dateValue === 'number' && dateValue > 40000) {
-      dt = new Date((dateValue - 25569) * 86400000);
+      const excelDate = new Date((dateValue - 25569) * 86400000);
+      dt = new Date(Date.UTC(excelDate.getUTCFullYear(), excelDate.getUTCMonth(), excelDate.getUTCDate()));
       console.log('Parsed as Excel serial:', dt);
     }
     
