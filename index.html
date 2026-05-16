@@ -1614,6 +1614,12 @@ body.dark .dur-success{color:#34d399;} body.dark .dur-warning{color:#fbbf24;} bo
 .dryer-bar-card h4{font-size:0.82rem;font-weight:700;margin-bottom:12px;color:var(--text);}
 .dryer-bar-wrap{position:relative;height:200px;}
 .dryer-chambers{display:flex;flex-wrap:wrap;gap:8px;}
+.dryer-live-tile{border-radius:10px;padding:10px 12px;text-align:center;border:2px solid;transition:all 0.4s;min-width:100px;}
+.dryer-live-tile .dlt-name{font-size:0.7rem;font-weight:700;letter-spacing:1px;text-transform:uppercase;opacity:0.75;margin-bottom:4px;}
+.dryer-live-tile .dlt-val{font-size:1.5rem;font-weight:800;font-family:'JetBrains Mono',monospace;line-height:1;}
+.dryer-live-tile .dlt-status{font-size:0.62rem;font-weight:700;margin-top:3px;letter-spacing:0.5px;}
+.dryer-live-tile.dlt-offline{opacity:0.55;filter:grayscale(0.6);}
+
 .chamber-tag{padding:6px 12px;border-radius:8px;font-size:0.76rem;font-weight:700;cursor:pointer;transition:all 0.25s;font-family:'JetBrains Mono',monospace;}
 .chamber-tag.off{opacity:0.3;}
 .dryer-summary-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:14px;margin-top:14px;}
@@ -3100,8 +3106,12 @@ body.holo2 .holo-reveal-progress-fill{background:linear-gradient(90deg,transpare
       <div class="dryer-chambers" id="d-chamberSel"></div>
     </div>
   </div>
-  <div class="card" style="margin-bottom:14px;">
-    <div class="card-title">📈 Temperature Trend</div>
+  <!-- LIVE CHAMBER STATUS GRID -->
+  <div class="card" id="d-live-chamber-card" style="margin-bottom:14px;display:none;">
+    <div class="card-title">🔴 Live Chamber Status — <span id="d-live-chamber-dryer-label">Dryer 1</span></div>
+    <div id="d-live-chamber-grid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(120px,1fr));gap:10px;margin-top:10px;"></div>
+    <div style="margin-top:10px;font-size:0.72rem;color:var(--text3);">Auto-refreshes with live data. <span style="color:var(--danger);">● Offline</span> = no update for 2+ min. Tap a dryer above to switch.</div>
+  </div>
     <div style="display:flex;gap:12px;flex-wrap:wrap;margin-bottom:10px;">
       <label class="chk-label"><input type="checkbox" id="d-hideZero" checked onchange="dRenderChart();dUpdateKPIStats();dRenderBars();dRenderSummary();"> Hide 0°C (offline) readings</label>
       <label class="chk-label"><input type="checkbox" id="d-joinGaps" checked onchange="dRenderChart()"> Join gaps</label>
@@ -3235,15 +3245,17 @@ body.holo2 .holo-reveal-progress-fill{background:linear-gradient(90deg,transpare
           <div>
             <div class="upload-zone" id="s-avo-dropzone" onclick="document.getElementById('s-avo-file').click()">
               <div class="icon">📊</div>
-              <p>Drop AVO Solar Excel file here<br>or click to browse</p>
-              <div class="sub">Accepts: AVO_Solar_daily_generation*.xlsx</div>
+              <p>Drop one or more Output_Active_Power CSVs here<br>or click to browse — <strong>multiple files supported</strong></p>
+              <div class="sub">Accepts: Output_Active_Power*.csv (multiple days) · AVO_Solar_daily_generation*.xlsx</div>
             </div>
-            <input type="file" id="s-avo-file" accept=".xlsx,.xlsm,.xls" style="display:none;" onchange="sLoadAVOFile(this)">
+            <input type="file" id="s-avo-file" accept=".xlsx,.xlsm,.xls,.csv" style="display:none;" multiple onchange="sLoadAVOFile(this)">
             <div id="s-avo-upload-status" style="margin-top:8px;font-size:0.82rem;color:var(--text3);"></div>
+            <div id="s-avo-upload-progress" style="margin-top:4px;font-size:0.78rem;color:var(--text3);display:none;"></div>
           </div>
           <div style="display:flex;flex-direction:column;gap:10px;justify-content:center;min-width:180px;">
             <button class="btn btn-avo" onclick="sSaveToDrive('avo')" id="s-avo-save-btn" disabled>💾 Save to Drive</button>
             <button class="btn btn-secondary" onclick="sLoadFromDrive('avo')">📥 Load from Drive</button>
+            <button class="btn btn-secondary" onclick="sLoadHourlyFromDrive(false)" style="border-color:var(--solar-avo);color:var(--solar-avo);">🔄 Refresh Data</button>
             <div id="s-avo-drive-status" style="font-size:0.76rem;color:var(--text3);"></div>
           </div>
         </div>
@@ -3279,6 +3291,55 @@ body.holo2 .holo-reveal-progress-fill{background:linear-gradient(90deg,transpare
       </div>
       <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px;" id="s-avo-inv-toggles"></div>
       <div class="chart-wrap chart-wrap-tall"><canvas id="s-avo-inv-chart"></canvas></div>
+    </div>
+
+    <!-- Hourly Power Chart (shown only when CSV uploaded) -->
+    <div class="card upload-collapsible" style="margin-bottom:14px;" id="s-avo-hourly-card">
+      <button class="upload-toggle-btn" onclick="toggleUpload('s-avo-hourly-card')" style="font-size:0.92rem;font-weight:700;">
+        <span class="toggle-icon">▶</span>
+        <span style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
+          <span>⚡ Hourly Generation (kWh per <span id="s-avo-hourly-interval-label">60 min</span>)</span>
+          <span id="s-avo-hourly-date-label" style="color:var(--solar-avo);font-size:0.82rem;font-weight:600;"></span>
+          <span id="s-avo-hourly-status-badge" style="font-size:0.72rem;color:var(--text3);font-weight:400;"></span>
+        </span>
+      </button>
+      <div class="upload-body">
+        <div style="display:flex;gap:6px;flex-wrap:wrap;align-items:center;margin-bottom:10px;margin-top:4px;">
+          <!-- Single date picker -->
+          <div style="display:flex;align-items:center;gap:4px;background:var(--surface2);border:1.5px solid var(--border);border-radius:9px;padding:2px 8px;">
+            <span style="font-size:0.75rem;color:var(--text3);">📅</span>
+            <input type="text" id="s-avo-hourly-daterange" placeholder="All dates" readonly
+              style="border:none;background:transparent;color:var(--text);font-size:0.8rem;font-family:'Space Grotesk',sans-serif;cursor:pointer;min-width:140px;outline:none;">
+            <button onclick="sAVOHourlyDateClear()" title="Clear date filter"
+              style="border:none;background:transparent;color:var(--text3);cursor:pointer;font-size:0.9rem;padding:0 2px;line-height:1;">✕</button>
+          </div>
+          <div class="chart-type-toggle"><button id="s-avo-hr-ctLine" class="active" onclick="sAVOHourlySetChartType('line')">↗ Line</button><button id="s-avo-hr-ctBar" onclick="sAVOHourlySetChartType('bar')">▐ Bar</button></div>
+          <div class="chart-type-toggle"><button id="s-avo-hr-modeKw" class="active" onclick="sAVOHourlySetMode('kw')">kWh</button><button id="s-avo-hr-modeKwp" onclick="sAVOHourlySetMode('kwp')">kWh/kWp</button></div>
+          <div class="chart-type-toggle"><button id="s-avo-hr-viewSep" class="active" onclick="sAVOHourlySetView('separate')">Separate</button><button id="s-avo-hr-viewComb" onclick="sAVOHourlySetView('combined')">Combined</button></div>
+          <div class="chart-type-toggle"><button id="s-avo-hr-modeDelta" class="active" onclick="sAVOHourlySetCumulative(false)">Delta</button><button id="s-avo-hr-modeCum" onclick="sAVOHourlySetCumulative(true)">Cumulative</button></div>
+          <button class="btn btn-secondary btn-sm" id="s-avo-hr-join-btn" onclick="sAVOHourlyToggleJoin()" style="font-size:0.75rem;padding:4px 10px;">🔗 Join gaps</button>
+        </div>
+        <!-- Interval row — collapsible pill -->
+        <div style="margin:6px 0 4px 0;">
+          <button id="s-avo-hr-interval-toggle" onclick="(function(){var p=document.getElementById('s-avo-hr-interval-panel');var open=p.style.display!=='none';p.style.display=open?'none':'flex';var btn=document.getElementById('s-avo-hr-interval-toggle');btn.style.background=open?'':'var(--accent)';btn.style.color=open?'':'#fff';btn.style.borderColor=open?'var(--border)':'var(--accent)';})()" style="display:inline-flex;align-items:center;gap:6px;padding:4px 12px;border-radius:20px;border:1.5px solid var(--border);background:var(--surface2);color:var(--text2);font-size:0.78rem;font-weight:600;cursor:pointer;transition:all 0.2s;">
+            <span>⏱</span><span>Interval: <span id="s-avo-hr-interval-pill-label">60 min</span></span><span style="font-size:0.65rem;opacity:0.6;">▼</span>
+          </button>
+          <div id="s-avo-hr-interval-panel" style="display:none;align-items:center;gap:6px;flex-wrap:wrap;margin-top:6px;padding:6px 10px;background:var(--surface2);border-radius:10px;border:1px solid var(--border);animation:fadeIn 0.15s ease;">
+            <div class="chart-type-toggle" style="flex-shrink:0;">
+              <button class="s-avo-hr-interval-btn"        data-min="2"  onclick="sAVOHourlySetInterval(2)">2 min</button>
+              <button class="s-avo-hr-interval-btn"        data-min="5"  onclick="sAVOHourlySetInterval(5)">5 min</button>
+              <button class="s-avo-hr-interval-btn"        data-min="10" onclick="sAVOHourlySetInterval(10)">10 min</button>
+              <button class="s-avo-hr-interval-btn"        data-min="15" onclick="sAVOHourlySetInterval(15)">15 min</button>
+              <button class="s-avo-hr-interval-btn"        data-min="20" onclick="sAVOHourlySetInterval(20)">20 min</button>
+              <button class="s-avo-hr-interval-btn"        data-min="30" onclick="sAVOHourlySetInterval(30)">30 min</button>
+              <button class="s-avo-hr-interval-btn active" data-min="60" onclick="sAVOHourlySetInterval(60)">60 min</button>
+            </div>
+          </div>
+        </div>
+        <div id="s-avo-hourly-loading" style="display:none;padding:18px 0;text-align:center;font-size:0.82rem;color:var(--text3);">⏳ Loading data from Drive…</div>
+        <div style="display:flex;gap:6px;flex-wrap:wrap;margin:8px 0;" id="s-avo-hourly-inv-toggles"></div>
+        <div class="chart-wrap chart-wrap-tall"><canvas id="s-avo-hourly-chart"></canvas></div>
+      </div>
     </div>
 
     <!-- Inverter KPI cards -->
@@ -7280,7 +7341,7 @@ function emsLoadFromGSheet(){ emsV2ScanFolder(); }
    fixed dryer GAS endpoint bug, fixed GAS Apps Script.
 ═══════════════════════════════════════════════════ */
 
-const GAS_URL = 'https://script.google.com/macros/s/AKfycbwTjlAIapKrqf78dGs6za7H6pq0BpZHw15GQilcUKNq41G2t746h3ch-y4MDuPU_imr/exec';
+const GAS_URL = 'https://script.google.com/macros/s/AKfycbz2UmRihP8Y7U_jIkSF5mevdIPc2BwFWBZxx7vLNHM021vGc5rSgsFskiE2ezJu8Ubt/exec';
 // Hardcoded EMS GSheet ID (Apr 2026 and future months stored here)
 const EMS_HARDCODED_SHEET_ID = '1BU16QT-Qef5yFy1jm2Do0z8LFs8enHV4xZDcVego5cQ';
 // Helper: extract just the sheet ID from a URL or raw ID
@@ -8476,9 +8537,9 @@ async function rFetchLive(silent){
     if(!rAllData.length){if(!silent)rShowError('No data for today yet.');if(!silent)hideLoader();return;}
     rAllData.sort((a,b)=>(parseTS(String(a[0]))||0)-(parseTS(String(b[0]))||0));
     rUpdateStatus();rRender();
-    const now=new Date().toLocaleTimeString();
-    document.getElementById('r-lastUpdate').textContent=new Date(rAllData[rAllData.length-1][0]).toLocaleString();
-    _setLiveBar('r',true,now);
+    const rLastTs=parseTS(String(rAllData[rAllData.length-1][0]));
+    document.getElementById('r-lastUpdate').textContent=rLastTs?rLastTs.toLocaleString():new Date().toLocaleString();
+    _setLiveBar('r',true,rLastTs?rLastTs.toLocaleTimeString():new Date().toLocaleTimeString());
   }catch(e){rHideError();if(!silent){rShowError('Live fetch error: '+e.message);}}
   if(!silent)hideLoader();
 }
@@ -8547,6 +8608,12 @@ async function ppFetchLive(silent){
 }
 function ppDeactivateLiveMode(){if(ppLiveActive){ppStopLive();}}
 
+// ── DRYER HELPERS ──
+function dGetHideZero(){
+  const el=document.getElementById('d-hideZero');
+  return el?el.checked:true;
+}
+
 // ── DRYER LIVE ──
 let dLiveActive=false, dLiveInterval=null;
 function dQDToday(){
@@ -8601,9 +8668,9 @@ async function dFetchLive(silent){
     const last=dAllData[dAllData.length-1];const lastTs=parseTS(String(last.ts));
     if(lastTs){document.getElementById('d-lastUpdate').textContent=lastTs.toLocaleString();dCheckDryerStatus(lastTs);}
     if(dAllData.length>=2){const t1=parseTS(String(dAllData[0].ts)),t2=parseTS(String(last.ts));if(t1&&t2)document.getElementById('d-timeRange').textContent=((t2-t1)/3600000).toFixed(1)+'h';}
-    dRenderChart();dRenderBars();dRenderSummary();dRenderThreshold();dUpdateKPIStats();
-    const now=new Date().toLocaleTimeString();
-    _setLiveBar('d',true,now);
+    dRenderChart();dRenderBars();dRenderSummary();dRenderThreshold();dUpdateKPIStats();dRenderLiveChambers();
+    const lastUpdatedStr=lastTs?lastTs.toLocaleTimeString():new Date().toLocaleTimeString();
+    _setLiveBar('d',true,lastUpdatedStr);
   }catch(e){console.error('Dryer live error:',e);if(!silent){document.getElementById('d-error').textContent='Live error: '+e.message;document.getElementById('d-error').style.display='block';}}
   if(!silent)hideLoader();
 }
@@ -8768,7 +8835,7 @@ let dChart=null,dAllData=[],dCurrentDryer=1,dActiveChambers={},dFp=null,dBarChar
 const D_NUM_DRYERS=4,D_NUM_CHAMBERS=8;
 const D_DRIVE_FOLDER_2026='1G6ZyKmXADZaOrDZ2AJhhC7HuPTC4n4xR';
 const D_MONTH_NAMES=['January','February','March','April','May','June','July','August','September','October','November','December'];
-const D_COLORS=['#ff0000','#0055ff','#ff8800','#00cc00','#00ffff','#ff00ff','#888888','#888888','#ff0000','#0055ff','#ff8800','#00cc00','#00ffff','#ff00ff','#888888','#888888','#ff0000','#0055ff','#ff8800','#00cc00','#00ffff','#ff00ff','#888888','#888888','#ff0000','#0055ff','#ff8800','#00cc00','#00ffff','#ff00ff','#888888','#888888'];
+const D_COLORS=['#ef4444','#3b82f6','#f97316','#22c55e','#06b6d4','#d946ef','#6b7280','#9ca3af','#ef4444','#3b82f6','#f97316','#22c55e','#06b6d4','#d946ef','#6b7280','#9ca3af','#ef4444','#3b82f6','#f97316','#22c55e','#06b6d4','#d946ef','#6b7280','#9ca3af','#ef4444','#3b82f6','#f97316','#22c55e','#06b6d4','#d946ef','#6b7280','#9ca3af'];
 
 function dInit(){
   dFp=flatpickr('#d-dateRange',{mode:'range',dateFormat:'d/m/Y',defaultDate:[new Date(),new Date()],maxDate:new Date(),onReady:function(_,__,fp){if(document.body.classList.contains('holo'))fp.calendarContainer&&fp.calendarContainer.classList.add('holo-fp');}});
@@ -8776,7 +8843,7 @@ function dInit(){
   dQDToday(); // auto-start live on first open
 }
 function dBuildDryerSelector(){const sel=document.getElementById('d-dryerSel');sel.innerHTML='';for(let i=1;i<=D_NUM_DRYERS;i++){const b=document.createElement('button');b.id=`d-dryerBtn${i}`;b.className='dryer-btn'+(i===dCurrentDryer?' active':'');b.textContent=`Dryer ${i}`;b.onclick=(()=>{const n=i;return()=>dSelectDryer(n);})();sel.appendChild(b);}}
-function dSelectDryer(n){dCurrentDryer=n;document.querySelectorAll('.dryer-btn').forEach((b,i)=>b.classList.toggle('active',i===n-1));dBuildChamberSelector();dRenderChart();dRenderBars();dUpdateKPIStats();}
+function dSelectDryer(n){dCurrentDryer=n;document.querySelectorAll('.dryer-btn').forEach((b,i)=>b.classList.toggle('active',i===n-1));dBuildChamberSelector();dRenderChart();dRenderBars();dUpdateKPIStats();dRenderLiveChambers();}
 function dBuildChamberSelector(){const sel=document.getElementById('d-chamberSel');sel.innerHTML='';for(let c=1;c<=D_NUM_CHAMBERS;c++){const idx=(dCurrentDryer-1)*D_NUM_CHAMBERS+(c-1);const color=D_COLORS[idx%D_COLORS.length];if(dActiveChambers[`${dCurrentDryer}_${c}`]===undefined)dActiveChambers[`${dCurrentDryer}_${c}`]=true;const tag=document.createElement('div');tag.className='chamber-tag '+(dActiveChambers[`${dCurrentDryer}_${c}`]?'on':'off');tag.style.background=color+'22';tag.style.border=`2px solid ${color}`;tag.style.color=color;tag.textContent=`Ch ${c}`;tag.onclick=(()=>{const k=`${dCurrentDryer}_${c}`;return()=>{dActiveChambers[k]=!dActiveChambers[k];dBuildChamberSelector();dRenderChart();dUpdateKPIStats();};})();sel.appendChild(tag);}}
 function dSelectAllChambers(){for(let c=1;c<=D_NUM_CHAMBERS;c++)dActiveChambers[`${dCurrentDryer}_${c}`]=true;dBuildChamberSelector();dRenderChart();dUpdateKPIStats();}
 function dClearChambers(){for(let c=1;c<=D_NUM_CHAMBERS;c++)dActiveChambers[`${dCurrentDryer}_${c}`]=false;dBuildChamberSelector();dRenderChart();dUpdateKPIStats();}
@@ -8882,7 +8949,7 @@ async function dLoadDataRange(startDt, endDt, bg){
     dAllData.sort((a,b)=>(parseTS(String(a.ts))||0)-(parseTS(String(b.ts))||0));
     const last=dAllData[dAllData.length-1];const lastTs=parseTS(String(last.ts));if(lastTs){document.getElementById('d-lastUpdate').textContent=lastTs.toLocaleString();dCheckDryerStatus(lastTs);}
     if(dAllData.length>=2){const t1=parseTS(String(dAllData[0].ts)),t2=parseTS(String(dAllData[dAllData.length-1].ts));if(t1&&t2)document.getElementById('d-timeRange').textContent=((t2-t1)/3600000).toFixed(1)+'h';}
-    dRenderChart();dRenderBars();dRenderSummary();dRenderThreshold();dUpdateKPIStats();
+    dRenderChart();dRenderBars();dRenderSummary();dRenderThreshold();dUpdateKPIStats();dRenderLiveChambers();
   }catch(e){console.error('Dryer error',e);if(!bg){document.getElementById('d-error').textContent='Error loading dryer data: '+e.message;document.getElementById('d-error').style.display='block';}}
   if(!bg)hideLoader();
 }
@@ -8930,7 +8997,48 @@ function dCheckDryerStatus(lastTs){
     }
   }
 }
-function dGetHideZero(){return document.getElementById('d-hideZero')?document.getElementById('d-hideZero').checked:true;}
+
+// Chamber colours matching graph: Ch1=red, Ch2=blue, Ch3=orange, Ch4=green, Ch5=cyan, Ch6=magenta, Ch7/Ch8=grey
+const D_CHAMBER_COLORS_LIVE=['#ef4444','#3b82f6','#f97316','#22c55e','#06b6d4','#d946ef','#6b7280','#6b7280'];
+
+function dRenderLiveChambers(){
+  if(!dLiveActive||!dAllData.length) {
+    const card=document.getElementById('d-live-chamber-card');
+    if(card)card.style.display='none';
+    return;
+  }
+  const card=document.getElementById('d-live-chamber-card');
+  const grid=document.getElementById('d-live-chamber-grid');
+  const lbl=document.getElementById('d-live-chamber-dryer-label');
+  if(!card||!grid)return;
+  card.style.display='';
+  if(lbl)lbl.textContent=`Dryer ${dCurrentDryer}`;
+
+  const last=dAllData[dAllData.length-1];
+  const lastTs=parseTS(String(last.ts));
+  const nowMs=Date.now();
+  const OFFLINE_MS=2*60*1000; // 2 minutes
+
+  grid.innerHTML='';
+  for(let c=1;c<=D_NUM_CHAMBERS;c++){
+    const color=D_CHAMBER_COLORS_LIVE[c-1];
+    const v=last[`d${dCurrentDryer}c${c}`];
+    const hasVal=v!==undefined&&v!==null&&v!==0&&!isNaN(v);
+    // Determine offline: last timestamp older than 2min, or value is 0/missing
+    const ageMs=lastTs?nowMs-lastTs.getTime():OFFLINE_MS+1;
+    const isOff=!hasVal||(ageMs>OFFLINE_MS);
+    const tile=document.createElement('div');
+    tile.className='dryer-live-tile'+(isOff?' dlt-offline':'');
+    tile.style.borderColor=color;
+    tile.style.background=color+'18';
+    tile.style.color=color;
+    tile.innerHTML=`<div class="dlt-name">CH ${c}</div>`+
+      `<div class="dlt-val">${hasVal&&!isOff?v.toFixed(1):'—'}${hasVal&&!isOff?'<span style="font-size:0.7rem">°C</span>':''}</div>`+
+      `<div class="dlt-status">${isOff?'<span style="color:#ef4444;">● OFFLINE</span>':'<span style="color:#22c55e;">● LIVE</span>'}</div>`;
+    grid.appendChild(tile);
+  }
+}
+
 function dUpdateKPIStats(){
   if(!dAllData.length)return;
   const hideZero=dGetHideZero();
@@ -9819,6 +9927,8 @@ function sInit(){
   // Try loading from Drive on init
   sLoadFromDrive('avo');
   sLoadFromDrive('vikram');
+  // Only auto-load hourly if not already loaded by the early background call
+  if(!sAVOHourlyRawData) sLoadHourlyFromDrive(false);
 }
 
 function setupDropZone(zoneId, inputId){
@@ -9827,7 +9937,13 @@ function setupDropZone(zoneId, inputId){
   if(!zone||!input) return;
   zone.addEventListener('dragover',e=>{e.preventDefault();zone.classList.add('dragover');});
   zone.addEventListener('dragleave',()=>zone.classList.remove('dragover'));
-  zone.addEventListener('drop',e=>{e.preventDefault();zone.classList.remove('dragover');const files=e.dataTransfer.files;if(files.length){input.files=files;input.dispatchEvent(new Event('change'));}});
+  zone.addEventListener('drop',e=>{e.preventDefault();zone.classList.remove('dragover');const files=e.dataTransfer.files;if(files.length){
+    // DataTransfer.files is read-only — assign via a new FileList trick or handle directly
+    const dt = new DataTransfer();
+    for(const f of files) dt.items.add(f);
+    input.files = dt.files;
+    input.dispatchEvent(new Event('change'));
+  }});
 }
 
 function sSwitchTab(tab){
@@ -9853,26 +9969,187 @@ function sShowDriveConfig(){ /* No-op: folder IDs are hardcoded */ }
 function sSaveDriveConfig(){ /* No-op: folder IDs are hardcoded */ }
 
 /* ── AVO Excel parsing ── */
-function sLoadAVOFile(input){
-  const file=input.files[0];if(!file)return;
-  document.getElementById('s-avo-upload-status').textContent='Parsing Excel…';
-  const reader=new FileReader();
-  reader.onload=e=>{
+// ── Parse Output_Active_Power CSV (power kWp, minutewise) ──────────────────
+// Filename: Output_Active_Power__10_May_2026__12_00_00_AM_-_10_May_2026__11_59_59_PM_.csv
+// Header:  Timestamp, 5 Solis 125-KW-INV5-Output Active Power-kWp, ...
+function sParseOutputActivePowerCSV(text, filename){
+  const lines = text.trim().split('\n').filter(l=>l.trim());
+  if(lines.length < 2) throw new Error('CSV appears empty: '+filename);
+  const header = lines[0].split(',').map(s=>s.trim());
+  const invCols = header.slice(1);
+
+  // Extract inverter names: "5 Solis 125-KW-INV5-Output Active Power-kWp" → "INV-5"
+  const inverterNames = invCols.map(h=>{
+    const m = h.match(/INV(\d+)/i);
+    return m ? `INV-${m[1]}` : h.replace(/-(Output|Daily).*$/i,'').trim();
+  });
+
+  const rawRows = [];
+  const dateSet = new Set();
+  for(let i=1;i<lines.length;i++){
+    const cols = lines[i].split(',').map(s=>s.trim());
+    if(!cols[0]) continue;
+    // Format: "10/05/2026 19:03:00"
+    const m = cols[0].match(/(\d{2})\/(\d{2})\/(\d{4})\s+(\d{2}):(\d{2}):(\d{2})/);
+    if(!m) continue;
+    const ts = new Date(+m[3], +m[2]-1, +m[1], +m[4], +m[5], +m[6]);
+    const dateKey = `${m[3]}-${m[2]}-${m[1]}`; // YYYY-MM-DD
+    dateSet.add(dateKey);
+    const vals = invCols.map((_,j)=>{
+      const v = cols[j+1];
+      if(!v||v==='-'||v.trim()==='-') return null;
+      const n = parseFloat(v);
+      return isNaN(n)?null:n;
+    });
+    rawRows.push({ts, vals});
+  }
+  rawRows.sort((a,b)=>a.ts-b.ts);
+  // Extract date from filename as canonical date
+  const fnMatch = filename.match(/__(\d{1,2})_([A-Za-z]+)_(\d{4})__/);
+  const months = {Jan:1,Feb:2,Mar:3,Apr:4,May:5,Jun:6,Jul:7,Aug:8,Sep:9,Oct:10,Nov:11,Dec:12};
+  let canonicalDate = [...dateSet][0] || null;
+  if(fnMatch){
+    const d=fnMatch[1].padStart(2,'0'), mo=String(months[fnMatch[2]]||1).padStart(2,'0'), yr=fnMatch[3];
+    canonicalDate = `${yr}-${mo}-${d}`;
+  }
+  return { rawRows, inverterNames, nInv:invCols.length, date:canonicalDate, dates:[...dateSet], isActivePower:true };
+}
+
+// ── Multi-file loader ───────────────────────────────────────────────────────
+async function sLoadAVOFile(input){
+  const files = Array.from(input.files||[]);
+  if(!files.length) return;
+
+  const statusEl = document.getElementById('s-avo-upload-status');
+  const progressEl = document.getElementById('s-avo-upload-progress');
+  if(progressEl) progressEl.style.display='';
+
+  // Separate CSV vs Excel
+  const csvFiles  = files.filter(f=>f.name.toLowerCase().endsWith('.csv'));
+  const xlsxFiles = files.filter(f=>!f.name.toLowerCase().endsWith('.csv'));
+
+  // ── Handle multiple CSVs (Output_Active_Power per-day files) ──
+  if(csvFiles.length > 0){
+    if(statusEl) statusEl.textContent = `⏳ Reading ${csvFiles.length} CSV file(s)…`;
+    const parsedDays = []; // [{date, rawRows, inverterNames, nInv}, ...]
+    let done = 0;
+
+    await Promise.all(csvFiles.map(file => new Promise((resolve)=>{
+      const reader = new FileReader();
+      reader.onload = e=>{
+        try{
+          const parsed = sParseOutputActivePowerCSV(e.target.result, file.name);
+          parsedDays.push(parsed);
+        }catch(err){ console.warn('Parse error for '+file.name, err); }
+        done++;
+        if(progressEl) progressEl.textContent = `Parsed ${done}/${csvFiles.length} files…`;
+        resolve();
+      };
+      reader.readAsText(file);
+    })));
+
+    // Sort by date
+    parsedDays.sort((a,b)=>(a.date||'').localeCompare(b.date||''));
+
+    if(!parsedDays.length){
+      if(statusEl) statusEl.textContent='❌ No valid CSV data found.';
+      return;
+    }
+
+    // Merge all days into sAVOHourlyRawData (combined for chart)
+    const merged = sMergeMultiDayParsed(parsedDays);
+    sAVOHourlyRawData = merged;
+
+    if(statusEl) statusEl.textContent =
+      `✅ Loaded ${parsedDays.length} day(s) — ${merged.rawRows.length} rows total · saving to Drive…`;
+    document.getElementById('s-avo-save-btn').disabled = false;
+    sRenderAVOHourly();
+
+    // Save each day as a SEPARATE sheet in Drive
+    if(progressEl) progressEl.textContent = `Saving ${parsedDays.length} day(s) to Drive…`;
+    const saveResults = await sSaveMultiDaysToDrive(parsedDays);
+    const saved = saveResults.filter(r=>r.ok).length;
+    const failed = saveResults.filter(r=>!r.ok).length;
+    if(statusEl) statusEl.textContent =
+      `✅ ${parsedDays.length} day(s) loaded · ${saved} saved to Drive${failed?` · ❌ ${failed} failed`:''}`;
+    if(progressEl) progressEl.style.display='none';
+    return;
+  }
+
+  // ── Handle single Excel ──
+  if(xlsxFiles.length > 0){
+    const file = xlsxFiles[0];
+    if(statusEl) statusEl.textContent='Parsing Excel…';
+    const reader = new FileReader();
+    reader.onload=e=>{
+      try{
+        const wb=XLSX.read(new Uint8Array(e.target.result),{type:'array',cellDates:true});
+        const vertSheet = wb.SheetNames.find(n=>n.includes('Vertical')||n.includes('vert')) || wb.SheetNames[2];
+        const dailySheet = wb.SheetNames.find(n=>n.includes('Daily')||n.includes('daily')) || wb.SheetNames[1];
+        const dws = wb.Sheets[dailySheet];
+        const dArr = XLSX.utils.sheet_to_json(dws, {header:1, defval:0});
+        const vws = wb.Sheets[vertSheet];
+        const vArr = XLSX.utils.sheet_to_json(vws, {header:1, defval:0});
+        sAVOData = sParseAVOData(dArr, vArr);
+        if(statusEl) statusEl.textContent=`✅ Parsed ${sAVOData.dates.length} days, ${sAVOData.inverterNames.length} inverters`;
+        document.getElementById('s-avo-save-btn').disabled=false;
+        sRenderAVO();
+      }catch(err){console.error('AVO parse error',err);if(statusEl) statusEl.textContent='❌ '+err.message;}
+    };
+    reader.readAsArrayBuffer(file);
+  }
+}
+
+// Merge multiple per-day parsed objects into a single sAVOHourlyRawData structure
+function sMergeMultiDayParsed(parsedDays){
+  if(!parsedDays.length) return null;
+  const first = parsedDays[0];
+  const inverterNames = first.inverterNames;
+  const nInv = first.nInv;
+  const inverterKwp = inverterNames.map((_,i)=>{ const n=parseInt((inverterNames[i].match(/\d+/)||[i+1])[0]); return AVO_INV_KWP[n-1]||AVO_INV_KWP[i]||171; });
+  const allRawRows = [];
+  const dateSet = new Set();
+  for(const day of parsedDays){
+    for(const r of day.rawRows) allRawRows.push(r);
+    for(const d of day.dates) dateSet.add(d);
+  }
+  allRawRows.sort((a,b)=>a.ts-b.ts);
+  const bucketed = sAVOBucketRawRows(allRawRows, nInv, sAVOHourlyInterval, false);
+  return { rawRows:allRawRows, inverterNames, inverterKwp, nInv, dates:[...dateSet].sort(), isCumulative:true, isActivePower:false, ...bucketed };
+}
+
+// Save each day as a separate GSheet tab in its own per-day file
+// Sheet name: AVO_Power_YYYY_MM_DD  (one file per day in SOLAR_FOLDER)
+async function sSaveMultiDaysToDrive(parsedDays){
+  const results = [];
+  for(const day of parsedDays){
     try{
-      const wb=XLSX.read(new Uint8Array(e.target.result),{type:'array',cellDates:true});
-      const vertSheet = wb.SheetNames.find(n=>n.includes('Vertical')||n.includes('vert')) || wb.SheetNames[2];
-      const dailySheet = wb.SheetNames.find(n=>n.includes('Daily')||n.includes('daily')) || wb.SheetNames[1];
-      const dws = wb.Sheets[dailySheet];
-      const dArr = XLSX.utils.sheet_to_json(dws, {header:1, defval:0});
-      const vws = wb.Sheets[vertSheet];
-      const vArr = XLSX.utils.sheet_to_json(vws, {header:1, defval:0});
-      sAVOData = sParseAVOData(dArr, vArr);
-      document.getElementById('s-avo-upload-status').textContent=`✅ Parsed ${sAVOData.dates.length} days, ${sAVOData.inverterNames.length} inverters`;
-      document.getElementById('s-avo-save-btn').disabled=false;
-      sRenderAVO();
-    }catch(err){console.error('AVO parse error',err);console.error('AVO full error:',err);document.getElementById('s-avo-upload-status').textContent='❌ '+err.message+' (check console)';}
-  };
-  reader.readAsArrayBuffer(file);
+      const dateKey = day.date || day.dates[0] || 'unknown'; // "YYYY-MM-DD"
+      const [yr,mo,dd] = dateKey.split('-');
+      const sheetName = `AVO_Power_${yr}_${mo}_${dd}`;
+
+      // Build minute-level rows  [Timestamp, INV-1, INV-2, ...]
+      const invHdrs = day.inverterNames.map((n,i)=>`${n} Active Power (kWp)`);
+      const header  = ['Timestamp', ...invHdrs];
+      const dataRows = day.rawRows.map(r=>{
+        const ts=r.ts;
+        const pad=n=>String(n).padStart(2,'0');
+        const tsStr=`${pad(ts.getDate())}/${pad(ts.getMonth()+1)}/${ts.getFullYear()} ${pad(ts.getHours())}:${pad(ts.getMinutes())}:${pad(ts.getSeconds())}`;
+        return [tsStr, ...r.vals.map(v=>v!==null?v:'')];
+      });
+      const rows = [header, ...dataRows];
+
+      const payload = { folderId:SOLAR_FOLDER_ID, sheetName, tab:'MinuteData', rows };
+      const resp = await fetch(GAS_URL+'?action=writeSheetInFolder',{method:'POST',headers:{'Content-Type':'text/plain'},body:JSON.stringify(payload)});
+      const json = await resp.json();
+      if(json.error) throw new Error(json.error);
+      results.push({ok:true, date:dateKey, sheetName});
+    }catch(err){
+      results.push({ok:false, date:day.date, error:err.message});
+      console.error('Save failed for day '+day.date, err);
+    }
+  }
+  return results;
 }
 
 
@@ -9887,6 +10164,677 @@ function sLoadAVOFile(input){
 
 
 
+
+
+// ── AVO HOURLY CSV STATE ────────────────────────────────────────────────────
+let sAVOHourlyRawData = null; // { timestamps, inverterNames, inverterKwp, readings: [[...per inv]], dates }
+let sAVOHourlyChart = null;
+let sAVOHourlyChartType = 'line';
+let sAVOHourlyMode = 'kw';       // 'kw' | 'kwp'
+let sAVOHourlyView = 'separate'; // 'separate' | 'combined'
+let sAVOHourlyCumulative = false; // show cumulative instead of delta
+let sAVOHourlyJoin = false;      // join gaps <5h
+const sAVOHourlyNorm = 'none';   // Always raw — spike fix removed
+let sAVOHourlyInterval = 60;     // bucket interval in minutes: 2,5,10,15,20,30,60
+let sAVOHourlyDateFrom = null;   // Date object for single-date filter
+let sAVOHourlyDateTo = null;     // kept for compatibility (same as From)
+let sAVOHourlyFp = null;         // flatpickr instance
+
+function sParseAVOHourlyCSV(text){
+  const lines = text.trim().split('\n').filter(l=>l.trim());
+  if(lines.length < 2) throw new Error('CSV appears empty');
+  const header = lines[0].split(',').map(s=>s.trim());
+  const invCols = header.slice(1);
+
+  // Extract friendly inverter names: "1 Solis 125-KW-INV1-Daily Energy-kWh" → "INV-1"
+  const inverterNames = invCols.map(h=>{
+    const m = h.match(/INV(\d+)/i);
+    return m ? `INV-${m[1]}` : h.replace(/-(Daily|Output).*$/i,'').trim();
+  });
+  const inverterKwp = inverterNames.map((_,i)=>{
+    const num = parseInt((inverterNames[i].match(/\d+/)||[i+1])[0]);
+    return AVO_INV_KWP[num-1] || AVO_INV_KWP[i] || 171;
+  });
+
+  // ── Step 1: parse all minute-level rows into raw cumulative readings ──────
+  const rawRows = []; // { ts, vals: [null|number, ...] }
+  const dateSet = new Set();
+
+  for(let i=1;i<lines.length;i++){
+    const cols = lines[i].split(',').map(s=>s.trim());
+    if(!cols[0]) continue;
+    const m = cols[0].match(/(\d{2})\/(\d{2})\/(\d{4})\s+(\d{2}):(\d{2}):(\d{2})/);
+    if(!m) continue;
+    const ts = new Date(+m[3], +m[2]-1, +m[1], +m[4], +m[5], +m[6]);
+    dateSet.add(`${m[1]}/${m[2]}/${m[3]}`);
+    const vals = invCols.map((_,j)=>{
+      const v = cols[j+1];
+      if(!v || v==='-' || v.trim()==='-') return null;
+      const n = parseFloat(v);
+      return isNaN(n) ? null : n;
+    });
+    rawRows.push({ts, vals});
+  }
+
+  rawRows.sort((a,b)=>a.ts-b.ts);
+  const nInv = invCols.length;
+  const dates = [...dateSet];
+
+  // Build bucketed result using current interval
+  const bucketed = sAVOBucketRawRows(rawRows, nInv, sAVOHourlyInterval);
+
+  return {
+    rawRows, inverterNames, inverterKwp, dates, nInv,
+    ...bucketed,
+    isCumulative: true
+  };
+}
+
+// Re-bucket raw rows at a given interval (minutes). Called on interval change.
+function sAVOBucketRawRows(rawRows, nInv, intervalMin, isActivePower){
+  function slotKey(ts){
+    return Math.floor((ts.getHours()*60 + ts.getMinutes()) / intervalMin);
+  }
+  function slotLabel(slotIdx){
+    const startMin = slotIdx * intervalMin;
+    const endMin   = startMin + intervalMin;
+    const pad = n=>String(n).padStart(2,'0');
+    const fmtMin = m=>`${pad(Math.floor(m/60))}:${pad(m%60)}`;
+    return `${fmtMin(startMin)}–${fmtMin(endMin)}`;
+  }
+
+  const slotMap = new Map();
+  for(const row of rawRows){
+    const sk = slotKey(row.ts);
+    const dk = `${row.ts.getFullYear()}-${String(row.ts.getMonth()+1).padStart(2,'0')}-${String(row.ts.getDate()).padStart(2,'0')}`;
+    const key = `${dk}:${sk}`;
+    if(!slotMap.has(key)){
+      const startTotalMin = sk * intervalMin;
+      const slotStart = new Date(row.ts.getFullYear(), row.ts.getMonth(), row.ts.getDate(),
+        Math.floor(startTotalMin/60), startTotalMin%60, 0);
+      slotMap.set(key, { ts: slotStart, firstTs: row.ts, slotIdx: sk, dk,
+        maxCum: Array(nInv).fill(null),   // for cumulative kWh mode
+        sumPwr: Array(nInv).fill(0),       // for active-power kWp mode
+        cntPwr: Array(nInv).fill(0)
+      });
+    }
+    const slot = slotMap.get(key);
+    row.vals.forEach((v,j)=>{
+      if(v !== null){
+        // cumulative path
+        if(slot.maxCum[j] === null || v > slot.maxCum[j]) slot.maxCum[j] = v;
+        // power path — accumulate for avg
+        slot.sumPwr[j] += v;
+        slot.cntPwr[j] += 1;
+      }
+    });
+  }
+
+  const slots = [...slotMap.values()].sort((a,b)=>a.ts-b.ts);
+
+  const prevCum = Array(nInv).fill(null);
+  let prevDk = null;
+  const slotTimestamps = [];
+  const slotReadings = Array.from({length:nInv}, ()=>[]);     // delta per slot
+  const slotCumReadings = Array.from({length:nInv}, ()=>[]);  // raw maxCum per slot (non-isActivePower only)
+  const slotLabels = [];
+
+  for(const slot of slots){
+    if(slot.dk !== prevDk){ prevCum.fill(null); prevDk = slot.dk; }
+    // For cumulative data: use the actual first raw timestamp in the slot so x-axis reflects real data times.
+    // For active-power data: use the rounded slot-start (consistent bucketing).
+    slotTimestamps.push(isActivePower ? slot.ts : (slot.firstTs || slot.ts));
+    slotLabels.push(slotLabel(slot.slotIdx));
+    for(let j=0;j<nInv;j++){
+      if(isActivePower){
+        // kWp → kWh: avgPower × (intervalMin / 60)
+        const kwh = slot.cntPwr[j] > 0
+          ? Math.round((slot.sumPwr[j] / slot.cntPwr[j]) * (intervalMin/60) * 1000) / 1000
+          : null;
+        slotReadings[j].push(kwh);
+        slotCumReadings[j].push(null); // not used for active power
+      } else {
+        const cur = slot.maxCum[j];
+        // Raw cumulative value (used directly in cumulative chart)
+        slotCumReadings[j].push(cur !== null ? Math.round(cur*1000)/1000 : null);
+        // Delta value (used in delta chart)
+        if(cur === null){
+          slotReadings[j].push(null);
+        } else if(prevCum[j] === null){
+          slotReadings[j].push(0);
+        } else {
+          const delta = cur - prevCum[j];
+          slotReadings[j].push(delta < 0 ? 0 : Math.round(delta*1000)/1000);
+        }
+        if(cur !== null) prevCum[j] = cur;
+      }
+    }
+  }
+
+  return { timestamps: slotTimestamps, slotLabels, readings: slotReadings, cumReadings: slotCumReadings };
+}
+
+function sRenderAVOHourly(){
+  if(!sAVOHourlyRawData) return;
+  const card = document.getElementById('s-avo-hourly-card');
+  // card is always visible (collapsible) — no need to show/hide
+  // Build inverter toggles
+  const togglesEl = document.getElementById('s-avo-hourly-inv-toggles');
+  if(togglesEl && (!togglesEl.children.length || togglesEl.dataset.built !== 'yes')){
+    togglesEl.innerHTML='';
+    // Sort inverters by numeric suffix (INV-1, INV-2 ... INV-7)
+    const sortedIdxs = sAVOHourlyRawData.inverterNames
+      .map((name,i)=>({name,i}))
+      .sort((a,b)=>{
+        const na=parseInt((a.name.match(/\d+/)||[99])[0]);
+        const nb=parseInt((b.name.match(/\d+/)||[99])[0]);
+        return na-nb;
+      });
+    sortedIdxs.forEach(({name,i})=>{
+      const lbl=document.createElement('label');lbl.className='chk-label';
+      lbl.dataset.invIdx=i;
+      lbl.innerHTML=`<input type="checkbox" checked onchange="sRenderAVOHourlyChart()"> ${name}`;
+      togglesEl.appendChild(lbl);
+    });
+    togglesEl.dataset.built='yes';
+  }
+  // Date label (in collapsible header)
+  const d = sAVOHourlyRawData.dates;
+  const dateLabel = document.getElementById('s-avo-hourly-date-label');
+  const dateLabelText = d.length===1 ? d[0] : d[0]+' – '+d[d.length-1];
+  if(dateLabel) dateLabel.textContent = '— ' + dateLabelText;
+  const badge = document.getElementById('s-avo-hourly-status-badge');
+  if(badge) badge.textContent = `(${d.length} day${d.length>1?'s':''}, ${sAVOHourlyRawData.rawRows ? sAVOHourlyRawData.rawRows.length+' rows' : 'loaded'})`;
+  const loadingEl = document.getElementById('s-avo-hourly-loading');
+  if(loadingEl) loadingEl.style.display='none';
+  sInitAVOHourlyFlatpickr();
+  // Sync interval button state
+  document.querySelectorAll('.s-avo-hr-interval-btn').forEach(b=>{
+    b.classList.toggle('active', parseInt(b.dataset.min)===sAVOHourlyInterval);
+  });
+  // Auto-set Cumulative mode when data is cumulative kWh (GSheet/MinuteData source)
+  if(sAVOHourlyRawData.isCumulative && !sAVOHourlyCumulative){
+    sAVOHourlyCumulative = true;
+    const dBtn=document.getElementById('s-avo-hr-modeDelta');
+    const cBtn=document.getElementById('s-avo-hr-modeCum');
+    if(dBtn) dBtn.classList.remove('active');
+    if(cBtn) cBtn.classList.add('active');
+    const barBtn=document.getElementById('s-avo-hr-ctBar');
+    if(barBtn){barBtn.disabled=true;barBtn.style.opacity='0.38';barBtn.title='Bar chart unavailable in Cumulative mode';}
+  }
+  sRenderAVOHourlyChart();
+  // Enable save btn for hourly
+  document.getElementById('s-avo-save-btn').disabled=false;
+}
+
+function sAVOHourlySetChartType(t){
+  if(t==='bar' && sAVOHourlyCumulative){ return; } // bar blocked in cumulative mode
+  sAVOHourlyChartType=t;
+  document.getElementById('s-avo-hr-ctLine').classList.toggle('active',t==='line');
+  document.getElementById('s-avo-hr-ctBar').classList.toggle('active',t==='bar');
+  sRenderAVOHourlyChart();
+}
+function sAVOHourlySetMode(m){
+  sAVOHourlyMode=m;
+  document.getElementById('s-avo-hr-modeKw').classList.toggle('active',m==='kw');
+  document.getElementById('s-avo-hr-modeKwp').classList.toggle('active',m==='kwp');
+  sRenderAVOHourlyChart();
+}
+function sAVOHourlySetView(v){
+  sAVOHourlyView=v;
+  document.getElementById('s-avo-hr-viewSep').classList.toggle('active',v==='separate');
+  document.getElementById('s-avo-hr-viewComb').classList.toggle('active',v==='combined');
+  sRenderAVOHourlyChart();
+}
+function sAVOHourlyToggleJoin(){
+  sAVOHourlyJoin=!sAVOHourlyJoin;
+  const btn=document.getElementById('s-avo-hr-join-btn');
+  if(btn){btn.textContent=sAVOHourlyJoin?'✂️ Disjoin':'🔗 Join gaps';btn.classList.toggle('btn-avo',sAVOHourlyJoin);btn.classList.toggle('btn-secondary',!sAVOHourlyJoin);}
+  sRenderAVOHourlyChart();
+}
+
+function sAVOHourlySetCumulative(isCum){
+  sAVOHourlyCumulative = isCum;
+  // Bar chart is incompatible with cumulative — force line
+  if(isCum && sAVOHourlyChartType==='bar'){
+    sAVOHourlyChartType='line';
+    const lBtn=document.getElementById('s-avo-hr-ctLine');
+    const bBtn=document.getElementById('s-avo-hr-ctBar');
+    if(lBtn)lBtn.classList.add('active');
+    if(bBtn)bBtn.classList.remove('active');
+  }
+  // Disable bar button in cumulative mode
+  const barBtn=document.getElementById('s-avo-hr-ctBar');
+  if(barBtn){barBtn.disabled=!!isCum;barBtn.style.opacity=isCum?'0.38':'';barBtn.title=isCum?'Bar chart unavailable in Cumulative mode':'';}
+  document.getElementById('s-avo-hr-modeDelta').classList.toggle('active', !isCum);
+  document.getElementById('s-avo-hr-modeCum').classList.toggle('active',  isCum);
+  sRenderAVOHourlyChart();
+}
+
+function sAVOHourlySetInterval(min){
+  sAVOHourlyInterval = min;
+  // Update title label
+  const lbl=document.getElementById('s-avo-hourly-interval-label');
+  if(lbl) lbl.textContent=`${min} min`;
+  // Update pill label and close panel
+  const pillLbl=document.getElementById('s-avo-hr-interval-pill-label');
+  if(pillLbl) pillLbl.textContent=`${min} min`;
+  const panel=document.getElementById('s-avo-hr-interval-panel');
+  if(panel){ panel.style.display='none'; }
+  const toggleBtn=document.getElementById('s-avo-hr-interval-toggle');
+  if(toggleBtn){ toggleBtn.style.background=''; toggleBtn.style.color=''; toggleBtn.style.borderColor='var(--border)'; }
+  // Re-bucket from stored raw rows without re-parsing CSV
+  if(sAVOHourlyRawData && sAVOHourlyRawData.rawRows){
+    const bucketed = sAVOBucketRawRows(sAVOHourlyRawData.rawRows, sAVOHourlyRawData.nInv, min, sAVOHourlyRawData.isActivePower);
+    sAVOHourlyRawData.timestamps  = bucketed.timestamps;
+    sAVOHourlyRawData.slotLabels  = bucketed.slotLabels;
+    sAVOHourlyRawData.readings    = bucketed.readings;
+    sAVOHourlyRawData.cumReadings = bucketed.cumReadings;
+  }
+  // Update active button state
+  document.querySelectorAll('.s-avo-hr-interval-btn').forEach(b=>{
+    b.classList.toggle('active', parseInt(b.dataset.min)===min);
+  });
+  sRenderAVOHourlyChart();
+}
+
+function sAVOHourlySetNorm(mode){
+  sAVOHourlyNorm=mode;
+  ['None','Spread','Average','Median'].forEach(n=>{
+    const b=document.getElementById('s-avo-hr-norm'+n);
+    if(b) b.classList.toggle('active', n.toLowerCase()===mode||('none'===mode&&n==='None'));
+  });
+  const info=document.getElementById('s-avo-hr-norm-info');
+  if(info){
+    const msgs={
+      none:'',
+      spread:'Spike energy redistributed evenly over the offline gap',
+      average:'Spike replaced by rolling 3-slot neighbourhood average',
+      median:'Spike clamped to median of ±3 surrounding slots'
+    };
+    info.textContent=msgs[mode]||'';
+  }
+  sRenderAVOHourlyChart();
+}
+
+// Spike detection + normalization helpers
+function sAVONormaliseReadings(readings, timestamps){
+  if(sAVOHourlyNorm==='none') return readings;
+  const n=readings.length;
+  const out=readings.slice();
+  const SLOT_MS=sAVOHourlyInterval*60*1000; // expected slot duration
+
+  // detect spikes: a value that is more than 3× the local rolling median AND the gap before it is >1 slot
+  for(let k=1;k<n;k++){
+    if(out[k]===null||out[k]===undefined) continue;
+    const gap=timestamps[k]-timestamps[k-1]; // ms
+    const expectedSlots=Math.round(gap/SLOT_MS);
+    if(expectedSlots<2) continue; // normal consecutive slot — no offline gap
+    // There IS a gap; the spike value covers multiple missed slots
+    const spike=out[k];
+    if(sAVOHourlyNorm==='spread'){
+      // redistribute evenly across the slots it covers
+      out[k]=spike/expectedSlots;
+    } else if(sAVOHourlyNorm==='average'){
+      // use average of up-to-3 non-null neighbours before k
+      const prev=[];for(let j=k-1;j>=0&&prev.length<3;j--){if(out[j]!==null&&out[j]!==undefined)prev.push(out[j]);}
+      const after=[];for(let j=k+1;j<n&&after.length<3;j++){if(out[j]!==null&&out[j]!==undefined)after.push(out[j]);}
+      const neighbours=[...prev,...after];
+      if(neighbours.length) out[k]=neighbours.reduce((a,b)=>a+b,0)/neighbours.length;
+    } else if(sAVOHourlyNorm==='median'){
+      const prev=[];for(let j=k-1;j>=0&&prev.length<3;j--){if(out[j]!==null&&out[j]!==undefined)prev.push(out[j]);}
+      const after=[];for(let j=k+1;j<n&&after.length<3;j++){if(out[j]!==null&&out[j]!==undefined)after.push(out[j]);}
+      const neighbours=[...prev,...after].sort((a,b)=>a-b);
+      if(neighbours.length) out[k]=neighbours[Math.floor(neighbours.length/2)];
+    }
+  }
+  return out;
+}
+
+function sAVOHourlyDateClear(){
+  sAVOHourlyDateFrom=null;sAVOHourlyDateTo=null;
+  if(sAVOHourlyFp) sAVOHourlyFp.clear();
+  sRenderAVOHourlyChart();
+}
+
+function sInitAVOHourlyFlatpickr(){
+  if(sAVOHourlyFp||!document.getElementById('s-avo-hourly-daterange')) return;
+  sAVOHourlyFp=flatpickr('#s-avo-hourly-daterange',{
+    mode:'single',dateFormat:'d/m/Y',maxDate:new Date(),
+    onChange:function(selectedDates){
+      if(selectedDates.length===1){
+        sAVOHourlyDateFrom=selectedDates[0];
+        sAVOHourlyDateTo=selectedDates[0];
+        sRenderAVOHourlyChart();
+      } else if(selectedDates.length===0){
+        sAVOHourlyDateFrom=null;sAVOHourlyDateTo=null;
+        sRenderAVOHourlyChart();
+      }
+    },
+    onReady:function(_,__,fp){
+      if(document.body.classList.contains('holo'))fp.calendarContainer&&fp.calendarContainer.classList.add('holo-fp');
+    }
+  });
+}
+
+function sRenderAVOHourlyChart(){
+  if(!sAVOHourlyRawData) return;
+  const d = sAVOHourlyRawData;
+  const canvas = document.getElementById('s-avo-hourly-chart');
+  if(!canvas) return;
+  if(sAVOHourlyChart){sAVOHourlyChart.destroy();sAVOHourlyChart=null;}
+
+  // Build invEnabled map by original index using data-inv-idx
+  const _toggleLabels = document.querySelectorAll('#s-avo-hourly-inv-toggles label[data-inv-idx]');
+  const invEnabled = {};
+  _toggleLabels.forEach(lbl=>{
+    const idx=parseInt(lbl.dataset.invIdx);
+    const chk=lbl.querySelector('input[type=checkbox]');
+    invEnabled[idx]=chk?chk.checked:true;
+  });
+  // Fallback: positional toggles (older built without data-inv-idx)
+  const toggles = document.querySelectorAll('#s-avo-hourly-inv-toggles input');
+  function isInvEnabled(i){ return invEnabled.hasOwnProperty(i)?invEnabled[i]:(!toggles[i]||toggles[i].checked); }
+  const textColor = isDark?'#6e8aac':'#5a677f';
+  const gridColor = isDark?'rgba(255,255,255,0.05)':'rgba(0,0,0,0.04)';
+
+  const JOIN_GAP_MS = 5*60*60*1000;       // > 5 h = day boundary / night gap
+  const SLOT_MS = sAVOHourlyInterval*60*1000;
+  // Disjoin: break whenever gap > 1.5x the interval (catches any missed slot, even 2-min data)
+  const DISJOIN_GAP_MS = Math.max(SLOT_MS * 1.5, SLOT_MS + 30*1000);
+
+  // --- Date range filter ---
+  let idxStart = 0, idxEnd = d.timestamps.length - 1;
+  if(sAVOHourlyDateFrom && sAVOHourlyDateTo){
+    const from = new Date(sAVOHourlyDateFrom); from.setHours(0,0,0,0);
+    const to   = new Date(sAVOHourlyDateTo);   to.setHours(23,59,59,999);
+    let found=false;
+    for(let k=0;k<d.timestamps.length;k++){
+      const t=d.timestamps[k];
+      if(t>=from && !found){idxStart=k;found=true;}
+      if(t<=to) idxEnd=k;
+    }
+    if(!found){idxStart=0;idxEnd=-1;}
+  }
+
+  const n = idxEnd - idxStart + 1;
+  if(n <= 0){
+    const ctx=canvas.getContext('2d');
+    ctx.clearRect(0,0,canvas.width,canvas.height);
+    ctx.fillStyle=textColor;ctx.font='14px Space Grotesk,sans-serif';
+    ctx.textAlign='center';ctx.fillText('No data for selected date range',canvas.width/2,canvas.height/2);
+    return;
+  }
+
+  const slicedTimestamps = d.timestamps.slice(idxStart, idxEnd+1);
+
+  // Identify gap positions (offline gaps between slots)
+  // Cumulative mode: only break at true day boundaries (>5h night gap) — small data gaps stay connected
+  // Delta Join mode: same 5h threshold
+  // Delta Disjoin mode: break on any gap > 1.5x interval
+  const gapThresholdMs = (sAVOHourlyCumulative || sAVOHourlyJoin) ? JOIN_GAP_MS : DISJOIN_GAP_MS;
+  const gapAfter = []; // sliced indices after which there's a gap
+  for(let k=0;k<n-1;k++){
+    if((slicedTimestamps[k+1]-slicedTimestamps[k])>gapThresholdMs) gapAfter.push(k);
+  }
+
+  // Build labels — always use real HH:MM from actual data timestamps (not computed slot-index strings)
+  // This ensures the x-axis starts at the first real reading (e.g. 05:38) not 00:00
+  const labels = [];
+  for(let k=0;k<n;k++){
+    const t = slicedTimestamps[k];
+    if(sAVOHourlyCumulative){
+      // Cumulative: exact HH:MM of each actual data point (e.g. 05:38, 05:44...)
+      labels.push(`${pad2(t.getHours())}:${pad2(t.getMinutes())}`);
+    } else {
+      // Delta: snap to slot boundary for clean range labels (e.g. 05:00–06:00)
+      const totalMins = t.getHours()*60 + t.getMinutes();
+      const slotStartMin = Math.floor(totalMins / sAVOHourlyInterval) * sAVOHourlyInterval;
+      const slotEndMin   = slotStartMin + sAVOHourlyInterval;
+      const fmtM = m => `${pad2(Math.floor(m/60)%24)}:${pad2(m%60)}`;
+      labels.push(`${fmtM(slotStartMin)}–${fmtM(slotEndMin)}`);
+    }
+  }
+
+  // Scale a delta value by kWp if needed
+  function scaleVal(raw, kwp){
+    if(raw===null||raw===undefined) return null;
+    return sAVOHourlyMode==='kwp'
+      ? Math.round(raw/kwp*10000)/10000
+      : Math.round(raw*1000)/1000;
+  }
+
+  // Build delta data array (with null gaps inserted for visual breaks)
+  function buildDeltaData(readingsArr, kwp){
+    const out = [];
+    for(let k=0;k<n;k++){
+      out.push(scaleVal(readingsArr[k], kwp));
+      if(!sAVOHourlyJoin && gapAfter.includes(k)) out.push(null);
+    }
+    return out;
+  }
+
+  // Build cumulative data.
+  // If cumReadingsArr provided (raw maxCum from sheet): use values directly.
+  // Otherwise fall back to running sum of deltas (active-power source).
+  // Returns solid dataset + dotted gap-bridge datasets.
+  function buildCumulativeDatasets(readingsArr, cumReadingsArr, kwp, color, name){
+    const solidData = [];
+    const useDirect = cumReadingsArr && cumReadingsArr.some(v=>v!==null);
+
+    if(useDirect){
+      // Direct path: raw cumulative kWh from the GSheet
+      for(let k=0;k<n;k++){
+        const raw = cumReadingsArr[k];
+        const v = (raw===null||raw===undefined) ? null : scaleVal(raw, kwp);
+        solidData.push(v!==null ? Math.round(v*1000)/1000 : null);
+      }
+    } else {
+      // Fallback: cumsum of delta buckets (active-power CSV source)
+      let cum = 0;
+      for(let k=0;k<n;k++){
+        const raw = readingsArr[k];
+        const isGapBefore = k>0 && (slicedTimestamps[k]-slicedTimestamps[k-1])>JOIN_GAP_MS;
+        if(isGapBefore){ cum = 0; }
+        const v = (raw===null||raw===undefined) ? null : scaleVal(raw, kwp);
+        if(v!==null){ cum+=v; solidData.push(Math.round(cum*1000)/1000); }
+        else { solidData.push(null); }
+      }
+    }
+
+    // Now build the labels array for this dataset (same as outer labels when no insertion)
+    // and add dotted bridge datasets for each gap
+    const allDatasets = [];
+    const intervalLabel = `${sAVOHourlyInterval} min`;
+    allDatasets.push({
+      label:`${name} (cumul. ${sAVOHourlyMode==='kwp'?'kWh/kWp':'kWh'})`,
+      data: solidData,
+      borderColor: color,
+      backgroundColor: sAVOHourlyChartType==='bar' ? color+'bb' : color+'18',
+      borderWidth:2,
+      pointRadius: sAVOHourlyChartType==='bar' ? 0 : 2, pointHoverRadius:5,
+      tension:0.3, fill:false,
+      spanGaps: false,
+    });
+
+    // No dotted bridge lines in cumulative mode — gaps are just left as breaks
+    return allDatasets;
+  }
+
+  // Build labels with gap nulls inserted (for delta mode only)
+  const labelsWithGaps = [];
+  for(let k=0;k<n;k++){
+    labelsWithGaps.push(labels[k]);
+    if(!sAVOHourlyJoin && gapAfter.includes(k)) labelsWithGaps.push('');
+  }
+
+  const intervalLabel = `${sAVOHourlyInterval} min`;
+  const yLabel = sAVOHourlyCumulative
+    ? (sAVOHourlyMode==='kwp' ? 'Cumulative kWh/kWp' : 'Cumulative kWh')
+    : (sAVOHourlyMode==='kwp' ? `kWh/kWp per ${intervalLabel}` : `kWh per ${intervalLabel}`);
+
+  // Filter legend entries starting with underscore
+  const legendFilter = item => !item.text.startsWith('_gap_');
+
+  const chartOpts = {
+    responsive:true, maintainAspectRatio:false, animation:{duration:300},
+    interaction:{mode:'index',intersect:false},
+    plugins:{
+      legend:{
+        display:true, position:'top',
+        labels:{color:textColor,font:{size:9},usePointStyle:true,boxWidth:10,
+          filter: legendFilter
+        }
+      },
+      tooltip:{
+        filter: item => !item.dataset.label.startsWith('_gap_'),
+        callbacks:{label:ctx=>{
+          const v=ctx.parsed.y;
+          if(v===null||v===undefined) return '';
+          const unit = sAVOHourlyMode==='kwp'?'kWh/kWp':'kWh';
+          return `${ctx.dataset.label}: ${v.toFixed(3)} ${unit}`;
+        }}
+      }
+    },
+    scales:{
+      x:{ticks:{color:textColor,font:{size:9},maxRotation:60,autoSkip:true,maxTicksLimit:16},grid:{color:gridColor}},
+      y:{title:{display:true,text:yLabel,color:textColor},ticks:{color:textColor,font:{size:9}},grid:{color:gridColor},min:0}
+    }
+  };
+
+  // ── CUMULATIVE MODE ──────────────────────────────────────────────────────
+  if(sAVOHourlyCumulative){
+    const allDatasets = [];
+    if(sAVOHourlyView==='combined'){
+      const enabledIdxs = d.inverterNames.map((_,i)=>i).filter(i=>isInvEnabled(i));
+      const combined = Array(n).fill(null);
+      const combinedCum = d.cumReadings ? Array(n).fill(null) : null;
+      for(const i of enabledIdxs){
+        const slicedReadings = d.readings[i].slice(idxStart, idxEnd+1);
+        const normed = sAVONormaliseReadings(slicedReadings, slicedTimestamps);
+        for(let k=0;k<n;k++){
+          const v=normed[k];
+          if(v!==null&&v!==undefined) combined[k]=(combined[k]||0)+v;
+        }
+        if(d.cumReadings){
+          const slicedCum = d.cumReadings[i].slice(idxStart, idxEnd+1);
+          for(let k=0;k<n;k++){
+            const cv=slicedCum[k];
+            if(cv!==null&&cv!==undefined) combinedCum[k]=(combinedCum[k]||0)+cv;
+          }
+        }
+      }
+      const totalKwp = enabledIdxs.reduce((s,i)=>s+(d.inverterKwp[i]||171),0);
+      allDatasets.push(...buildCumulativeDatasets(combined, combinedCum, totalKwp, '#10b981', 'Total Generation'));
+    } else {
+      d.inverterNames.forEach((name,i)=>{
+        if(!isInvEnabled(i)) return;
+        const color = CHART_COLORS_12[i%12];
+        const kwp = d.inverterKwp[i]||171;
+        const slicedReadings = d.readings[i].slice(idxStart, idxEnd+1);
+        const normedReadings = sAVONormaliseReadings(slicedReadings, slicedTimestamps);
+        const slicedCumReadings = d.cumReadings ? d.cumReadings[i].slice(idxStart, idxEnd+1) : null;
+        allDatasets.push(...buildCumulativeDatasets(normedReadings, slicedCumReadings, kwp, color, name));
+      });
+    }
+    sAVOHourlyChart = new Chart(canvas.getContext('2d'),{type:sAVOHourlyChartType,data:{labels,datasets:allDatasets},options:chartOpts});
+    attachChartDragSelect('s-avo-hourly-chart',()=>sAVOHourlyChart,labels,allDatasets,{unit:'kWh',floatId:'uds-float-s-avo-hourly-chart',barGlow:sAVOHourlyChartType==='bar'});
+    return;
+  }
+
+  // ── DELTA MODE ──────────────────────────────────────────────────────────
+  // For delta mode, also render dotted bridge segments for gaps
+  function buildDeltaDatasetsWithGaps(readingsArr, kwp, color, name){
+    const solidData = buildDeltaData(readingsArr, kwp);
+    const result = [{
+      label:`${name} (${sAVOHourlyMode==='kwp'?'kWh/kWp':'kWh'}/${intervalLabel})`,
+      data: solidData,
+      borderColor: color,
+      backgroundColor: sAVOHourlyChartType==='bar'?color+'bb':color+'18',
+      borderWidth:1.5,
+      pointRadius: sAVOHourlyChartType==='line'?2:0, pointHoverRadius:4,
+      tension:0.25, fill:false, spanGaps:sAVOHourlyJoin,
+      type:sAVOHourlyChartType, borderRadius:sAVOHourlyChartType==='bar'?3:0
+    }];
+    // Add dotted bridge connecting across each gap (only for line mode)
+    if(sAVOHourlyChartType==='line' && !sAVOHourlyJoin){
+      for(const gIdx of gapAfter){
+        // find the label index of gIdx in labelsWithGaps (account for inserted nulls before gIdx)
+        const nullsBefore = gapAfter.filter(g=>g<gIdx).length;
+        const lIdx = gIdx + nullsBefore; // position in labelsWithGaps
+        const bridgeLabels = Array(labelsWithGaps.length).fill(null);
+        // Get value just before gap and just after
+        const vBefore = solidData[lIdx];
+        const vAfter  = solidData[lIdx+2] !== undefined ? solidData[lIdx+2] : null; // +1 is the null gap
+        if(vBefore===null||vAfter===null) continue;
+        bridgeLabels[lIdx]   = vBefore;
+        bridgeLabels[lIdx+2] = vAfter;
+        result.push({
+          label:`_gap_${name}_${gIdx}`,
+          data: bridgeLabels,
+          borderColor: color+'77',
+          backgroundColor:'transparent',
+          borderWidth:1.5,
+          borderDash:[5,4],
+          pointRadius:0, pointHoverRadius:0,
+          tension:0, fill:false, spanGaps:true,
+          segment:{borderDash:()=>[5,4]}
+        });
+      }
+    }
+    return result;
+  }
+
+  if(sAVOHourlyView==='combined'){
+    const enabledIdxs = d.inverterNames.map((_,i)=>i).filter(i=>isInvEnabled(i));
+    const combined = Array(n).fill(null);
+    for(const i of enabledIdxs){
+      const slicedReadings = d.readings[i].slice(idxStart, idxEnd+1);
+      const normed = sAVONormaliseReadings(slicedReadings, slicedTimestamps);
+      for(let k=0;k<n;k++){
+        const v=normed[k];
+        if(v!==null&&v!==undefined) combined[k]=(combined[k]||0)+v;
+      }
+    }
+    const totalKwp = enabledIdxs.reduce((s,i)=>s+(d.inverterKwp[i]||171),0);
+    const datasets = buildDeltaDatasetsWithGaps(combined, totalKwp, '#10b981', 'Total Generation');
+    // Apply gradient bg to bar
+    if(sAVOHourlyChartType==='bar'){
+      const nonNull=datasets[0].data.filter(v=>v!==null);
+      datasets[0].backgroundColor=sDailyGradientColors(nonNull.length?nonNull:[0],0.75);
+    }
+    sAVOHourlyChart = new Chart(canvas.getContext('2d'),{type:sAVOHourlyChartType,data:{labels:labelsWithGaps,datasets},options:chartOpts});
+    attachChartDragSelect('s-avo-hourly-chart',()=>sAVOHourlyChart,labelsWithGaps,datasets,{unit:'kWh',floatId:'uds-float-s-avo-hourly-chart',barGlow:sAVOHourlyChartType==='bar'});
+  } else {
+    const allDatasets = [];
+    d.inverterNames.forEach((name,i)=>{
+      if(!isInvEnabled(i)) return;
+      const color = CHART_COLORS_12[i%12];
+      const kwp = d.inverterKwp[i]||171;
+      const slicedReadings = d.readings[i].slice(idxStart, idxEnd+1);
+      const normedReadings = sAVONormaliseReadings(slicedReadings, slicedTimestamps);
+      allDatasets.push(...buildDeltaDatasetsWithGaps(normedReadings, kwp, color, name));
+    });
+    sAVOHourlyChart = new Chart(canvas.getContext('2d'),{type:sAVOHourlyChartType,data:{labels:labelsWithGaps,datasets:allDatasets},options:chartOpts});
+    attachChartDragSelect('s-avo-hourly-chart',()=>sAVOHourlyChart,labelsWithGaps,allDatasets,{unit:'kWh',floatId:'uds-float-s-avo-hourly-chart',barGlow:sAVOHourlyChartType==='bar'});
+  }
+}
+
+// ── AVO HOURLY SAVE TO DRIVE ─────────────────────────────────────────────────
+function sBuildAVOHourlyRows(data){
+  const invHdrs = data.inverterNames.map((n,i)=>`${n} (${(data.inverterKwp[i]||0).toFixed(1)}kWp) kWh/30min`);
+  const header = ['Slot (30 min)',...invHdrs,'Total kWh'];
+  const rows = [header];
+  data.timestamps.forEach((ts,k)=>{
+    const label = data.slotLabels ? data.slotLabels[k]
+      : ts.toLocaleString('en-GB',{hour:'2-digit',minute:'2-digit'});
+    const dateStr = ts.toLocaleDateString('en-GB',{day:'2-digit',month:'2-digit',year:'numeric'});
+    const invVals = data.readings.map(arr=>arr[k]!==null&&arr[k]!==undefined ? Math.round(arr[k]*100)/100 : '');
+    const total = invVals.reduce((a,b)=>a+(typeof b==='number'?b:0),0);
+    rows.push([`${dateStr} ${label}`,...invVals,Math.round(total*100)/100]);
+  });
+  return rows;
+}
 
 
 function sParseAVOData(dArr, vArr){
@@ -10066,7 +11014,13 @@ function sRenderAVO(){
   if(noNotesEl)noNotesEl.style.display=noteCount===0?'block':'none';
   // Inverter toggles
   const toggles=document.getElementById('s-avo-inv-toggles');toggles.innerHTML='';
-  d.inverterNames.forEach((name,i)=>{const lbl=document.createElement('label');lbl.className='chk-label';lbl.innerHTML=`<input type="checkbox" checked onchange="sRenderAVOInvChart()"> ${name}`;toggles.appendChild(lbl);});
+  // Sort by numeric suffix: INV-1, INV-2 ... INV-7
+  const _sortedInvIdxs=d.inverterNames.map((name,i)=>({name,i})).sort((a,b)=>{
+    const na=parseInt((a.name.match(/\d+/)||[99])[0]);
+    const nb=parseInt((b.name.match(/\d+/)||[99])[0]);
+    return na-nb;
+  });
+  _sortedInvIdxs.forEach(({name,i})=>{const lbl=document.createElement('label');lbl.className='chk-label';lbl.dataset.invIdx=i;lbl.innerHTML=`<input type="checkbox" checked onchange="sRenderAVOInvChart()"> ${name}`;toggles.appendChild(lbl);});
   // Weather grid
   sRenderWeatherGrid('s-avo-weather-grid', d);
   // Charts
@@ -10118,9 +11072,13 @@ function sRenderAVOInvChart(){
   const _avoInvFirst=!sAVOInvChart;if(sAVOInvChart){sAVOInvChart.destroy();sAVOInvChart=null;}
   const textColor=isDark?'#6e8aac':'#5a677f';const gridColor=isDark?'rgba(255,255,255,0.05)':'rgba(0,0,0,0.04)';
   const toggles=document.querySelectorAll('#s-avo-inv-toggles input');
+  const _invToggleLabels=document.querySelectorAll('#s-avo-inv-toggles label[data-inv-idx]');
+  const _invEnabledMap={};
+  _invToggleLabels.forEach(lbl=>{const idx=parseInt(lbl.dataset.invIdx);const chk=lbl.querySelector('input');_invEnabledMap[idx]=chk?chk.checked:true;});
+  function _isAVOInvEnabled(i){return _invEnabledMap.hasOwnProperty(i)?_invEnabledMap[i]:(!toggles[i]||toggles[i].checked);}
   const labels=d.dates.map(dt=>dt.toLocaleDateString('en-GB',{day:'2-digit',month:'short'}));
   const isKwp=sAVOInvMode==='kwp';
-  const datasets=d.inverterNames.map((name,i)=>{if(toggles[i]&&!toggles[i].checked)return null;const color=CHART_COLORS_12[i%CHART_COLORS_12.length];const kwp=d.inverterKwp?.[i]||AVO_INV_KWP[i]||1;const data=isKwp?d.perInverter[i].map(v=>+(v/kwp).toFixed(4)):d.perInverter[i];return{label:name,data,type:'bar',backgroundColor:color+'cc',borderColor:color,borderWidth:1.5,borderRadius:3};}).filter(Boolean);
+  const datasets=d.inverterNames.map((name,i)=>{if(!_isAVOInvEnabled(i))return null;const color=CHART_COLORS_12[i%CHART_COLORS_12.length];const kwp=d.inverterKwp?.[i]||AVO_INV_KWP[i]||1;const data=isKwp?d.perInverter[i].map(v=>+(v/kwp).toFixed(4)):d.perInverter[i];return{label:name,data,type:'bar',backgroundColor:color+'cc',borderColor:color,borderWidth:1.5,borderRadius:3};}).filter(Boolean);
   sAVOInvChart=new Chart(canvas.getContext('2d'),{type:'bar',data:{labels,datasets},options:{responsive:true,maintainAspectRatio:false,animation:{duration:400},interaction:{mode:'index',intersect:false},plugins:{legend:{display:true,position:'top',labels:{color:textColor,font:{size:10,family:'Space Grotesk'},usePointStyle:true}},tooltip:{callbacks:{label:c=>c.dataset.label+': '+c.parsed.y.toFixed(isKwp?3:0)+(isKwp?' kWh/kWp':' kWh'),afterBody:ctx=>{const i=ctx[0]?.dataIndex;if(i==null)return[];const note=d.remarks?.[i];return note?[`📝 ${note}`]:[];}}}},scales:{x:{stacked:true,ticks:{color:textColor,font:{size:9},maxRotation:45},grid:{color:gridColor}},y:{stacked:true,title:{display:true,text:isKwp?'kWh/kWp':'kWh',color:textColor},ticks:{color:textColor,font:{size:9}},grid:{color:gridColor}}}}});
   attachChartDragSelect('s-avo-inv-chart',()=>sAVOInvChart,labels,datasets,{unit:'auto',floatId:'uds-float-s-avo-inv-chart',barGlow:true});
 }
@@ -10839,6 +11797,7 @@ function sRenderCompare(){
 /* ── Drive Save / Load ── */
 // ── SHEET ID for the "Daily Solar Reading" Google Sheet ──────────────────
 const SOLAR_SHEET_ID = '1iTNUD7IPC5x7xKqIvm-SKxPo2wLspEFAdLsIgXUVCbA';
+const SOLAR_FOLDER_ID = '1BsE6ioU-pcHG7APeUd0ZlGu3Hn8J6Lez';
 
 // Helper function to normalize date to UTC to avoid timezone shift
 function normalizeDateToUTC(date) {
@@ -10968,8 +11927,17 @@ function sBuildVikramRows(data){
 
 
 async function sSaveToDrive(type){
+  // Handle hourly CSV data separately
+  if(type==='avo' && sAVOHourlyRawData && !sAVOData){
+    await sSaveHourlyToDrive();
+    return;
+  }
+  if(type==='avo' && sAVOHourlyRawData && sAVOData){
+    // Both loaded — save both
+    await sSaveHourlyToDrive();
+  }
   const data=type==='avo'?sAVOData:sVikramData;
-  if(!data){alert('No data loaded. Upload the Excel file first.');return;}
+  if(!data){alert('No daily data loaded. Upload the Excel file first.');return;}
   const statusEl=document.getElementById(type==='avo'?'s-avo-drive-status':'s-vik-drive-status');
   statusEl.textContent='Writing to Google Sheet…';
   try{
@@ -10977,12 +11945,53 @@ async function sSaveToDrive(type){
     const rows = type==='avo' ? sBuildAVORows(data) : sBuildVikramRows(data);
     const payload = { sheetId: SOLAR_SHEET_ID, tab, rows };
     const url=GAS_URL+'?action=writeSheet';
-    // GAS CORS fix: text/plain avoids preflight OPTIONS block; GAS reads postData.contents regardless
     const resp=await fetch(url,{method:'POST',headers:{'Content-Type':'text/plain'},body:JSON.stringify(payload)});
     const json=await resp.json();
     if(json.error)throw new Error(json.error);
     statusEl.textContent=`✅ Saved ${rows.length-1} rows → GSheet (${tab} tab)`;
   }catch(e){statusEl.textContent='❌ Save failed: '+e.message;console.error('Sheet save error',e);}
+}
+
+async function sSaveHourlyToDrive(){
+  const statusEl=document.getElementById('s-avo-drive-status');
+  if(!sAVOHourlyRawData){return;}
+  statusEl.textContent='Saving to Drive…';
+  try{
+    const d = sAVOHourlyRawData;
+    const firstTs = d.timestamps[0];
+    const yr = firstTs.getFullYear();
+    const mo = String(firstTs.getMonth()+1).padStart(2,'0');
+    const sheetName = `AVO_Hourly_${yr}_${mo}`;
+
+    // ── Tab 1: HourlyPower (bucketed at current interval) ──
+    const hourlyRows = sBuildAVOHourlyRows(d);
+    const hourlyPayload = {folderId:SOLAR_FOLDER_ID, sheetName, tab:'HourlyPower', rows:hourlyRows};
+    const r1=await fetch(GAS_URL+'?action=writeSheetInFolder',{method:'POST',headers:{'Content-Type':'text/plain'},body:JSON.stringify(hourlyPayload)});
+    const j1=await r1.json(); if(j1.error)throw new Error(j1.error);
+
+    // ── Tab 2: MinuteRaw (exact minute-level data from the CSV) ──
+    if(d.rawRows && d.rawRows.length){
+      // Build header from inverter names
+      const invHdrs = d.inverterNames.map((n,i)=>`${n} (${(d.inverterKwp[i]||0).toFixed(1)}kWp) kWh-cum`);
+      const minuteHeader = ['Timestamp',...invHdrs];
+      const minuteRows = [minuteHeader];
+      for(const row of d.rawRows){
+        const ts = row.ts;
+        const dd=String(ts.getDate()).padStart(2,'0');
+        const mm=String(ts.getMonth()+1).padStart(2,'0');
+        const yyyy=ts.getFullYear();
+        const hh=String(ts.getHours()).padStart(2,'0');
+        const min=String(ts.getMinutes()).padStart(2,'0');
+        const ss=String(ts.getSeconds()).padStart(2,'0');
+        minuteRows.push([`${dd}/${mm}/${yyyy} ${hh}:${min}:${ss}`,...row.vals.map(v=>v!==null?v:'')]);
+      }
+      const minutePayload = {folderId:SOLAR_FOLDER_ID, sheetName, tab:'MinuteRaw', rows:minuteRows, append:false};
+      const r2=await fetch(GAS_URL+'?action=writeSheetInFolder',{method:'POST',headers:{'Content-Type':'text/plain'},body:JSON.stringify(minutePayload)});
+      const j2=await r2.json(); if(j2.error)throw new Error(j2.error);
+    }
+
+    statusEl.textContent=`✅ Saved → "${sheetName}" · HourlyPower (${hourlyRows.length-1} rows) + MinuteRaw (${d.rawRows?.length||0} rows)`;
+  }catch(e){statusEl.textContent='❌ Hourly save failed: '+e.message;console.error('Hourly save error',e);}
 }
 
 async function sLoadFromDrive(type){
@@ -11000,6 +12009,153 @@ async function sLoadFromDrive(type){
     else{sVikramData=data;document.getElementById('s-vik-upload-status').textContent=`✅ Loaded from GSheet — ${data.dates?.length||0} days`;document.getElementById('s-vik-save-btn').disabled=false;sRenderVikram();}
     if(statusEl)statusEl.textContent='✅ Loaded from GSheet';
   }catch(e){if(statusEl)statusEl.textContent='Sheet load: '+e.message;console.warn('Sheet load error',e);}
+}
+
+// ── Auto-refresh handle ──
+let _sHourlyAutoRefreshTimer = null;
+
+// Build today's CSV filename matching what the SolarEdge/Solis logger writes
+// Actual format: "Daily Energy (10 May 2026 12:00:00 AM - 10 May 2026 11:59:59 PM).csv"
+function sGetTodayCsvFilenames(){
+  const now = new Date();
+  const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  const d  = String(now.getDate());          // no leading zero: "10"
+  const d0 = String(now.getDate()).padStart(2,'0'); // leading zero: "10"
+  const mo = months[now.getMonth()];
+  const yr = now.getFullYear();
+  // Return multiple candidate names to handle zero-pad variations
+  return [
+    `Daily Energy (${d} ${mo} ${yr} 12:00:00 AM - ${d} ${mo} ${yr} 11:59:59 PM).csv`,
+    `Daily Energy (${d0} ${mo} ${yr} 12:00:00 AM - ${d0} ${mo} ${yr} 11:59:59 PM).csv`,
+    `Daily Energy  (${d} ${mo} ${yr} 12:00:00 AM - ${d} ${mo} ${yr} 11:59:59 PM).csv`,
+  ];
+}
+function sGetTodayCsvFilename(){ return sGetTodayCsvFilenames()[0]; }
+
+async function sLoadHourlyFromDrive(silent){
+  const statusEl  = document.getElementById('s-avo-upload-status');
+  const loadingEl = document.getElementById('s-avo-hourly-loading');
+  const badge     = document.getElementById('s-avo-hourly-status-badge');
+
+  if(!silent){
+    if(statusEl)  statusEl.textContent  = '⏳ Loading latest minute data from Drive…';
+    if(loadingEl) loadingEl.style.display = '';
+    if(badge)     badge.textContent     = '⏳ loading…';
+  }
+
+  function hide(){ if(loadingEl) loadingEl.style.display='none'; if(badge) badge.textContent=''; }
+
+  try{
+    // ── Step 1: list all AVO_Power_* sheets (1 request) ─────────────────
+    const listUrl  = GAS_URL + '?action=listAvoHourly&folderId=' + encodeURIComponent(SOLAR_FOLDER_ID);
+    const listResp = await fetch(listUrl);
+    if(!listResp.ok) throw new Error('listAvoHourly HTTP ' + listResp.status);
+    const listJson = await listResp.json();
+    if(listJson.error) throw new Error(listJson.error);
+
+    const sheets = (listJson.files || []).filter(f=>
+      f.fileName && f.fileName.match(/^AVO_Power_\d{4}_\d{2}_\d{2}$/)
+    );
+    if(!sheets.length){
+      hide();
+      if(!silent && statusEl) statusEl.textContent = '⚠️ No AVO_Power_* sheets found in Drive folder. Upload CSV manually.';
+      return;
+    }
+
+    // ── Step 2: read MinuteData tab from most recent sheet (1 request) ──
+    const best   = sheets[0]; // already sorted by modified desc from GAS
+    const readUrl = GAS_URL + '?action=readAvoHourly'
+      + '&sheetId=' + encodeURIComponent(best.fileId)
+      + '&tab=MinuteData';
+    const readResp = await fetch(readUrl);
+    if(!readResp.ok) throw new Error('readAvoHourly HTTP ' + readResp.status);
+    const readJson = await readResp.json();
+    if(readJson.error) throw new Error(readJson.error);
+
+    const rows = readJson.rows || [];
+    if(rows.length < 2){
+      hide();
+      if(!silent && statusEl) statusEl.textContent = `⚠️ Sheet "${best.fileName}" has no data in MinuteData tab.`;
+      return;
+    }
+
+    // ── Step 3: parse rows into the same structure sParseAVOHourlyCSV produces ──
+    // Row format: [Timestamp("DD/MM/YYYY HH:MM:SS"), INV-1 val, INV-2 val, ...]
+    const header   = rows[0].map(h => String(h).trim());
+    const invCols  = header.slice(1);
+    const inverterNames = invCols.map(h => {
+      const m = h.match(/INV[- ]?(\d+)/i);
+      return m ? `INV-${m[1]}` : h.replace(/\s*(Active Power|kWp|kWh).*/i,'').trim();
+    });
+    const inverterKwp = inverterNames.map((_,i) => {
+      const num = parseInt((inverterNames[i].match(/\d+/)||[i+1])[0]);
+      return AVO_INV_KWP[num-1] || AVO_INV_KWP[i] || 171;
+    });
+    const nInv   = invCols.length;
+    const rawRows = [];
+    const dateSet = new Set();
+
+    for(let i = 1; i < rows.length; i++){
+      const cols = rows[i];
+      if(!cols[0]) continue;
+      // Use parseGASTimestamp which correctly handles:
+      // - ISO UTC "2026-05-13T00:08:00.000Z" → adds +5:30 → 05:38 IST
+      // - ISO local "2026-05-13T05:38:00" → treats as local
+      // - "DD/MM/YYYY HH:MM:SS" → treats as local IST
+      const ts = parseGASTimestamp(cols[0]);
+      if(!ts || isNaN(ts.getTime())) continue;
+      const dd = String(ts.getDate()).padStart(2,'0');
+      const mm = String(ts.getMonth()+1).padStart(2,'0');
+      const yy = ts.getFullYear();
+      dateSet.add(`${dd}/${mm}/${yy}`);
+      const vals = invCols.map((_,j) => {
+        const v = parseFloat(cols[j+1]);
+        return isNaN(v) ? null : v;
+      });
+      rawRows.push({ts, vals});
+    }
+
+    rawRows.sort((a,b) => a.ts - b.ts);
+    if(!rawRows.length){
+      hide();
+      if(!silent && statusEl) statusEl.textContent = `⚠️ MinuteData in "${best.fileName}" parsed 0 rows.`;
+      return;
+    }
+
+    const bucketed = sAVOBucketRawRows(rawRows, nInv, sAVOHourlyInterval, false);
+    sAVOHourlyRawData = {
+      rawRows, inverterNames, inverterKwp, nInv,
+      dates: [...dateSet], isCumulative: true, isActivePower: false,
+      ...bucketed
+    };
+
+    // Friendly age label from sheet name (AVO_Power_YYYY_MM_DD)
+    const nameParts = best.fileName.split('_'); // ["AVO","Power","YYYY","MM","DD"]
+    let ageStr = best.fileName;
+    if(nameParts.length >= 5){
+      const sheetDate = new Date(+nameParts[2], +nameParts[3]-1, +nameParts[4]);
+      const daysAgo   = Math.round((Date.now() - sheetDate) / 86400000);
+      ageStr = daysAgo === 0 ? 'today' : daysAgo === 1 ? 'yesterday' : `${daysAgo} days ago`;
+    }
+    if(statusEl) statusEl.textContent =
+      `✅ Minute data loaded (${ageStr}) — ${dateSet.size} day(s), ${rawRows.length} rows`;
+    const saveBtn = document.getElementById('s-avo-save-btn');
+    if(saveBtn) saveBtn.disabled = false;
+    if(loadingEl) loadingEl.style.display = 'none';
+    sRenderAVOHourly();
+    _sScheduleHourlyRefresh();
+
+  }catch(e){
+    console.info('Hourly auto-load error:', e.message);
+    hide();
+    if(!silent && statusEl) statusEl.textContent = '⚠️ Auto-load failed: ' + e.message;
+  }
+}
+
+function _sScheduleHourlyRefresh(){
+  // Refresh every 5 minutes so chart stays up to date without manual reload
+  clearTimeout(_sHourlyAutoRefreshTimer);
+  _sHourlyAutoRefreshTimer = setTimeout(()=>sLoadHourlyFromDrive(true), 5*60*1000);
 }
 
 
@@ -12700,6 +13856,8 @@ window.addEventListener('DOMContentLoaded',()=>{
     setTimeout(()=>{
       if(!sInitialized){sInitialized=true;sInit();}
     },2400);
+    // Hourly minute data — load early and independently so chart is ready fast
+    setTimeout(()=>{ sLoadHourlyFromDrive(false); }, 2000);
     // EMS — scans Drive folder for all month sheets, auto-selects current month
     setTimeout(()=>{
       if(!emsInitialized){emsInitialized=true;emsInit();}
