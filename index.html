@@ -5228,6 +5228,25 @@ function emsV2SetDailyMode(mode) {
   EMS2.dailyMode = mode;
   document.getElementById('daily-mode-combined').classList.toggle('active', mode === 'combined');
   document.getElementById('daily-mode-separate').classList.toggle('active', mode === 'separate');
+
+  const a   = document.getElementById('daily-shift-a');
+  const b   = document.getElementById('daily-shift-b');
+  const c   = document.getElementById('daily-shift-c');
+  const tot = document.getElementById('daily-shift-total');
+  const totLabel = document.getElementById('daily-total-label');
+
+  if(mode === 'combined') {
+    // Combined: always show Total only; lock A/B/C out
+    a.checked = false; b.checked = false; c.checked = false; tot.checked = true;
+    tot.disabled = false;
+    totLabel.style.opacity = '1'; totLabel.style.pointerEvents = '';
+  } else {
+    // Separate: auto-select all three shifts, disable Total
+    a.checked = true; b.checked = true; c.checked = true; tot.checked = false;
+    tot.disabled = true;
+    totLabel.style.opacity = '0.4'; totLabel.style.pointerEvents = 'none';
+  }
+
   emsV2RenderDaily();
 }
 
@@ -5641,13 +5660,21 @@ function emsV2ShiftChange() {
   const tot = document.getElementById('daily-shift-total');
   const totLabel = document.getElementById('daily-total-label');
 
-  const anyShift = a.checked || b.checked || c.checked;
-  tot.disabled = anyShift;
-  totLabel.style.opacity = anyShift ? '0.4' : '1';
-  totLabel.style.pointerEvents = anyShift ? 'none' : '';
-
-  if(tot.checked && anyShift) tot.checked = false;
-  if(!a.checked && !b.checked && !c.checked && !tot.checked) { tot.checked = true; }
+  if(EMS2.dailyMode === 'combined') {
+    // In combined mode: only Total is relevant; ignore A/B/C changes, keep Total checked
+    a.checked = false; b.checked = false; c.checked = false; tot.checked = true;
+    tot.disabled = false;
+    totLabel.style.opacity = '1'; totLabel.style.pointerEvents = '';
+  } else {
+    // In separate mode: A/B/C are selectable; Total is always locked off
+    if(!a.checked && !b.checked && !c.checked) {
+      // At least one must be selected — restore all three
+      a.checked = true; b.checked = true; c.checked = true;
+    }
+    tot.checked = false;
+    tot.disabled = true;
+    totLabel.style.opacity = '0.4'; totLabel.style.pointerEvents = 'none';
+  }
 
   emsV2RenderDaily();
 }
@@ -5720,19 +5747,21 @@ function emsV2RenderDaily() {
   const machineColors = ['#3b82f6','#10b981','#f59e0b','#ef4444','#8b5cf6','#06b6d4','#f97316','#84cc16','#ec4899','#14b8a6','#f43f5e','#a855f7','#0ea5e9','#22c55e','#eab308','#6366f1','#fb923c','#38bdf8','#4ade80','#c084fc'];
   const isBar = EMS2.dailyChartType === 'bar';
   const isSep = EMS2.dailyMode === 'separate';
+  // Combined mode: only show Total line; Separate mode: only show A/B/C (not Total)
+  const shiftsFiltered = isSep ? shifts.filter(s => s !== 'Total') : shifts.filter(s => s === 'Total');
   const datasets = [];
 
   if(isSep) {
-    // One dataset per selected sensor (total only if multiple shifts; per shift if one sensor and multiple shifts selected)
+    // Separate mode: show Shift A/B/C per sensor (Total excluded via shiftsFiltered)
     selectedSensors.forEach((sensor, si) => {
       const baseColor = machineColors[si % machineColors.length];
-      if(shifts.length === 1) {
-        const shift = shifts[0];
+      if(shiftsFiltered.length === 1) {
+        const shift = shiftsFiltered[0];
         const values = sortedDates.map(dk => {
           const row = EMS2.dailyData[sensor]; return row && row[dk] ? (row[dk][shift] || 0) : 0;
         });
         datasets.push({
-          label: EMS2.shortName(sensor) + (shift !== 'Total' ? ` Sh.${shift}` : ''),
+          label: EMS2.shortName(sensor) + ` Sh.${shift}`,
           data: values,
           backgroundColor: baseColor + (isBar ? 'cc' : '00'),
           borderColor: baseColor, borderWidth: 2,
@@ -5741,7 +5770,7 @@ function emsV2RenderDaily() {
         });
       } else {
         // Multiple shifts selected in separate mode: one dataset per (sensor×shift)
-        shifts.forEach((shift, shIdx) => {
+        shiftsFiltered.forEach((shift, shIdx) => {
           const color = machineColors[(si * 4 + shIdx) % machineColors.length];
           const values = sortedDates.map(dk => {
             const row = EMS2.dailyData[sensor]; return row && row[dk] ? (row[dk][shift] || 0) : 0;
@@ -5758,10 +5787,10 @@ function emsV2RenderDaily() {
       }
     });
   } else {
-    // Combined mode (original behaviour)
+    // Combined mode: only show Total shift (shiftsFiltered = ['Total'])
     if(selectedSensors.length === 1) {
       const sensor = selectedSensors[0];
-      for(const shift of shifts) {
+      for(const shift of shiftsFiltered) {
         const values = sortedDates.map(dk => {
           const row = EMS2.dailyData[sensor];
           return row && row[dk] ? (row[dk][shift] || 0) : 0;
@@ -5776,7 +5805,7 @@ function emsV2RenderDaily() {
         });
       }
     } else {
-      for(const shift of shifts) {
+      for(const shift of shiftsFiltered) {
         const values = sortedDates.map(dk => {
           let sum = 0;
           for(const sensor of selectedSensors) {
@@ -5848,19 +5877,6 @@ function emsRenderDailySummary(datasets, sortedDates, labels) {
       </div>
     </div>`;
   });
-  // Grand total if multiple datasets
-  if(datasets.length>1){
-    const allVals = sortedDates.map((_,di)=>datasets.reduce((s,ds)=>s+(ds.data[di]||0),0));
-    const grand = allVals.reduce((a,b)=>a+b,0);
-    const grandAvg = grand/nDays;
-    html+=`<div style="background:var(--surface2);border-radius:8px;padding:8px 12px;border-left:3px solid #6366f1;min-width:160px;flex:1;">
-      <div style="font-size:0.68rem;font-weight:700;color:#6366f1;margin-bottom:4px;">GRAND TOTAL (${nDays} days)</div>
-      <div style="display:flex;gap:14px;">
-        <div><div style="font-size:0.62rem;color:var(--text3);">TOTAL</div><div style="font-size:0.88rem;font-weight:700;color:var(--text);">${grand>=1000?(grand/1000).toFixed(1)+'k':grand.toFixed(0)} kWh</div></div>
-        <div><div style="font-size:0.62rem;color:var(--text3);">AVG/DAY</div><div style="font-size:0.88rem;font-weight:700;color:var(--text);">${grandAvg.toFixed(1)} kWh</div></div>
-      </div>
-    </div>`;
-  }
   cont.innerHTML=html;
 }
 
