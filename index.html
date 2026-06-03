@@ -2642,6 +2642,107 @@ body.holo2 .holo-reveal-progress-fill{background:linear-gradient(90deg,transpare
   100% { border-color: hsl(0,90%,55%);   box-shadow: 0 0 12px 3px hsl(0,90%,55%,0.5); }
 }
 
+/* ── DRYER HEATMAP ── */
+#d-heatmap-card { animation: fadeUp 0.5s both; }
+#dhm-grid { user-select: none; }
+.dhm-cell {
+  border-radius: 6px !important;
+  transition: transform 0.15s cubic-bezier(0.34,1.56,0.64,1), box-shadow 0.15s, filter 0.15s !important;
+  cursor: pointer;
+  position: relative;
+}
+.dhm-cell:hover {
+  transform: scale(1.18) !important;
+  z-index: 20 !important;
+  filter: brightness(1.12);
+}
+.dhm-cell:active {
+  transform: scale(0.95) !important;
+}
+/* Heatmap legend gradient bar */
+#dhm-legend { border: 1px solid var(--border); border-radius: 6px; overflow: hidden; }
+
+/* ── MUTE BUTTON ── */
+#sublynq-mute-btn {
+  position: fixed !important;
+  bottom: 80px !important;
+  right: 14px !important;
+  z-index: 99999 !important;
+  width: 38px !important;
+  height: 38px !important;
+  border-radius: 50% !important;
+  border: 1.5px solid var(--border2) !important;
+  background: var(--surface) !important;
+  color: var(--text) !important;
+  font-size: 1rem !important;
+  cursor: pointer !important;
+  box-shadow: var(--shadow-sm) !important;
+  transition: transform 0.2s cubic-bezier(0.34,1.56,0.64,1), box-shadow 0.2s !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  -webkit-tap-highlight-color: transparent;
+  visibility: visible !important;
+  pointer-events: auto !important;
+  opacity: 1;
+}
+#sublynq-mute-btn:hover {
+  transform: scale(1.15) !important;
+  box-shadow: var(--shadow) !important;
+}
+#sublynq-mute-btn:active {
+  transform: scale(0.92) !important;
+}
+#sublynq-mute-btn.muted {
+  opacity: 0.55;
+  border-style: dashed !important;
+}
+
+/* ── HOLO MUTE BUTTON OVERRIDE ── */
+body.holo #sublynq-mute-btn,
+body.holo2 #sublynq-mute-btn,
+body.holo3d #sublynq-mute-btn {
+  border-color: rgba(0,234,255,0.4) !important;
+  background: rgba(0,8,24,0.9) !important;
+  color: #00eaff !important;
+  box-shadow: 0 0 14px rgba(0,234,255,0.2) !important;
+  display: flex !important;
+  visibility: visible !important;
+  pointer-events: auto !important;
+}
+
+/* ── Dryer heatmap dryer summary animation ── */
+#dhm-dryer-summary > div {
+  transition: box-shadow 0.3s;
+}
+#dhm-dryer-summary > div:hover {
+  box-shadow: var(--shadow);
+}
+
+/* ── Dryer heatmap tooltip ── */
+#dhm-tooltip {
+  pointer-events: none;
+  transition: opacity 0.1s;
+  backdrop-filter: blur(8px);
+}
+
+/* ── Sound ripple on click (visual feedback) ── */
+@keyframes _sfxRipple {
+  0%   { transform: scale(0); opacity: 0.5; }
+  100% { transform: scale(2.5); opacity: 0; }
+}
+._sfx-ripple-dot {
+  position: fixed;
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: var(--accent);
+  pointer-events: none;
+  z-index: 99998;
+  transform: scale(0);
+  animation: _sfxRipple 0.35s ease-out forwards;
+}
+
 </style>
 </head>
 <body>
@@ -3112,6 +3213,47 @@ body.holo2 .holo-reveal-progress-fill{background:linear-gradient(90deg,transpare
     <div id="d-live-chamber-grid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(120px,1fr));gap:10px;margin-top:10px;"></div>
     <div style="margin-top:10px;font-size:0.72rem;color:var(--text3);">Auto-refreshes with live data. <span style="color:var(--danger);">● Offline</span> = no update for 2+ min. Tap a dryer above to switch.</div>
   </div>
+
+  <!-- ── DRYER MINI HEATMAP: 4 Dryers × 6 Chambers ── -->
+  <div class="card" id="d-heatmap-card" style="margin-bottom:14px;">
+    <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;margin-bottom:14px;">
+      <div class="card-title" style="margin:0;">🌡️ Dryer Heatmap — 4 Dryers × 6 Chambers</div>
+      <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
+        <label style="font-size:0.72rem;color:var(--text2);font-weight:600;">View:</label>
+        <div class="chart-type-toggle">
+          <button id="dhm-btn-avg" class="active" onclick="dHeatmapSetMode('avg')" title="Average Temperature">Avg</button>
+          <button id="dhm-btn-max" onclick="dHeatmapSetMode('max')" title="Maximum Temperature">Max</button>
+          <button id="dhm-btn-min" onclick="dHeatmapSetMode('min')" title="Minimum Temperature">Min</button>
+        </div>
+        <label style="font-size:0.72rem;color:var(--text2);font-weight:600;">Scale: <span id="dhm-range-label" style="color:var(--dryer);font-family:'JetBrains Mono',monospace;">Auto</span></label>
+        <input type="range" min="50" max="200" value="150" step="5" id="dhm-max-slider" class="slider" style="width:80px;" oninput="dHeatmapScaleChange(this.value)" title="Max scale (°C)">
+      </div>
+    </div>
+    <div id="d-heatmap-wrap" style="overflow-x:auto;">
+      <div style="min-width:340px;">
+        <!-- Legend -->
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:12px;flex-wrap:wrap;">
+          <span style="font-size:0.68rem;color:var(--text3);font-weight:700;text-transform:uppercase;letter-spacing:0.5px;">°C Scale:</span>
+          <div id="dhm-legend" style="display:flex;align-items:center;gap:0;border-radius:6px;overflow:hidden;height:18px;width:200px;"></div>
+          <span id="dhm-legend-lo" style="font-size:0.68rem;color:var(--text3);font-family:'JetBrains Mono',monospace;"></span>
+          <span style="font-size:0.65rem;color:var(--text3);">→</span>
+          <span id="dhm-legend-hi" style="font-size:0.68rem;color:var(--text3);font-family:'JetBrains Mono',monospace;"></span>
+          <span style="font-size:0.68rem;color:var(--text3);margin-left:8px;">⬜ No data</span>
+        </div>
+        <!-- Heatmap Grid: rows=dryers, cols=chambers -->
+        <div style="display:grid;grid-template-columns:auto repeat(6,1fr);gap:3px;align-items:center;" id="dhm-grid">
+          <!-- built dynamically -->
+        </div>
+        <!-- Dryer summary bar -->
+        <div id="dhm-dryer-summary" style="margin-top:12px;display:grid;grid-template-columns:repeat(4,1fr);gap:8px;"></div>
+      </div>
+    </div>
+    <div style="margin-top:10px;font-size:0.7rem;color:var(--text3);">
+      Tap any cell for chamber details. Colors map temperature intensity — <span style="color:#3b82f6;">blue</span> = cool · <span style="color:#f59e0b;">amber</span> = warm · <span style="color:#dc2626;">red</span> = hot.
+    </div>
+  </div>
+  <!-- Heatmap Cell Tooltip -->
+  <div id="dhm-tooltip" style="display:none;position:fixed;z-index:9999;background:var(--surface);border:1.5px solid var(--dryer);border-radius:10px;padding:8px 12px;font-size:0.78rem;box-shadow:0 4px 20px rgba(220,38,38,0.18);pointer-events:none;max-width:200px;"></div>
     <div style="display:flex;gap:12px;flex-wrap:wrap;margin-bottom:10px;">
       <label class="chk-label"><input type="checkbox" id="d-hideZero" checked onchange="dRenderChart();dUpdateKPIStats();dRenderBars();dRenderSummary();"> Hide 0°C (offline) readings</label>
       <label class="chk-label"><input type="checkbox" id="d-joinGaps" checked onchange="dRenderChart()"> Join gaps</label>
@@ -16786,6 +16928,1031 @@ document.addEventListener('mousedown',function(e){
 });
 document.addEventListener('mouseup',()=>clearTimeout(_aiLongPress));
 </script>
+
+<!-- ═══════════════════════════════════════════════════════════════
+     SUBLYNQ SOUND ENGINE — Normal Light/Dark Theme Edition
+     Context-aware sounds for every interactive element
+     ═══════════════════════════════════════════════════════════════ -->
+<script>
+(function(){
+'use strict';
+
+/* ── AUDIO CONTEXT ── */
+let _AC = null;
+let _soundMuted = false;
+
+function _getAC(){
+  if(_soundMuted) return null;
+  if(!_AC || _AC.state === 'closed'){
+    try{ _AC = new(window.AudioContext||window.webkitAudioContext)(); }catch(e){ return null; }
+  }
+  if(_AC.state === 'suspended') _AC.resume().catch(()=>{});
+  return _AC;
+}
+
+/* ── MUTE BUTTON ── */
+(function buildMuteBtn(){
+  const btn = document.createElement('button');
+  btn.id = 'sublynq-mute-btn';
+  btn.title = 'Toggle all sound effects';
+  btn.innerHTML = '🔊';
+  btn.style.cssText = `
+    position:fixed; bottom:80px; right:14px; z-index:99999;
+    width:38px; height:38px; border-radius:50%;
+    border:1.5px solid var(--border2,rgba(37,99,235,0.4));
+    background:var(--surface,#fff); color:var(--text,#0d1630);
+    font-size:1rem; cursor:pointer; box-shadow:0 2px 12px rgba(0,0,0,0.14);
+    display:flex; align-items:center; justify-content:center;
+    visibility:visible; pointer-events:auto;
+    -webkit-tap-highlight-color:transparent;
+  `;
+  btn.addEventListener('click', function(e){
+    e.stopPropagation(); // prevent boop from firing
+    _soundMuted = !_soundMuted;
+    btn.innerHTML = _soundMuted ? '🔇' : '🔊';
+    btn.classList.toggle('muted', _soundMuted);
+    // Always keep button visible & on top — re-append ensures nothing buries it
+    document.body.appendChild(btn);
+    if(!_soundMuted) SFX.uiClick(); // confirmation chirp on unmute
+  });
+
+  // Ensure button is always in DOM — re-append on any page change
+  function _ensureMuteBtn(){
+    if(!document.getElementById('sublynq-mute-btn')){
+      document.body.appendChild(btn);
+    }
+    // Also re-assert critical styles in case something trampled them
+    btn.style.display = 'flex';
+    btn.style.visibility = 'visible';
+    btn.style.pointerEvents = 'auto';
+  }
+  // Watch for any DOM mutations that might remove the button
+  new MutationObserver(_ensureMuteBtn).observe(document.body, {childList: true});
+
+  document.body.appendChild(btn);
+})();
+
+/* ═══════════════════════════════════
+   SFX — Sound Effect Library
+   Each function builds sounds via Web Audio API only (no files needed)
+   ═══════════════════════════════════ */
+const SFX = {};
+
+/* ── tiny helper: envelope + connect ── */
+function _note(freq, type, duration, gainPeak, startDelay, freqEnd, dest){
+  const ac = _getAC(); if(!ac) return;
+  const o = ac.createOscillator();
+  const g = ac.createGain();
+  const t = ac.currentTime + (startDelay||0);
+  o.type = type || 'sine';
+  o.frequency.setValueAtTime(freq, t);
+  if(freqEnd) o.frequency.exponentialRampToValueAtTime(freqEnd, t + duration*0.8);
+  g.gain.setValueAtTime(0, t);
+  g.gain.linearRampToValueAtTime(gainPeak, t + Math.min(0.01, duration*0.15));
+  g.gain.exponentialRampToValueAtTime(0.0001, t + duration);
+  o.connect(g); g.connect(dest||ac.destination);
+  o.start(t); o.stop(t + duration + 0.01);
+}
+
+function _noise(duration, gainPeak, startDelay, dest){
+  const ac = _getAC(); if(!ac) return;
+  const len = Math.ceil(ac.sampleRate * duration);
+  const buf = ac.createBuffer(1, len, ac.sampleRate);
+  const d = buf.getChannelData(0);
+  for(let i=0;i<len;i++) d[i]=(Math.random()*2-1);
+  const src = ac.createBufferSource();
+  src.buffer = buf;
+  const g = ac.createGain();
+  const t = ac.currentTime + (startDelay||0);
+  g.gain.setValueAtTime(0, t);
+  g.gain.linearRampToValueAtTime(gainPeak, t+0.005);
+  g.gain.exponentialRampToValueAtTime(0.0001, t+duration);
+  src.connect(g); g.connect(dest||ac.destination);
+  src.start(t); src.stop(t+duration+0.01);
+}
+
+/* 1. Dynamic Smart Click — subtle tactile click that adapts to button context */
+SFX.uiClick = function(variant){
+  const ac = _getAC(); if(!ac) return;
+  // Soft tick + tiny resonance
+  _note(1800, 'triangle', 0.06, 0.22, 0, 600);
+  _noise(0.018, 0.04, 0);
+};
+
+/* 2. Nav tab switch — swoosh + settle */
+SFX.navSwitch = function(){
+  _note(320, 'sine', 0.12, 0.18, 0, 480);
+  _note(640, 'sine', 0.09, 0.10, 0.04, 820);
+};
+
+/* 3. Chart open/expand — airy rising chord */
+SFX.open = function(){
+  [261.63, 329.63, 392].forEach((f,i) => _note(f, 'sine', 0.25, 0.08, i*0.04));
+};
+
+/* 4. Close/retract — descending chord */
+SFX.close = function(){
+  [392, 329.63, 261.63].forEach((f,i) => _note(f, 'sine', 0.22, 0.07, i*0.04));
+};
+
+/* 5. Upload / drop file — bubbly pop sequence */
+SFX.upload = function(){
+  const ac = _getAC(); if(!ac) return;
+  [600,900,1200,1600,2000].forEach((f,i)=>{
+    _note(f, 'sine', 0.14, 0.09, i*0.045, f*1.3);
+  });
+  _noise(0.06, 0.06, 0.05);
+};
+
+/* 6. Data load — mechanical whir + success chime */
+SFX.load = function(){
+  const ac = _getAC(); if(!ac) return;
+  // Short mechanical sweep
+  _note(150, 'sawtooth', 0.18, 0.07, 0, 600);
+  // Success ping at end
+  _note(880, 'sine', 0.2, 0.12, 0.16);
+  _note(1320, 'sine', 0.18, 0.09, 0.20);
+};
+
+/* 7. Drag on graph — piano keys, chromatic walk per delta */
+let _dragPianoNote = 0;
+const _PIANO_FREQS = [261.63,277.18,293.66,311.13,329.63,349.23,369.99,392,415.30,440,466.16,493.88,523.25];
+SFX.drag = function(direction){
+  const ac = _getAC(); if(!ac) return;
+  if(direction === 1) _dragPianoNote = Math.min(_dragPianoNote+1, _PIANO_FREQS.length-1);
+  else if(direction === -1) _dragPianoNote = Math.max(_dragPianoNote-1, 0);
+  const f = _PIANO_FREQS[_dragPianoNote];
+  _note(f, 'sine', 0.15, 0.11, 0);
+  // Faint harmonic
+  _note(f*2, 'sine', 0.12, 0.04, 0.01);
+};
+
+/* Drag select start/end tones */
+SFX.dragStart = function(){
+  _note(440, 'sine', 0.12, 0.12, 0);
+  _dragPianoNote = 5; // reset to middle C area
+};
+SFX.dragEnd = function(){
+  _note(523.25, 'sine', 0.14, 0.12, 0);
+  _note(659.25, 'sine', 0.12, 0.08, 0.06);
+};
+
+/* 8. Select / checkbox toggle */
+SFX.select = function(checked){
+  if(checked){ _note(880, 'sine', 0.10, 0.10, 0); _note(1320,'sine',0.09,0.07,0.05); }
+  else        { _note(660, 'sine', 0.10, 0.08, 0); _note(440,'sine',0.09,0.06,0.05); }
+};
+
+/* 9. Export — typewriter burst + ding */
+SFX.exportSound = function(){
+  for(let i=0;i<6;i++){
+    _note(900+i*80, 'square', 0.04, 0.06, i*0.04);
+    _noise(0.03, 0.025, i*0.04);
+  }
+  _note(1760, 'sine', 0.22, 0.13, 0.3);
+};
+
+/* 10. Theme toggle — morning birds (light) / owl (dark) */
+SFX.themeBird = function(isDark){
+  const ac = _getAC(); if(!ac) return;
+  if(!isDark){
+    // Dawn birds — quick ascending chirps
+    [[1200,1600],[1400,1800],[1600,2000],[1000,1400]].forEach(([f1,f2],i)=>{
+      _note(f1,'sine',0.12,0.09,i*0.11,f2);
+      _note(f1*1.25,'sine',0.08,0.05,i*0.11+0.04,f2*1.25);
+    });
+    // Final trill
+    [1600,1800,2000,1800,1600].forEach((f,i) => _note(f,'sine',0.06,0.07,0.52+i*0.04));
+  } else {
+    // Owl — deep hoo-hoo
+    _note(220,'sine',0.35,0.14,0,180);
+    _note(220,'sine',0.35,0.14,0.4,180);
+    // Distant hoot overtone
+    _note(440,'sine',0.3,0.05,0.02,360);
+    _note(440,'sine',0.3,0.05,0.42,360);
+    // Flap wings noise
+    _noise(0.08,0.06,0.75);
+  }
+};
+
+/* 11. Bar chart ↔ Line chart button — switching sound */
+SFX.chartSwitch = function(type){
+  if(type==='bar'){
+    // Blocky staccato
+    [400,500,600,700].forEach((f,i)=>_note(f,'square',0.06,0.09,i*0.04));
+  } else {
+    // Smooth glide
+    _note(400,'sine',0.25,0.11,0,900);
+    _note(800,'sine',0.2,0.06,0.06,600);
+  }
+};
+
+/* 12. Collapse / accordion open-close */
+SFX.collapse = function(open){
+  if(open){ _note(300,'sine',0.15,0.10,0,500); _noise(0.04,0.03,0.05); }
+  else     { _note(500,'sine',0.15,0.08,0,250); _noise(0.04,0.025,0.04); }
+};
+
+/* 13. Live refresh / data reload */
+SFX.refresh = function(){
+  [523.25,659.25,783.99].forEach((f,i)=>_note(f,'sine',0.14,0.08,i*0.05));
+};
+
+/* 14. Error / warning */
+SFX.error = function(){
+  _note(220,'sawtooth',0.1,0.14,0);
+  _note(196,'sawtooth',0.1,0.12,0.08);
+  _noise(0.06,0.08,0.04);
+};
+
+/* 15. Heatmap cell hover — soft marimba */
+SFX.heatmapHover = function(intensity){ // 0..1
+  const f = 400 + intensity * 800;
+  _note(f,'sine',0.1,0.08,0,f*1.05);
+};
+
+/* 16. Quick date button — calendar flip */
+SFX.datePick = function(){
+  _note(880,'triangle',0.08,0.09,0);
+  _note(1100,'triangle',0.07,0.07,0.04);
+};
+
+/* 17. Page navigation — whoosh */
+SFX.pageNav = function(){
+  const ac = _getAC(); if(!ac) return;
+  // Pitched swish
+  _note(200,'sine',0.18,0.12,0,800);
+  _noise(0.08,0.05,0.01);
+};
+
+/* 18. Export menu open/close */
+SFX.menuOpen = function(){
+  _note(600,'sine',0.08,0.08,0,900);
+};
+
+/* 19. Slider drag */
+SFX.sliderTick = function(){
+  _note(1200,'triangle',0.05,0.07,0,1000);
+};
+
+/* 20. Toggle switch */
+SFX.toggle = function(on){
+  if(on){ _note(800,'sine',0.08,0.10,0); _note(1200,'sine',0.07,0.07,0.04); }
+  else  { _note(600,'sine',0.08,0.08,0); _note(400,'sine',0.07,0.05,0.04); }
+};
+
+/* 21. Home card hover — soft bell */
+SFX.homeCardHover = function(){
+  _note(1046.5,'sine',0.2,0.06,0);
+  _note(1318.5,'sine',0.18,0.04,0.03);
+};
+
+/* 22. Measure / ruler click */
+SFX.measure = function(){
+  _note(500,'square',0.06,0.10,0);
+  _note(1000,'sine',0.1,0.07,0.04);
+};
+
+/* 23. Clear / reset */
+SFX.clear = function(){
+  _note(800,'triangle',0.1,0.09,0,300);
+  _noise(0.05,0.04,0.02);
+};
+
+/* 24. Data point tooltip hover */
+SFX.tooltipHover = function(){
+  _note(1400,'sine',0.05,0.04,0,1600);
+};
+
+/* 25. Loader bar complete */
+SFX.loaderDone = function(){
+  [523.25,659.25,783.99,1046.5].forEach((f,i)=>_note(f,'sine',0.2,0.09,i*0.06));
+};
+
+/* ═════════════════════════════════════════════════
+   WIRING — attach sounds to elements
+   Uses event delegation for efficiency
+   ═════════════════════════════════════════════════ */
+
+function _wire(){
+
+  /* ── Visual ripple on any sound-producing click ── */
+  function _spawnRipple(x, y, color){
+    const d = document.createElement('div');
+    d.className = '_sfx-ripple-dot';
+    d.style.left = (x-6)+'px';
+    d.style.top  = (y-6)+'px';
+    if(color) d.style.background = color;
+    document.body.appendChild(d);
+    setTimeout(()=>d.remove(), 380);
+  }
+
+  /* ══════════════════════════════════════════════════
+     NAV SECTION SOUNDS — each page has its own sonic identity
+     ══════════════════════════════════════════════════ */
+
+  // Helper: detect which section a nav button targets
+  function _getNavSection(el){
+    // Check id patterns: tab-home, mob-home, holo3d-nav-btn with text
+    const id = el.id || '';
+    const onclick = el.getAttribute('onclick') || '';
+    const txt = (el.textContent||'').toLowerCase();
+    const combined = id + onclick + txt;
+    if(/home/i.test(combined))    return 'home';
+    if(/resin/i.test(combined))   return 'resin';
+    if(/prepress/i.test(combined))return 'prepress';
+    if(/dryer/i.test(combined))   return 'dryer';
+    if(/solar/i.test(combined))   return 'solar';
+    if(/ems/i.test(combined))     return 'ems';
+    if(/ai/i.test(combined))      return 'ai';
+    return null;
+  }
+
+  // HOME — door unlock: mechanical clunk, latch click, open creak
+  SFX.navHome = function(){
+    const ac = _getAC(); if(!ac) return;
+    // Heavy metal clunk (door mechanism)
+    _note(120, 'sawtooth', 0.08, 0.22, 0, 80);
+    _noise(0.06, 0.18, 0);
+    // Latch click (sharp tick)
+    _noise(0.018, 0.28, 0.055);
+    _note(800, 'square', 0.03, 0.14, 0.06, 400);
+    // Door creak sweep (low → mid)
+    _note(180, 'sine', 0.22, 0.09, 0.08, 320);
+    _note(260, 'sine', 0.18, 0.06, 0.14, 200);
+    // Welcome chime
+    _note(523.25, 'sine', 0.18, 0.07, 0.28);
+    _note(659.25, 'sine', 0.16, 0.06, 0.34);
+  };
+
+  // RESIN — bubbling liquid: rising bubble pops + thick liquid sound
+  SFX.navResin = function(){
+    const ac = _getAC(); if(!ac) return;
+    // Thick liquid base (low rumble)
+    _note(80, 'sine', 0.2, 0.12, 0, 100);
+    // Bubble pops — each bubble is a short sine blip with pitch wobble
+    [[0.04,320,480],[0.10,420,600],[0.17,280,420],[0.23,500,700],[0.29,360,540],[0.35,600,800]].forEach(([t,f1,f2])=>{
+      _note(f1, 'sine', 0.09, 0.13, t, f2);
+      _noise(0.015, 0.07, t+0.01);
+    });
+    // Final big bubble pop
+    _note(200, 'sine', 0.14, 0.16, 0.42, 800);
+    _noise(0.04, 0.12, 0.43);
+  };
+
+  // PREPRESS — microwave timer ding: classic bell ting × 3 with diminuendo
+  SFX.navPrepress = function(){
+    const ac = _getAC(); if(!ac) return;
+    // Classic metallic "ting" bell tone — microwave beep
+    [[0, 1800, 0.18],[0.22, 1800, 0.14],[0.44, 1800, 0.10]].forEach(([delay, f, gain])=>{
+      // Fundamental
+      _note(f,      'sine', 0.35, gain,       delay);
+      // 2nd harmonic (adds bell metallic quality)
+      _note(f*2.76, 'sine', 0.28, gain*0.45,  delay);
+      // 3rd harmonic
+      _note(f*5.4,  'sine', 0.18, gain*0.18,  delay);
+      // Short noise attack (physical strike)
+      _noise(0.012, gain*0.6, delay);
+    });
+    // Microwave relay click at end
+    _noise(0.02, 0.2, 0.68);
+  };
+
+  // DRYER — hot air woosh blow: turbulent air burst fading out
+  SFX.navDryer = function(){
+    const ac = _getAC(); if(!ac) return;
+    // Bandpass-ish noise burst (simulate rush of hot air)
+    const buf = ac.createBuffer(1, ac.sampleRate * 0.55, ac.sampleRate);
+    const d = buf.getChannelData(0);
+    for(let i=0;i<d.length;i++) d[i]=(Math.random()*2-1);
+    const src = ac.createBufferSource();
+    src.buffer = buf;
+    // BandPass filter centred on ~800 Hz for "air" character
+    const bpf = ac.createBiquadFilter();
+    bpf.type = 'bandpass';
+    bpf.frequency.setValueAtTime(400, ac.currentTime);
+    bpf.frequency.exponentialRampToValueAtTime(1200, ac.currentTime + 0.18);
+    bpf.frequency.exponentialRampToValueAtTime(600, ac.currentTime + 0.5);
+    bpf.Q.value = 1.2;
+    const g = ac.createGain();
+    g.gain.setValueAtTime(0, ac.currentTime);
+    g.gain.linearRampToValueAtTime(0.28, ac.currentTime + 0.04);
+    g.gain.exponentialRampToValueAtTime(0.0001, ac.currentTime + 0.55);
+    src.connect(bpf); bpf.connect(g); g.connect(ac.destination);
+    src.start(ac.currentTime); src.stop(ac.currentTime + 0.58);
+    // Low warmth thud underneath (heat element)
+    _note(60, 'sine', 0.18, 0.14, 0, 120);
+    // High airy whistle tail
+    _note(2400, 'sine', 0.3, 0.04, 0.05, 800);
+  };
+
+  // SOLAR — energetic sun burst: bright rising chord + shimmer
+  SFX.navSolar = function(){
+    const ac = _getAC(); if(!ac) return;
+    // Bright energetic rising sweep
+    _note(330, 'sine', 0.22, 0.13, 0,    880);
+    _note(440, 'sine', 0.20, 0.11, 0.03, 1100);
+    _note(550, 'sine', 0.18, 0.10, 0.06, 1320);
+    _note(660, 'sine', 0.16, 0.09, 0.09, 1760);
+    // Solar shimmer — high freq sparkle
+    [0.12,0.16,0.20,0.24,0.28].forEach((t,i)=>{
+      _note(2000+i*300, 'sine', 0.08, 0.04, t, 2800+i*200);
+    });
+    // Warm sustain chord
+    [523.25,659.25,783.99,1046.5].forEach((f,i)=>_note(f,'sine',0.35,0.07,0.18+i*0.02));
+  };
+
+  // EMS — electric power: voltage zap + hum + relay click
+  SFX.navEMS = function(){
+    const ac = _getAC(); if(!ac) return;
+    // Sharp electric zap (sawtooth burst)
+    _note(120, 'sawtooth', 0.06, 0.20, 0, 60);
+    _note(240, 'sawtooth', 0.05, 0.18, 0.01, 120);
+    _noise(0.04, 0.22, 0);
+    // Power hum (50Hz AC mains character)
+    _note(50,  'sine', 0.28, 0.12, 0.02);
+    _note(100, 'sine', 0.25, 0.08, 0.02);
+    _note(150, 'sine', 0.22, 0.04, 0.02);
+    // Relay clicks × 2 (circuit energising)
+    _noise(0.015, 0.25, 0.06);
+    _noise(0.015, 0.20, 0.12);
+    // Rising power-up whine
+    _note(200, 'sawtooth', 0.22, 0.07, 0.08, 1800);
+    // Electrical arc crackle
+    [0.04,0.07,0.10,0.13].forEach(t=>_noise(0.01, 0.12, t));
+  };
+
+  // AI / generic nav — futuristic interface bleep
+  SFX.navAI = function(){
+    _note(880, 'sine', 0.14, 0.10, 0);
+    _note(1320,'sine', 0.12, 0.08, 0.05);
+    _note(1760,'sine', 0.10, 0.06, 0.09);
+  };
+
+  // Map section → sound + ripple colour
+  const _NAV_SFX = {
+    home:     { fn: ()=>SFX.navHome(),    color:'#6366f1' },
+    resin:    { fn: ()=>SFX.navResin(),   color:'var(--resin)' },
+    prepress: { fn: ()=>SFX.navPrepress(),color:'var(--prepress)' },
+    dryer:    { fn: ()=>SFX.navDryer(),   color:'var(--dryer)' },
+    solar:    { fn: ()=>SFX.navSolar(),   color:'var(--solar)' },
+    ems:      { fn: ()=>SFX.navEMS(),     color:'var(--ems)' },
+    ai:       { fn: ()=>SFX.navAI(),      color:'#818cf8' },
+  };
+
+  // BOOP — non-interactive click fallback: low double-thump
+  SFX.boop = function(){
+    const ac = _getAC(); if(!ac) return;
+    _note(90,  'sine', 0.09, 0.10, 0,    75);
+    _note(70,  'sine', 0.09, 0.08, 0.07, 55);
+    _noise(0.025, 0.04, 0.01);
+  };
+
+  /* ─────────────────────────────────────────────────────
+     INTERACTIVE ELEMENT DETECTION
+     Returns true if el is something the user can meaningfully interact with
+  ───────────────────────────────────────────────────── */
+  function _isInteractive(el){
+    if(!el) return false;
+    const tag = el.tagName;
+    // Inherently interactive tags
+    if(['BUTTON','A','INPUT','SELECT','TEXTAREA','LABEL','SUMMARY'].includes(tag)) return true;
+    // Elements with explicit interactive attributes
+    if(el.hasAttribute('onclick') || el.hasAttribute('ontouchend')) return true;
+    if(el.getAttribute('role') === 'button') return true;
+    if(el.tabIndex >= 0 && el.tabIndex !== undefined) return true;
+    // Interactive classes
+    const cls = el.className || '';
+    if(/(btn|tab|card|link|toggle|switch|selector|item|btn-|quick-|qd-|press-btn|dryer-btn|mob-tab|nav-tab|solar-sub-tab|export-item|upload-toggle|more-link|ql-|home-quicklink|dhm-cell|chart-type|chk-label)/i.test(cls)) return true;
+    return false;
+  }
+
+  function _closestInteractive(el){
+    let cur = el;
+    let depth = 0;
+    while(cur && cur !== document.body && depth < 7){
+      if(_isInteractive(cur)) return cur;
+      cur = cur.parentElement;
+      depth++;
+    }
+    return null;
+  }
+
+  /* ── Global click delegation ── */
+  document.addEventListener('click', function(e){
+    if(_soundMuted) return;
+    const t = e.target;
+
+    // ── 1. Theme button — handled separately by toggleTheme patch
+    if(t.id === 'themeBtn' || t.closest && t.closest('#themeBtn')) return;
+
+    // ── 2. Mute button itself — no sound (it IS the sound control)
+    if(t.id === 'sublynq-mute-btn' || t.closest && t.closest('#sublynq-mute-btn')) return;
+
+    // ── 3. NAV SECTION BUTTONS — top bar & mobile bottom bar & holo3d nav
+    const navEl = t.classList.contains('nav-tab') ? t
+                : t.classList.contains('mob-tab')  ? t
+                : t.closest && t.closest('.nav-tab, .mob-tab, .holo3d-nav-btn');
+    if(navEl){
+      const section = _getNavSection(navEl);
+      const sfxEntry = section && _NAV_SFX[section];
+      if(sfxEntry){
+        sfxEntry.fn();
+        _spawnRipple(e.clientX, e.clientY, sfxEntry.color);
+      } else {
+        SFX.navSwitch();
+        _spawnRipple(e.clientX, e.clientY, 'var(--accent)');
+      }
+      return;
+    }
+
+    // ── 4. Home cards (visual page launcher cards on home screen)
+    if(t.closest && t.closest('.home-card')){
+      const card = t.closest('.home-card');
+      const onclick = card.getAttribute('onclick') || '';
+      const section = _getNavSection(card);
+      const sfxEntry = section && _NAV_SFX[section];
+      if(sfxEntry){ sfxEntry.fn(); _spawnRipple(e.clientX, e.clientY, sfxEntry.color); }
+      else { SFX.pageNav(); _spawnRipple(e.clientX, e.clientY, 'var(--accent2)'); }
+      return;
+    }
+
+    // ── 5. Quick date buttons
+    if(t.classList.contains('qd-btn') || t.classList.contains('qd-btn-live')){
+      SFX.datePick(); _spawnRipple(e.clientX, e.clientY, 'var(--accent)'); return;
+    }
+
+    // ── 6. Load data / view buttons
+    if(t.tagName==='BUTTON' && t.textContent && /load data|view|📊/i.test(t.textContent)){
+      SFX.load(); return;
+    }
+
+    // ── 7. Export items
+    if(t.classList.contains('export-item')){
+      SFX.exportSound(); _spawnRipple(e.clientX, e.clientY, 'var(--success)'); return;
+    }
+
+    // ── 8. Export wrap button (open menu)
+    if(t.closest && t.closest('.export-wrap') && t.tagName==='BUTTON' && (t.textContent||'').includes('Export')){
+      SFX.menuOpen(); return;
+    }
+
+    // ── 9. Chart type toggle buttons
+    if(t.closest && t.closest('.chart-type-toggle')){
+      const txt = (t.textContent||'').toLowerCase();
+      if(txt.includes('bar') || txt.includes('▐')){ SFX.chartSwitch('bar'); return; }
+      if(txt.includes('line') || txt.includes('↗')){ SFX.chartSwitch('line'); return; }
+      SFX.chartSwitch('other'); SFX.uiClick(); return;
+    }
+
+    // ── 10. Heatmap mode buttons
+    if(t.id && t.id.startsWith('dhm-btn-')){ SFX.heatmapHover(0.5); return; }
+
+    // ── 11. Collapse / accordion headers
+    if(t.closest && (t.closest('[onclick*="sToggleCollapse"]') || t.closest('[onclick*="toggleCollapse"]') ||
+       t.closest('[onclick*="rToggleReport"]') || t.closest('[onclick*="toggleUpload"]'))){
+      const icon = t.closest('.card') && t.closest('.card').querySelector('[style*="rotate(-90"]');
+      SFX.collapse(!!icon); return;
+    }
+
+    // ── 12. Press / dryer / chamber selectors
+    if(t.closest && (t.closest('.press-selector') || t.closest('.dryer-selector') || t.closest('.dryer-chambers'))){
+      SFX.select(true); return;
+    }
+
+    // ── 13. Select All / None / Clear
+    if(t.tagName==='BUTTON' && t.textContent && /(all|none|clear|✕)/i.test(t.textContent.trim())){
+      SFX.clear(); return;
+    }
+
+    // ── 14. Measure buttons
+    if(t.id && /mBtn/.test(t.id)){ SFX.measure(); return; }
+
+    // ── 15. Quick-fill / quick preset buttons
+    if(t.classList.contains('quick-btn') || t.classList.contains('ems-daily-preset')){
+      SFX.uiClick(); return;
+    }
+
+    // ── 16. Toggle switches
+    if(t.classList.contains('toggle-sw') || (t.closest && t.closest('.toggle-sw'))){
+      const sw = t.closest ? t.closest('.toggle-sw') : t;
+      SFX.toggle(sw && sw.classList.contains('on')); return;
+    }
+
+    // ── 17. Solar sub-tabs
+    if(t.classList.contains('solar-sub-tab')){
+      SFX.navSwitch(); _spawnRipple(e.clientX, e.clientY, 'var(--solar)'); return;
+    }
+
+    // ── 18. Any other genuine button / interactive element
+    const interactive = _closestInteractive(t);
+    if(interactive){
+      SFX.uiClick(); return;
+    }
+
+    // ── 19. BOOP — non-interactive area click (background, labels, static text, etc.)
+    SFX.boop();
+
+  }, true);
+
+  /* ── Checkbox change ── */
+  document.addEventListener('change', function(e){
+    if(_soundMuted) return;
+    const t = e.target;
+    if(t.type === 'checkbox'){ SFX.select(t.checked); return; }
+    if(t.type === 'range')   { SFX.sliderTick(); return; }
+  }, true);
+
+  /* ── File drop / upload zones ── */
+  document.addEventListener('drop', function(e){
+    if(_soundMuted) return;
+    if(e.target.classList.contains('upload-zone') || e.target.closest('.upload-zone')){
+      SFX.upload();
+    }
+  }, true);
+  document.addEventListener('dragenter', function(e){
+    if(_soundMuted) return;
+    if(e.target.classList.contains('upload-zone') || e.target.closest('.upload-zone')){
+      SFX.drag(1);
+    }
+  }, true);
+
+  /* ── Graph canvas drag — piano sounds ── */
+  let _isDragging = false;
+  let _lastDragX = 0;
+  document.addEventListener('mousedown', function(e){
+    if(_soundMuted) return;
+    if(e.target.tagName === 'CANVAS'){ _isDragging = true; _lastDragX = e.clientX; SFX.dragStart(); }
+  }, true);
+  document.addEventListener('mousemove', function(e){
+    if(!_isDragging || _soundMuted) return;
+    const dx = e.clientX - _lastDragX;
+    if(Math.abs(dx) > 18){ SFX.drag(dx > 0 ? 1 : -1); _lastDragX = e.clientX; }
+  }, true);
+  document.addEventListener('mouseup', function(e){
+    if(_isDragging){ _isDragging = false; if(!_soundMuted) SFX.dragEnd(); }
+  }, true);
+  // Touch drag on canvas
+  let _isTouchDrag = false;
+  let _lastTouchX = 0;
+  document.addEventListener('touchstart', function(e){
+    if(e.target.tagName==='CANVAS'){ _isTouchDrag=true; _lastTouchX=e.touches[0].clientX; if(!_soundMuted)SFX.dragStart(); }
+  },{passive:true});
+  document.addEventListener('touchmove', function(e){
+    if(!_isTouchDrag||_soundMuted) return;
+    const dx = e.touches[0].clientX - _lastTouchX;
+    if(Math.abs(dx)>20){ SFX.drag(dx>0?1:-1); _lastTouchX=e.touches[0].clientX; }
+  },{passive:true});
+  document.addEventListener('touchend', function(){
+    if(_isTouchDrag){ _isTouchDrag=false; if(!_soundMuted)SFX.dragEnd(); }
+  },{passive:true});
+
+  /* ── Hover sounds for home cards ── */
+  document.addEventListener('mouseover', function(e){
+    if(_soundMuted) return;
+    if(e.target.closest('.home-card')){ SFX.homeCardHover(); }
+  }, true);
+
+  /* ── File input click (upload button) ── */
+  document.querySelectorAll('input[type=file]').forEach(inp=>{
+    inp.addEventListener('change',()=>{ if(!_soundMuted)SFX.upload(); });
+  });
+  // MutationObserver for late-added file inputs
+  new MutationObserver(muts=>{
+    muts.forEach(m=>m.addedNodes.forEach(n=>{
+      if(n.querySelectorAll){
+        n.querySelectorAll('input[type=file]').forEach(inp=>{
+          if(!inp._sfxBound){ inp._sfxBound=true; inp.addEventListener('change',()=>{if(!_soundMuted)SFX.upload();}); }
+        });
+      }
+    }));
+  }).observe(document.body,{childList:true,subtree:true});
+
+  /* ── Loader done ── */
+  const _loaderObs = new MutationObserver(()=>{
+    const bar = document.getElementById('loaderBar');
+    if(bar && bar.style.width==='100%'){ if(!_soundMuted)SFX.loaderDone(); }
+  });
+  const lbar = document.getElementById('loaderBar');
+  if(lbar) _loaderObs.observe(lbar, {attributes:true, attributeFilter:['style']});
+
+  /* ── Patch toggleTheme for bird/owl sounds ── */
+  const _origToggleTheme = window.toggleTheme;
+  window.toggleTheme = function(){
+    if(_origToggleTheme) _origToggleTheme.call(this);
+    // isDark is updated inside _origToggleTheme, re-read it
+    const darkNow = document.body.classList.contains('dark') || document.body.classList.contains('holo');
+    SFX.themeBird(darkNow);
+  };
+
+  /* ── Heatmap cell hover sounds ── */
+  document.addEventListener('mouseover', function(e){
+    if(_soundMuted) return;
+    const cell = e.target.closest('.dhm-cell');
+    if(cell){ const temp = parseFloat(cell.dataset.temp)||0; SFX.heatmapHover(Math.min(1, temp/200)); }
+  }, true);
+
+}
+
+/* ── Init after DOM ready ── */
+if(document.readyState==='loading'){
+  document.addEventListener('DOMContentLoaded', _wire);
+} else {
+  _wire();
+}
+
+// Expose globally for use by other modules
+window.SFX = SFX;
+
+})();
+</script>
+
+<!-- ═══════════════════════════════════════════════════════════════
+     DRYER HEATMAP ENGINE
+     4 Dryers × 6 Chambers — mini temperature heatmap
+     ═══════════════════════════════════════════════════════════════ -->
+<script>
+(function(){
+'use strict';
+
+/* ── Heatmap state ── */
+let _dhmMode = 'avg';  // 'avg' | 'max' | 'min'
+let _dhmMaxScale = null; // null = auto
+
+/* Temperature → RGBA colour (blue→cyan→green→yellow→orange→red) */
+function _tempColor(val, lo, hi, alpha){
+  if(val === null || isNaN(val)) return `rgba(var(--surface3-rgb,200,200,200),0.3)`;
+  const t = Math.max(0, Math.min(1, (val - lo) / Math.max(hi - lo, 1)));
+  // 5-stop gradient: blue (0) → cyan (0.25) → green (0.5) → amber (0.75) → red (1)
+  let r,g,b;
+  if(t < 0.25){
+    const s = t/0.25;
+    r=Math.round(59*(1-s)+0*s); g=Math.round(130*(1-s)+200*s); b=Math.round(246*(1-s)+255*s);
+  } else if(t < 0.5){
+    const s=(t-0.25)/0.25;
+    r=Math.round(0*(1-s)+16*s); g=Math.round(200*(1-s)+185*s); b=Math.round(255*(1-s)+129*s);
+  } else if(t < 0.75){
+    const s=(t-0.5)/0.25;
+    r=Math.round(16*(1-s)+245*s); g=Math.round(185*(1-s)+158*s); b=Math.round(129*(1-s)+11*s);
+  } else {
+    const s=(t-0.75)/0.25;
+    r=Math.round(245*(1-s)+220*s); g=Math.round(158*(1-s)+38*s); b=Math.round(11*(1-s)+38*s);
+  }
+  return `rgba(${r},${g},${b},${alpha||0.9})`;
+}
+
+/* ── Build legend ── */
+function _buildLegend(lo, hi){
+  const el = document.getElementById('dhm-legend');
+  const loEl = document.getElementById('dhm-legend-lo');
+  const hiEl = document.getElementById('dhm-legend-hi');
+  if(!el) return;
+  const steps = 30;
+  el.innerHTML = '';
+  for(let i=0;i<steps;i++){
+    const s = document.createElement('div');
+    const val = lo + (hi-lo)*(i/steps);
+    s.style.cssText = `flex:1;height:18px;background:${_tempColor(val,lo,hi,1)};`;
+    el.appendChild(s);
+  }
+  if(loEl) loEl.textContent = lo.toFixed(0)+'°C';
+  if(hiEl) hiEl.textContent = hi.toFixed(0)+'°C';
+}
+
+/* ── Main render ── */
+function dRenderHeatmap(){
+  const grid = document.getElementById('dhm-grid');
+  const summary = document.getElementById('dhm-dryer-summary');
+  if(!grid) return;
+
+  // Gather data from existing dAllData (dryer section)
+  const NUM_DRYERS = 4, NUM_CHAMBERS = 6;
+
+  // Build stats: dAllData[dryerIdx][chamberIdx] → {avg, max, min, count}
+  const stats = [];
+  let globalLo = Infinity, globalHi = -Infinity;
+
+  // dAllData is a flat array: each row has d1c1, d1c2…d4c6 fields
+  const hideZero = (document.getElementById('d-hideZero') || {}).checked !== false;
+
+  for(let di=0; di<NUM_DRYERS; di++){
+    stats[di] = [];
+    for(let ci=0; ci<NUM_CHAMBERS; ci++){
+      const field = `d${di+1}c${ci+1}`;
+      let vals = [];
+      if(typeof dAllData !== 'undefined' && Array.isArray(dAllData)){
+        vals = dAllData
+          .map(r => parseFloat(r[field]))
+          .filter(v => !isNaN(v) && v > 0);
+      }
+      if(vals.length === 0){
+        stats[di][ci] = null;
+      } else {
+        const avg = vals.reduce((a,b)=>a+b,0)/vals.length;
+        const max = Math.max(...vals);
+        const min = Math.min(...vals);
+        stats[di][ci] = {avg, max, min, count: vals.length};
+        const pick = _dhmMode==='max'?max:_dhmMode==='min'?min:avg;
+        if(pick < globalLo) globalLo = pick;
+        if(pick > globalHi) globalHi = pick;
+      }
+    }
+  }
+
+  // Fallback if no data loaded — show skeleton with placeholder values
+  const noData = !isFinite(globalLo);
+  if(noData){ globalLo = 20; globalHi = 160; }
+  if(globalHi === globalLo){ globalHi = globalLo + 50; }
+
+  // Apply manual scale
+  const hi = (_dhmMaxScale !== null) ? _dhmMaxScale : globalHi;
+  const lo = Math.max(0, globalLo - 5);
+
+  _buildLegend(lo, hi);
+  document.getElementById('dhm-range-label').textContent = _dhmMaxScale ? _dhmMaxScale+'°C' : 'Auto';
+
+  // Build grid HTML
+  grid.innerHTML = '';
+  // Column headers (empty corner + C1..C6)
+  grid.appendChild(Object.assign(document.createElement('div'),{
+    style:'font-size:0.6rem;color:var(--text3);text-align:center;font-weight:700;',
+    textContent:''
+  }));
+  for(let ci=0;ci<NUM_CHAMBERS;ci++){
+    const h = document.createElement('div');
+    h.style.cssText = 'font-size:0.62rem;font-weight:700;color:var(--text3);text-align:center;padding:2px 0;text-transform:uppercase;letter-spacing:0.5px;';
+    h.textContent = 'C'+(ci+1);
+    grid.appendChild(h);
+  }
+
+  // Rows: each dryer
+  const dryerColors = ['var(--dryer)','var(--warning)','var(--success)','var(--accent)'];
+  for(let di=0;di<NUM_DRYERS;di++){
+    // Row label
+    const lbl = document.createElement('div');
+    lbl.style.cssText = `font-size:0.62rem;font-weight:700;color:${dryerColors[di]};text-align:right;padding-right:6px;white-space:nowrap;letter-spacing:0.3px;`;
+    lbl.textContent = 'D'+(di+1);
+    grid.appendChild(lbl);
+
+    for(let ci=0;ci<NUM_CHAMBERS;ci++){
+      const cell = document.createElement('div');
+      const s = stats[di][ci];
+      const val = s ? (_dhmMode==='max'?s.max:_dhmMode==='min'?s.min:s.avg) : null;
+      const bg = val !== null ? _tempColor(val, lo, hi, 0.88) : 'var(--surface3,#eef1f8)';
+      const textColor = val !== null ? (val > (lo+(hi-lo)*0.55) ? '#fff' : 'rgba(0,0,0,0.75)') : 'var(--text3)';
+
+      cell.className = 'dhm-cell';
+      cell.dataset.dryer = di+1;
+      cell.dataset.chamber = ci+1;
+      cell.dataset.temp = val !== null ? val.toFixed(1) : '';
+      cell.style.cssText = `
+        background:${bg};
+        border-radius:5px;
+        padding:6px 3px;
+        text-align:center;
+        font-size:0.62rem;
+        font-weight:700;
+        color:${textColor};
+        cursor:pointer;
+        transition:transform 0.15s,box-shadow 0.15s;
+        min-height:34px;
+        display:flex;align-items:center;justify-content:center;flex-direction:column;
+        gap:1px;
+        position:relative;
+      `;
+
+      if(val !== null){
+        cell.innerHTML = `<span style="font-size:0.7rem;font-weight:800;">${val.toFixed(1)}</span><span style="font-size:0.5rem;opacity:0.75;">°C</span>`;
+      } else {
+        cell.innerHTML = `<span style="font-size:0.65rem;opacity:0.4;">—</span>`;
+      }
+
+      // Hover effects
+      cell.addEventListener('mouseenter', function(){
+        this.style.transform = 'scale(1.15)';
+        this.style.zIndex = '10';
+        this.style.boxShadow = `0 4px 16px ${bg}`;
+        // Show tooltip
+        const tt = document.getElementById('dhm-tooltip');
+        if(tt && s){
+          tt.innerHTML = `
+            <div style="font-weight:700;color:var(--dryer);margin-bottom:4px;">Dryer ${di+1} · Chamber ${ci+1}</div>
+            <div style="display:flex;gap:10px;font-size:0.75rem;">
+              <div><div style="color:var(--text3);font-size:0.62rem;">AVG</div><div style="font-weight:700;">${s.avg.toFixed(1)}°C</div></div>
+              <div><div style="color:var(--text3);font-size:0.62rem;">MAX</div><div style="font-weight:700;color:var(--danger);">${s.max.toFixed(1)}°C</div></div>
+              <div><div style="color:var(--text3);font-size:0.62rem;">MIN</div><div style="font-weight:700;color:var(--accent);">${s.min.toFixed(1)}°C</div></div>
+            </div>
+            <div style="font-size:0.6rem;color:var(--text3);margin-top:3px;">${s.count} data points</div>
+          `;
+          tt.style.display = 'block';
+        }
+      });
+      cell.addEventListener('mousemove', function(e){
+        const tt = document.getElementById('dhm-tooltip');
+        if(tt){ tt.style.left=(e.clientX+12)+'px'; tt.style.top=(e.clientY-8)+'px'; }
+      });
+      cell.addEventListener('mouseleave', function(){
+        this.style.transform = '';
+        this.style.zIndex = '';
+        this.style.boxShadow = '';
+        const tt = document.getElementById('dhm-tooltip');
+        if(tt) tt.style.display = 'none';
+      });
+      // Touch tap
+      cell.addEventListener('click', function(){
+        if(typeof SFX !== 'undefined') SFX.heatmapHover(val ? Math.min(1,val/hi) : 0);
+      });
+
+      grid.appendChild(cell);
+    }
+  }
+
+  // Dryer summary bars
+  if(summary){
+    summary.innerHTML = '';
+    for(let di=0;di<NUM_DRYERS;di++){
+      const dStats = stats[di].filter(Boolean);
+      if(!dStats.length){
+        summary.innerHTML += `<div style="background:var(--surface2);border-radius:10px;padding:10px 12px;text-align:center;opacity:0.5;">
+          <div style="font-size:0.65rem;font-weight:700;color:${dryerColors[di]};">Dryer ${di+1}</div>
+          <div style="font-size:0.7rem;color:var(--text3);margin-top:4px;">Load data →</div>
+        </div>`;
+        continue;
+      }
+      const allVals = stats[di].filter(Boolean).map(s=>_dhmMode==='max'?s.max:_dhmMode==='min'?s.min:s.avg);
+      const avgAll = allVals.reduce((a,b)=>a+b,0)/allVals.length;
+      const maxAll = Math.max(...allVals);
+      const pct = Math.min(100, Math.round((avgAll - lo)/(hi-lo)*100));
+      const barColor = _tempColor(avgAll, lo, hi, 1);
+      summary.innerHTML += `
+        <div style="background:var(--surface2);border-radius:10px;padding:10px 12px;">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">
+            <span style="font-size:0.65rem;font-weight:700;color:${dryerColors[di]};">Dryer ${di+1}</span>
+            <span style="font-size:0.7rem;font-weight:800;color:${barColor};">${avgAll.toFixed(1)}°C</span>
+          </div>
+          <div style="height:6px;border-radius:3px;background:var(--surface3,#e0e5f0);overflow:hidden;">
+            <div style="width:${pct}%;height:100%;background:${barColor};border-radius:3px;transition:width 0.4s;"></div>
+          </div>
+          <div style="display:flex;justify-content:space-between;margin-top:4px;font-size:0.58rem;color:var(--text3);">
+            <span>Avg</span><span>Max: ${maxAll.toFixed(1)}°C</span>
+          </div>
+        </div>
+      `;
+    }
+  }
+}
+
+/* ── Public mode/scale setters ── */
+window.dHeatmapSetMode = function(mode){
+  _dhmMode = mode;
+  ['avg','max','min'].forEach(m=>{
+    const b=document.getElementById('dhm-btn-'+m);
+    if(b){ b.classList.toggle('active', m===mode); }
+  });
+  dRenderHeatmap();
+  if(typeof SFX !== 'undefined') SFX.chartSwitch(mode==='bar'?'bar':'line');
+};
+
+window.dHeatmapScaleChange = function(val){
+  _dhmMaxScale = parseInt(val)||null;
+  dRenderHeatmap();
+  if(typeof SFX !== 'undefined') SFX.sliderTick();
+};
+
+/* ── Hook into existing dRender cycle ── */
+// Patch dRenderChart to also update heatmap
+const _origDRenderChart = window.dRenderChart;
+window.dRenderChart = function(){
+  if(_origDRenderChart) _origDRenderChart.apply(this, arguments);
+  setTimeout(dRenderHeatmap, 120);
+};
+
+// Patch dRenderBars to also trigger heatmap (fires after data load)
+const _origDRenderBars = window.dRenderBars;
+window.dRenderBars = function(){
+  if(_origDRenderBars) _origDRenderBars.apply(this, arguments);
+  setTimeout(dRenderHeatmap, 150);
+};
+
+// Render on dryer page visit
+const _origShowPage = window.showPage;
+window.showPage = function(name){
+  if(_origShowPage) _origShowPage.apply(this, arguments);
+  if(name === 'dryer') setTimeout(dRenderHeatmap, 500);
+};
+
+// Also re-render periodically if dryer page is active
+setInterval(()=>{
+  const dp = document.getElementById('page-dryer');
+  if(dp && dp.classList.contains('active')) dRenderHeatmap();
+}, 30000);
+
+// Initial render attempt
+setTimeout(dRenderHeatmap, 2000);
+
+})();
+</script>
+
 <div id="ems-touch-drag-ghost"></div>
 
 </body>
