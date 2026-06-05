@@ -5402,10 +5402,10 @@ function emsV2SetDailyMode(mode) {
     tot.disabled = false;
     totLabel.style.opacity = '1'; totLabel.style.pointerEvents = '';
   } else {
-    // Separate: auto-select all three shifts, disable Total
-    a.checked = true; b.checked = true; c.checked = true; tot.checked = false;
-    tot.disabled = true;
-    totLabel.style.opacity = '0.4'; totLabel.style.pointerEvents = 'none';
+    // Separate: auto-select all three shifts + Total (all enabled)
+    a.checked = true; b.checked = true; c.checked = true; tot.checked = true;
+    tot.disabled = false;
+    totLabel.style.opacity = '1'; totLabel.style.pointerEvents = '';
   }
 
   emsV2RenderDaily();
@@ -5829,14 +5829,14 @@ function emsV2ShiftChange() {
     tot.disabled = false;
     totLabel.style.opacity = '1'; totLabel.style.pointerEvents = '';
   } else {
-    // In separate mode: A/B/C are selectable; Total is always locked off
-    if(!a.checked && !b.checked && !c.checked) {
-      // At least one must be selected — restore all three
-      a.checked = true; b.checked = true; c.checked = true;
+    // In separate mode: A/B/C and Total are all selectable; at least one must stay on
+    const anyChecked = a.checked || b.checked || c.checked || tot.checked;
+    if(!anyChecked) {
+      // Restore all if nothing selected
+      a.checked = true; b.checked = true; c.checked = true; tot.checked = true;
     }
-    tot.checked = false;
-    tot.disabled = true;
-    totLabel.style.opacity = '0.4'; totLabel.style.pointerEvents = 'none';
+    tot.disabled = false;
+    totLabel.style.opacity = '1'; totLabel.style.pointerEvents = '';
   }
 
   emsV2RenderDaily();
@@ -5910,12 +5910,12 @@ function emsV2RenderDaily() {
   const machineColors = ['#3b82f6','#10b981','#f59e0b','#ef4444','#8b5cf6','#06b6d4','#f97316','#84cc16','#ec4899','#14b8a6','#f43f5e','#a855f7','#0ea5e9','#22c55e','#eab308','#6366f1','#fb923c','#38bdf8','#4ade80','#c084fc'];
   const isBar = EMS2.dailyChartType === 'bar';
   const isSep = EMS2.dailyMode === 'separate';
-  // Combined mode: only show Total line; Separate mode: only show A/B/C (not Total)
-  const shiftsFiltered = isSep ? shifts.filter(s => s !== 'Total') : shifts.filter(s => s === 'Total');
+  // Combined mode: only show Total line; Separate mode: show whatever is checked (A/B/C/Total)
+  const shiftsFiltered = isSep ? shifts : shifts.filter(s => s === 'Total');
   const datasets = [];
 
   if(isSep) {
-    // Separate mode: show Shift A/B/C per sensor (Total excluded via shiftsFiltered)
+    // Separate mode: show selected shifts (A/B/C/Total) per sensor for side-by-side comparison
     selectedSensors.forEach((sensor, si) => {
       const baseColor = machineColors[si % machineColors.length];
       if(shiftsFiltered.length === 1) {
@@ -5924,7 +5924,7 @@ function emsV2RenderDaily() {
           const row = EMS2.dailyData[sensor]; return row && row[dk] ? (row[dk][shift] || 0) : 0;
         });
         datasets.push({
-          label: EMS2.shortName(sensor) + ` Sh.${shift}`,
+          label: EMS2.shortName(sensor) + (shift === 'Total' ? ' Total' : ` Sh.${shift}`),
           data: values,
           backgroundColor: baseColor + (isBar ? 'cc' : '00'),
           borderColor: baseColor, borderWidth: 2,
@@ -5939,7 +5939,7 @@ function emsV2RenderDaily() {
             const row = EMS2.dailyData[sensor]; return row && row[dk] ? (row[dk][shift] || 0) : 0;
           });
           datasets.push({
-            label: EMS2.shortName(sensor) + ` Sh.${shift}`,
+            label: EMS2.shortName(sensor) + (shift === 'Total' ? ' Total' : ` Sh.${shift}`),
             data: values,
             backgroundColor: color + (isBar ? 'cc' : '00'),
             borderColor: color, borderWidth: 2,
