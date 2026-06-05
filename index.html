@@ -3912,6 +3912,12 @@ body.holo3d #sublynq-mute-btn {
       <div style="display:flex;flex-direction:column;gap:10px;justify-content:center;min-width:180px;">
         <button class="btn btn-ems" onclick="emsSaveAllToDrive()" id="ems-interval-save-btn" disabled>💾 Save to GSheet</button>
         <div id="ems-interval-drive-status" style="font-size:0.76rem;color:var(--text3);"></div>
+        <div style="margin-top:8px;padding-top:8px;border-top:1px solid var(--border);">
+          <div style="font-size:0.72rem;color:var(--text3);margin-bottom:6px;font-weight:600;">📥 Or import GSheet export directly:</div>
+          <button class="btn" onclick="document.getElementById('ems-direct-import-file').click()" style="font-size:0.74rem;padding:5px 10px;background:var(--surface2);border:1.5px solid var(--border2);color:var(--text2);width:100%;">📂 Load GSheet .xlsx</button>
+          <input type="file" id="ems-direct-import-file" accept=".xlsx,.xlsm" style="display:none;" onchange="emsDirectImportGSheetXlsx(this)">
+          <div id="ems-direct-import-status" style="font-size:0.72rem;color:var(--text3);margin-top:4px;"></div>
+        </div>
       </div>
     </div>
   </div>
@@ -4565,8 +4571,7 @@ async function emsV2ScanFolder() {
     const url = GAS_URL + '?action=listFilesInFolder&folderId=' + encodeURIComponent(EMS_INTERVAL_FOLDER);
     const resp = await fetch(url);
     const json = await resp.json();
-    if(json.error && json.error.includes('Unknown')) throw new Error('GAS not updated yet');
-    if(json.error) throw new Error(json.error);
+    if(json.error) throw new Error(json.error); // falls to probe fallback
     const files = json.files || [];
     parsed = files.map(f => {
       const m = f.name.match(/^EMS_([A-Za-z]+)_(\d{4})$/);
@@ -4586,10 +4591,7 @@ async function emsV2ScanFolder() {
       const name  = 'EMS_' + MONTHS_SHORT[d.getMonth()] + '_' + d.getFullYear();
       probes.push({ label, name, year: d.getFullYear(), month: d.getMonth() });
     }
-    // Also add EMS_HARDCODED_SHEET_ID for current month as guaranteed entry
-    const curLabel = MONTHS_LONG[now.getMonth()] + ' ' + now.getFullYear();
-    parsed = [{ label: curLabel, id: EMS_HARDCODED_SHEET_ID, year: now.getFullYear(), month: now.getMonth() }];
-    // Probe each month in parallel (limited to avoid rate limits)
+    // Probe each month in parallel using findFileInFolder (most reliable)
     const probeResults = await Promise.allSettled(probes.map(async p => {
       const findUrl = GAS_URL + '?action=findFileInFolder&folderId=' + encodeURIComponent(EMS_INTERVAL_FOLDER) + '&fileName=' + encodeURIComponent(p.name);
       const r = await fetch(findUrl);
@@ -4598,10 +4600,27 @@ async function emsV2ScanFolder() {
       return null;
     }));
     const found = probeResults.map(r => r.status === 'fulfilled' ? r.value : null).filter(Boolean);
+    // Start with probed results (real Drive fileIds), not hardcoded
+    parsed = found;
+    // Add HARDCODED_SHEET_ID only if current month wasn't found via probe
+    const curLabel = MONTHS_LONG[now.getMonth()] + ' ' + now.getFullYear();
+    if(!parsed.some(p => p.label === curLabel)) {
+      parsed.push({ label: curLabel, id: EMS_HARDCODED_SHEET_ID, year: now.getFullYear(), month: now.getMonth() });
+    }
     // Merge found with guaranteed current (deduplicate by id)
     const seen = new Set(parsed.map(p => p.id));
     for(const f of found) { if(f && !seen.has(f.id)) { parsed.push(f); seen.add(f.id); } }
   }
+
+  // Deduplicate by label (keep first occurrence = highest priority entry)
+  // This prevents duplicate "June 2026" when Drive has multiple files or
+  // the fallback hardcoded entry collides with a scanned file.
+  const _seenLabels = new Set();
+  parsed = parsed.filter(p => {
+    if(_seenLabels.has(p.label)) return false;
+    _seenLabels.add(p.label);
+    return true;
+  });
 
   // Sort newest first
   parsed.sort((a,b) => b.year - a.year || b.month - a.month);
@@ -5728,19 +5747,21 @@ function emsDailyPreset(preset) {
 
   if(preset === 'thismonth') {
     from = new Date(now.getFullYear(), now.getMonth(), 1);
-    to   = new Date(now.getFullYear(), now.getMonth()+1, 0);
+    // Cap to today — don't extend into future days of the current month
+    const endOfMonth = new Date(now.getFullYear(), now.getMonth()+1, 0);
+    to   = now < endOfMonth ? now : endOfMonth;
   } else if(preset === 'lastmonth') {
     from = new Date(now.getFullYear(), now.getMonth()-1, 1);
     to   = new Date(now.getFullYear(), now.getMonth(), 0);
   } else if(preset === '3m') {
     from = new Date(now.getFullYear(), now.getMonth()-2, 1);
-    to   = new Date(now.getFullYear(), now.getMonth()+1, 0);
+    to   = now; // don't go beyond today
   } else if(preset === '6m') {
     from = new Date(now.getFullYear(), now.getMonth()-5, 1);
-    to   = new Date(now.getFullYear(), now.getMonth()+1, 0);
+    to   = now; // don't go beyond today
   } else if(preset === 'thisyear') {
     from = new Date(now.getFullYear(), 0, 1);
-    to   = new Date(now.getFullYear(), 11, 31);
+    to   = now; // don't extend beyond today
   } else if(preset === 'lastyear') {
     from = new Date(now.getFullYear()-1, 0, 1);
     to   = new Date(now.getFullYear()-1, 11, 31);
@@ -6627,7 +6648,8 @@ function emsHeatmapPreset(preset) {
     from = new Date(now); from.setDate(now.getDate()-7); to = yest;
   } else if(preset === 'thismonth') {
     from = new Date(now.getFullYear(), now.getMonth(), 1);
-    to   = new Date(now.getFullYear(), now.getMonth()+1, 0);
+    const _eom = new Date(now.getFullYear(), now.getMonth()+1, 0);
+    to   = now < _eom ? now : _eom;
   } else {
     from = new Date(now.getFullYear(), now.getMonth()-1, 1);
     to   = new Date(now.getFullYear(), now.getMonth(), 0);
@@ -7499,7 +7521,7 @@ function emsLoadFromGSheet(){ emsV2ScanFolder(); }
    fixed dryer GAS endpoint bug, fixed GAS Apps Script.
 ═══════════════════════════════════════════════════ */
 
-const GAS_URL = 'https://script.google.com/macros/s/AKfycbz2UmRihP8Y7U_jIkSF5mevdIPc2BwFWBZxx7vLNHM021vGc5rSgsFskiE2ezJu8Ubt/exec';
+const GAS_URL = 'https://script.google.com/macros/s/AKfycbxSwXvhYU2qySetsNhGvoKZ7MnTMY3YUA4VhEhfCq5uYuuzfRasDWwptgDgJpnZaoxN/exec';
 // Hardcoded EMS GSheet ID (Apr 2026 and future months stored here)
 const EMS_HARDCODED_SHEET_ID = '1BU16QT-Qef5yFy1jm2Do0z8LFs8enHV4xZDcVego5cQ';
 // Helper: extract just the sheet ID from a URL or raw ID
@@ -12948,6 +12970,177 @@ function emsMachineSectionClear(cat){
    Stored in separate monthly GSheets in Drive folder 158-trz20GGOzkst8jsxe13jvuMsFR43K
 ═══════════════════════════════════════════════════════════════ */
 
+/* ══════════════════════════════════════════════════════
+   DIRECT GSHEET XLSX IMPORT
+   Accepts a GSheet export (.xlsx) that already has DailyShift, Hourly,
+   Collective, MeterConfig tabs — bypasses GAS API entirely.
+   Use when the GSheet in Drive is broken/empty but you have a local export.
+══════════════════════════════════════════════════════ */
+async function emsDirectImportGSheetXlsx(input) {
+  const file = input.files[0];
+  if(!file) return;
+  const statusEl = document.getElementById('ems-direct-import-status');
+  statusEl.textContent = '⏳ Reading ' + file.name + '…';
+  statusEl.style.color = 'var(--text2)';
+
+  try {
+    const buf = await file.arrayBuffer();
+    const wb = XLSX.read(buf, { type: 'array', cellDates: false });
+
+    // ── Detect month from DailyShift header or Hourly data ──
+    const MONTHS_LONG  = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+    const MONTHS_SHORT = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+    let year = 0, month0 = -1; // month0 = 0-indexed month
+
+    // Try Hourly tab first — first data row has "DD Mon HH:MM - DD Mon HH:MM"
+    const hrSheet = wb.Sheets['Hourly'];
+    if(hrSheet) {
+      const hrRows = XLSX.utils.sheet_to_json(hrSheet, { header: 1, defval: null });
+      for(let r = 1; r < Math.min(hrRows.length, 5); r++) {
+        const slot = hrRows[r] && hrRows[r][0] ? String(hrRows[r][0]).trim() : '';
+        const m = slot.match(/\d{2}\s+([A-Za-z]+)\s+\d{2}:\d{2}/);
+        if(m) {
+          const mi = MONTHS_SHORT.findIndex(s => s.toLowerCase() === m[1].toLowerCase());
+          if(mi >= 0) { month0 = mi; break; }
+        }
+      }
+    }
+
+    // Detect year from Hourly DateTimeStamp or fallback to current year
+    // Try to find year in any string cell across first few Hourly rows
+    if(hrSheet && month0 >= 0) {
+      const hrRows2 = XLSX.utils.sheet_to_json(hrSheet, { header: 1, defval: null });
+      // Search all cells in first 5 rows for a 4-digit year
+      outer: for(let r = 0; r < Math.min(hrRows2.length, 5); r++) {
+        for(const cell of (hrRows2[r] || [])) {
+          if(cell && typeof cell === 'string') {
+            const ym = cell.match(/(20\d{2})/);
+            if(ym) { year = parseInt(ym[1]); break outer; }
+          }
+        }
+      }
+    }
+    // If no year found in Hourly, try Collective/MeterConfig or use current year
+    if(!year) {
+      year = new Date().getFullYear();
+      // Try to find year from Collective sheet header rows
+      const colSheet = wb.Sheets['Collective'];
+      if(colSheet) {
+        const colRows = XLSX.utils.sheet_to_json(colSheet, { header: 1, defval: null });
+        for(let r = 0; r < Math.min(colRows.length, 5); r++) {
+          for(const cell of (colRows[r] || [])) {
+            if(cell && typeof cell === 'string') {
+              const ym = cell.match(/(20\d{2})/);
+              if(ym) { year = parseInt(ym[1]); break; }
+            }
+          }
+        }
+      }
+    }
+
+    // Fallback month detection from file name (e.g. "EMS_May_2026.xlsx")
+    if(month0 < 0) {
+      const fnm = file.name.match(/([A-Za-z]{3,})[_\s-]*(20\d{2})/);
+      if(fnm) {
+        const mi = MONTHS_SHORT.findIndex(s => s.toLowerCase() === fnm[1].toLowerCase().slice(0,3));
+        if(mi >= 0) { month0 = mi; }
+        if(fnm[2]) year = parseInt(fnm[2]);
+      }
+    }
+
+    if(month0 < 0) throw new Error('Could not detect month from file. Rename file to include month name (e.g. EMS_May_2026.xlsx)');
+    if(!year) year = new Date().getFullYear();
+
+    const monthLabel = MONTHS_LONG[month0] + ' ' + year;
+    statusEl.textContent = '📅 Detected: ' + monthLabel + ' — loading…';
+
+    // ── Parse DailyShift tab ──
+    const dsSheet = wb.Sheets['DailyShift'];
+    if(!dsSheet) throw new Error('DailyShift tab not found in this file');
+    const dsRows = XLSX.utils.sheet_to_json(dsSheet, { header: 1, defval: null });
+
+    // Use emsV2ParseDailyShiftRowsFull (already defined)
+    const parsedDaily = emsV2ParseDailyShiftRowsFull(dsRows, year, month0);
+    const sensorCount = Object.keys(parsedDaily).length;
+    if(sensorCount === 0) throw new Error('DailyShift tab is empty or unrecognised format');
+
+    // ── Parse Hourly tab ──
+    let parsedHourly = {};
+    if(hrSheet) {
+      const hrRows = XLSX.utils.sheet_to_json(hrSheet, { header: 1, defval: null });
+      parsedHourly = emsV2ParseHourlyRows(hrRows);
+    }
+
+    // ── Merge into EMS2 data store ──
+    if(!EMS2.dailyData) EMS2.dailyData = {};
+    if(!EMS2.hourlyData) EMS2.hourlyData = {};
+
+    let dayCount = 0;
+    for(const [sensor, days] of Object.entries(parsedDaily)) {
+      if(!EMS2.dailyData[sensor]) EMS2.dailyData[sensor] = {};
+      Object.assign(EMS2.dailyData[sensor], days);
+      EMS_LOAD.allSensors.add(sensor);
+      dayCount = Math.max(dayCount, Object.keys(days).length);
+    }
+    Object.assign(EMS2.hourlyData, parsedHourly);
+
+    // ── Register this month in FOLDER_SHEETS if not already present ──
+    if(!EMS2.FOLDER_SHEETS) EMS2.FOLDER_SHEETS = [];
+    const alreadyHas = EMS2.FOLDER_SHEETS.some(s => s.label === monthLabel);
+    if(!alreadyHas) {
+      EMS2.FOLDER_SHEETS.push({ label: monthLabel, id: '__local__', year, month: month0 });
+      EMS2.FOLDER_SHEETS.sort((a,b) => b.year - a.year || b.month - a.month);
+    }
+    EMS_LOAD.loadedMonths.add(monthLabel);
+    if(!EMS2.SELECTED_MONTHS) EMS2.SELECTED_MONTHS = new Set();
+    EMS2.SELECTED_MONTHS.add(monthLabel);
+
+    // ── Parse MeterConfig if present and not yet configured ──
+    const mcSheet = wb.Sheets['MeterConfig'];
+    if(mcSheet && (!EMS2.PRODUCTION || EMS2.PRODUCTION.length === 0)) {
+      const mcRows = XLSX.utils.sheet_to_json(mcSheet, { header: 1, defval: null });
+      // mcRows[0] = header ['Sensor Name', 'Zone']
+      const prod = [], util = [];
+      for(let r = 1; r < mcRows.length; r++) {
+        const sName = mcRows[r][0] ? String(mcRows[r][0]).trim() : '';
+        const zone  = mcRows[r][1] ? String(mcRows[r][1]).trim().toLowerCase() : '';
+        if(!sName) continue;
+        if(zone === 'utility') util.push(sName);
+        else prod.push(sName);
+      }
+      if(prod.length || util.length) {
+        EMS2.PRODUCTION = prod;
+        EMS2.UTILITY = util;
+        emsV2BuildButtons();
+      }
+    }
+
+    // ── Update UI ──
+    emsV2BuildMonthCheckboxes();
+    emsV2UpdateMonthLabel();
+    emsV2RenderAll();
+
+    const hrSlots = Object.keys(parsedHourly).length;
+    statusEl.textContent = '✅ ' + monthLabel + ' loaded locally — ' + sensorCount + ' sensors, ' + dayCount + ' days' + (hrSlots ? ', ' + hrSlots + ' hourly slots' : '');
+    statusEl.style.color = 'var(--success)';
+
+    // Update status bar
+    const sbar = document.getElementById('ems-gs-status-text');
+    if(sbar) {
+      const n = Object.keys(EMS2.dailyData).length;
+      const m = EMS2.FOLDER_SHEETS ? EMS2.FOLDER_SHEETS.length : 0;
+      sbar.textContent = '✅ ' + n + ' sensors · ' + m + ' months (incl. local import)';
+    }
+
+  } catch(err) {
+    statusEl.textContent = '❌ ' + err.message;
+    statusEl.style.color = 'var(--danger)';
+    console.error('Direct GSheet import error:', err);
+  }
+  // Reset file input so same file can be re-imported
+  input.value = '';
+}
+
 let emsIntervalData = null;  // parsed interval data
 let emsIntervalFiles = [];   // staged File objects
 let emsHourlyChart = null, emsShiftDonut = null, emsComparisonChart = null, emsDailyIntervalChart = null;
@@ -13068,6 +13261,8 @@ function emsParseConsumptionFile(wb){
   // ── Collective sheet: monthly totals ──
   const wsC=wb.Sheets[wb.SheetNames.find(n=>/collective/i.test(n))||wb.SheetNames[0]];
   const arrC=XLSX.utils.sheet_to_json(wsC,{header:1,defval:null,blankrows:false});
+  // Detect month: scan first 10 rows for string like "May 2026".
+  // Also try the workbook file name as fallback (e.g. "Consumption May 2026.xlsx")
   let month='Unknown Month';
   for(let ri=0;ri<10;ri++){
     const row=arrC[ri]||[];
@@ -13078,6 +13273,23 @@ function emsParseConsumptionFile(wb){
       }
     }
     if(month!=='Unknown Month')break;
+  }
+  // Fallback: try to detect month from the sheet name itself (e.g. "01 To 31" on May sheet)
+  // or from any cell containing a 3-letter month abbreviation in the daily sheet
+  if(month==='Unknown Month'){
+    const dailySN=wb.SheetNames.find(n=>/\d+\s*[Tt]o\s*\d+/.test(n));
+    if(dailySN){
+      const wsD2=wb.Sheets[dailySN];
+      const arrD2=XLSX.utils.sheet_to_json(wsD2,{header:1,defval:null,blankrows:false});
+      outer2: for(let ri=0;ri<8;ri++){
+        for(const cell of (arrD2[ri]||[])){
+          if(cell&&typeof cell==='string'){
+            const m=cell.match(/([A-Za-z]{3,})\s*(\d{4})/);
+            if(m){const mo=m[1].toLowerCase().slice(0,3);month=(MONTHS[mo]||m[1])+' '+m[2];break outer2;}
+          }
+        }
+      }
+    }
   }
   let headerRow=-1;
   for(let ri=0;ri<arrC.length;ri++){
@@ -13104,11 +13316,21 @@ function emsParseConsumptionFile(wb){
     const arrD=XLSX.utils.sheet_to_json(wsD,{header:1,defval:null});
     // Row 5 (index 5): date headers like "01	Apr	2026" repeated per day, col 1 then +4 each
     // Row 7 (index 7): "Sensor Name", "Shift A","Shift B","Shift C","Total" repeated
-    // Find the day header row: first row where col 1 looks like a date pattern
+    // Find the day header row: first row where col 1 looks like a date pattern.
+    // IMPORTANT: Excel stores dates as numeric serials (e.g. 46768 = 2026-05-01).
+    // SheetJS returns them as numbers with defval:null — handle both string and numeric forms.
+    const _xlSerialToDay = (v) => {
+      if(typeof v !== 'number' || v < 40000 || v > 60000) return null;
+      const d = new Date(Math.round((v - 25569) * 86400000)); // Excel→JS epoch
+      return d.getUTCDate();
+    };
     let dayHdrRow=-1;
     for(let ri=0;ri<15;ri++){
       const r=arrD[ri]||[];
+      // String date like "01 May 2026"
       if(r[1]&&typeof r[1]==='string'&&/\d+/.test(r[1])&&/[A-Za-z]/.test(r[1])){dayHdrRow=ri;break;}
+      // Numeric serial date (Excel stores dates as numbers)
+      if(r[1]&&_xlSerialToDay(r[1])!==null){dayHdrRow=ri;break;}
     }
     if(dayHdrRow>=0){
       const dhr=arrD[dayHdrRow]||[];
@@ -13117,18 +13339,26 @@ function emsParseConsumptionFile(wb){
       let c=1;
       while(c<dhr.length){
         if(dhr[c]!==null&&dhr[c]!==undefined){
-          const dayStr=String(dhr[c]).replace(/	/g,' ').trim();
-          const dm=dayStr.match(/^(\d{1,2})/);
-          if(dm)dayCols.push({dayNum:parseInt(dm[1]),colA:c,colB:c+1,colC:c+2,colT:c+3});
+          // Handle both string ("01 May 2026") and numeric Excel serial date
+          let dayNum=null;
+          if(typeof dhr[c]==='number'){
+            dayNum=_xlSerialToDay(dhr[c]); // convert serial → day-of-month
+          } else {
+            const dayStr=String(dhr[c]).replace(/	/g,' ').trim();
+            const dm=dayStr.match(/^(\d{1,2})/);
+            if(dm)dayNum=parseInt(dm[1]);
+          }
+          if(dayNum!==null)dayCols.push({dayNum,colA:c,colB:c+1,colC:c+2,colT:c+3});
         }
         c+=4;
       }
       dayNumbers=dayCols.map(d=>d.dayNum);
-      // Find data rows
+      // Find data rows — look for "Sensor Name" header, or fall back to dayHdrRow+2
       let dataStartRow=-1;
-      for(let ri=dayHdrRow+1;ri<arrD.length;ri++){
+      for(let ri=dayHdrRow+1;ri<Math.min(dayHdrRow+5,arrD.length);ri++){
         if(arrD[ri]&&arrD[ri][0]&&String(arrD[ri][0]).toLowerCase().includes('sensor')){dataStartRow=ri+1;break;}
       }
+      if(dataStartRow<0) dataStartRow=dayHdrRow+2; // fallback: data starts 2 rows after day header
       if(dataStartRow>=0){
         for(let ri=dataStartRow;ri<arrD.length;ri++){
           const row=arrD[ri]||[];
