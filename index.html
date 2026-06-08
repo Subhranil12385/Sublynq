@@ -2743,6 +2743,26 @@ body.holo3d #sublynq-mute-btn {
   animation: _sfxRipple 0.35s ease-out forwards;
 }
 
+/* ── Resin chart nav bar ─────────────────────────────────────────── */
+.r-nav-bar{display:flex;align-items:center;justify-content:center;gap:8px;margin-bottom:10px;flex-wrap:wrap;}
+.r-nav-bar .r-nav-group{display:flex;align-items:center;gap:5px;}
+.r-btn-nav{padding:7px 16px;border:2px solid var(--accent,#7c3aed);border-radius:8px;background:transparent;color:var(--accent,#7c3aed);font-size:1em;font-weight:700;cursor:pointer;transition:all 0.18s;user-select:none;-webkit-user-select:none;}
+.r-btn-nav:hover:not(:disabled){background:var(--accent,#7c3aed);color:#fff;transform:translateY(-1px);box-shadow:0 3px 10px rgba(124,58,237,0.35);}
+.r-btn-zoom{padding:7px 14px;border:2px solid #10b981;border-radius:8px;background:transparent;color:#10b981;font-size:0.95em;font-weight:700;cursor:pointer;transition:all 0.18s;user-select:none;-webkit-user-select:none;}
+.r-btn-zoom:hover:not(:disabled){background:#10b981;color:#fff;transform:translateY(-1px);box-shadow:0 3px 10px rgba(16,185,129,0.35);}
+.r-btn-nav:disabled,.r-btn-zoom:disabled{opacity:0.3;cursor:not-allowed;transform:none!important;box-shadow:none!important;}
+.r-nav-sep{font-size:0.75em;color:var(--text3,#888);margin:0 3px;}
+.r-cache-bar{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-top:8px;padding:6px 12px;background:rgba(16,185,129,0.07);border:1px solid rgba(16,185,129,0.2);border-radius:8px;font-size:0.78em;color:#10b981;}
+.r-cache-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0;}
+.r-cache-dot.loading{background:#f59e0b;animation:pulse 1.2s infinite;}
+.r-cache-dot.done{background:#10b981;}
+.r-cache-dot.idle{background:#6b7280;}
+/* chart-wrap must be position:relative so overlay SVG can be positioned */
+.chart-wrap{position:relative;}
+.r-measure-svg{position:absolute;top:0;left:0;width:100%;height:100%;pointer-events:none;overflow:visible;}
+/* Nav toast */
+#r-nav-toast{position:fixed;bottom:80px;left:50%;transform:translateX(-50%);background:#1e293b;color:#fff;padding:9px 20px;border-radius:30px;font-size:0.88em;font-weight:600;z-index:9998;opacity:0;transition:opacity 0.3s;pointer-events:none;white-space:nowrap;box-shadow:0 4px 15px rgba(0,0,0,0.3);}
+
 </style>
 </head>
 <body>
@@ -3057,11 +3077,30 @@ body.holo3d #sublynq-mute-btn {
       <button class="btn btn-secondary btn-sm" onclick="rClearMeasure(1)">🗑 Clear M1</button>
       <button class="btn btn-secondary btn-sm" onclick="rClearMeasure(2)">🗑 Clear M2</button>
     </div>
-    <div class="chart-wrap chart-wrap-tall"><canvas id="r-chart"></canvas></div>
+    <div class="r-nav-bar">
+      <div class="r-nav-group">
+        <button class="r-btn-nav" id="r-navLeft" title="Scroll left (hold to continue)">◀ 10 min</button>
+        <button class="r-btn-nav" id="r-navRight" title="Scroll right (hold to continue)">10 min ▶</button>
+      </div>
+      <span class="r-nav-sep">|</span>
+      <div class="r-nav-group">
+        <button class="r-btn-zoom" id="r-navZoomIn" title="Zoom in (hold to continue)">🔍+ Zoom In</button>
+        <button class="r-btn-zoom" id="r-navZoomOut" title="Zoom out (hold to continue)">🔍− Zoom Out</button>
+      </div>
+    </div>
+    <div id="r-cache-bar" class="r-cache-bar" style="display:none;">
+      <span class="r-cache-dot idle" id="r-cache3dDot"></span><span id="r-cache3dText">3-day cache: idle</span>
+      &nbsp;|&nbsp;
+      <span class="r-cache-dot idle" id="r-cache7dDot"></span><span id="r-cache7dText">7-day cache: idle</span>
+    </div>
+    <div class="chart-wrap chart-wrap-tall">
+      <canvas id="r-chart"></canvas>
+      <svg id="r-measure-svg" class="r-measure-svg" xmlns="http://www.w3.org/2000/svg"></svg>
+    </div>
     <div class="zero-filter">
       <label class="chk-label"><input type="checkbox" id="r-hideZero" checked onchange="rRender()"> Hide 0°C readings</label>
       <label class="chk-label"><input type="checkbox" id="r-breakGaps"> Break at hidden zeros</label>
-      <label class="chk-label"><input type="checkbox" id="r-joinShort" checked onchange="rRender()"> Break at gaps &gt;30min</label>
+      <label class="chk-label"><input type="checkbox" id="r-joinShort" onchange="rRender()"> Break at gaps &gt;30min</label>
     </div>
     <div class="dur-grid">
       <div class="dur-panel"><h4>⏱️ Measurement duration 1</h4><div class="dur-items"><div class="dur-item"><div class="lbl">Start</div><div class="val" id="r-m1start">--</div></div><div class="dur-item"><div class="lbl">End</div><div class="val" id="r-m1end">--</div></div><div class="dur-item"><div class="lbl">Duration</div><div class="val" id="r-m1dur">--</div></div></div></div>
@@ -3211,7 +3250,7 @@ body.holo3d #sublynq-mute-btn {
   <div class="card" id="d-live-chamber-card" style="margin-bottom:14px;display:none;">
     <div class="card-title">🔴 Live Chamber Status — <span id="d-live-chamber-dryer-label">Dryer 1</span></div>
     <div id="d-live-chamber-grid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(120px,1fr));gap:10px;margin-top:10px;"></div>
-    <div style="margin-top:10px;font-size:0.72rem;color:var(--text3);">Auto-refreshes with live data. <span style="color:var(--danger);">● Offline</span> = no update for 2+ min. Tap a dryer above to switch.</div>
+    <div style="margin-top:10px;font-size:0.72rem;color:var(--text3);">Auto-refreshes with live data. <span style="color:var(--danger);">● Offline</span> = no update for 5+ min. Tap a dryer above to switch.</div>
   </div>
 
   <!-- ── DRYER MINI HEATMAP: 4 Dryers × 6 Chambers ── -->
@@ -7522,6 +7561,7 @@ function emsLoadFromGSheet(){ emsV2ScanFolder(); }
 ═══════════════════════════════════════════════════ */
 
 const GAS_URL = 'https://script.google.com/macros/s/AKfycbym74GptTI48xB-v4ReNTbygZbgZPDE8NXbEuY2gRUM7nyeQI2ic6j2wBjs_LK0WbRW/exec';
+const DRYER_GAS_URL = 'https://script.google.com/macros/s/AKfycbxCZ2Zr28uzMfCQH7w7sJsCUP0qji0EpRsCiPuoe54EeNAn4hLD-JOwQB-AfF_jhmtH/exec';
 // Hardcoded EMS GSheet ID (Apr 2026 and future months stored here)
 const EMS_HARDCODED_SHEET_ID = '1BU16QT-Qef5yFy1jm2Do0z8LFs8enHV4xZDcVego5cQ';
 // Helper: extract just the sheet ID from a URL or raw ID
@@ -8321,6 +8361,7 @@ let rMs1=null,rMe1=null,rMs2=null,rMe2=null,rM1State=0,rM2State=0;
 function rInit(){
   rFp=flatpickr('#r-dateRange',{mode:'range',dateFormat:'d/m/Y',defaultDate:[new Date(),new Date()],maxDate:new Date(),onReady:function(_,__,fp){if(document.body.classList.contains('holo'))fp.calendarContainer&&fp.calendarContainer.classList.add('holo-fp');}});
   rSetMeasure(1);
+  rSetNavEnabled(false); // enabled after 3-day cache is ready
   rQDToday(); // auto-start live on first open
 }
 function rSetYesterday(){const y=yesterday();rFp.setDate([y,y]);document.getElementById('r-startTime').value='00:00';document.getElementById('r-endTime').value='23:59';rLoadYesterday(false);}
@@ -8398,7 +8439,10 @@ async function rLoadRange(startDt,endDt,bg){
     });
     if(!rAllData.length){if(!bg)rShowError('No data in the selected range.');if(!bg)hideLoader();return;}
     rAllData.sort((a,b)=>(parseTS(String(a[0]))||0)-(parseTS(String(b[0]))||0));
+    rMergeCache(rAllData);
+    rSetNavEnabled(true);
     rUpdateStatus();rRender();
+    setTimeout(()=>rStartBgPrefetch(),2500);
   }catch(e){console.error('Resin error',e);if(!bg)rShowError('Error: '+e.message);}
   if(!bg)hideLoader();
 }
@@ -8482,15 +8526,343 @@ function rCountBatches(ch){
   if(segStart!==null){const last=vals[vals.length-1][0];if(last-segStart>=MIN_DURATION_MS)batches++;}
   document.getElementById(`r-batches${ch}`).textContent=batches||'0';
 }
-function rClearMeasure(which){if(which===1){rMs1=null;rMe1=null;rM1State=0;document.getElementById('r-m1start').textContent='--';document.getElementById('r-m1end').textContent='--';document.getElementById('r-m1dur').textContent='--';}else{rMs2=null;rMe2=null;rM2State=0;document.getElementById('r-m2start').textContent='--';document.getElementById('r-m2end').textContent='--';document.getElementById('r-m2dur').textContent='--';}rRender();}
-function rSetMeasure(n){rMeasure=n;document.getElementById('r-mBtn1').className='btn btn-sm '+(n===1?'btn-primary':'btn-secondary');document.getElementById('r-mBtn2').className='btn btn-sm '+(n===2?'btn-primary':'btn-secondary');}
-function rHandleClick(t){
-  if(rMeasure===1){if(rM1State===0){rMs1=t;rMe1=null;rM1State=1;}else{rMe1=t;rM1State=0;rCalcDuration(1);}}
-  else{if(rM2State===0){rMs2=t;rMe2=null;rM2State=1;}else{rMe2=t;rM2State=0;rCalcDuration(2);}}
-  rRender();
+function rClearMeasure(which){if(which===1){rMs1=null;rMe1=null;rM1State=0;rLivePreview=null;document.getElementById('r-m1start').textContent='--';document.getElementById('r-m1end').textContent='--';document.getElementById('r-m1dur').textContent='--';}else{rMs2=null;rMe2=null;rM2State=0;rLivePreview=null;document.getElementById('r-m2start').textContent='--';document.getElementById('r-m2end').textContent='--';document.getElementById('r-m2dur').textContent='--';}rRender();rDrawOverlay();}
+function rSetMeasure(n){rMeasure=n;document.getElementById('r-mBtn1').className='btn btn-sm '+(n===1?'btn-primary':'btn-secondary');document.getElementById('r-mBtn2').className='btn btn-sm '+(n===2?'btn-primary':'btn-secondary');const canvas=document.getElementById('r-chart');if(canvas)canvas.style.cursor=rIsMeasuring()?'crosshair':'default';}
+// ── Resin chart: live preview state ──────────────────────────────────────────
+let rLivePreview=null;        // Date while hovering before 2nd click
+let rTouchLongTimer=null;     // mobile long-press timer
+let rTouchStarted=false;      // mobile: long-press confirmed
+
+// ── Background cache ──────────────────────────────────────────────────────────
+let rCachedData=[],rCachedHeader=null,rCachedFrom=null,rCachedTo=null;
+let rBgQueue=[],rBgRunning=false,rBgStarted=false;
+const R_LIVE_EDGE_MS=3*60*1000;
+
+function rSetCacheStatus(which,state,msg){
+  const bar=document.getElementById('r-cache-bar');
+  const dot=document.getElementById(`r-cache${which}Dot`);
+  const txt=document.getElementById(`r-cache${which}Text`);
+  if(!bar||!dot||!txt)return;
+  bar.style.display='flex';
+  dot.className=`r-cache-dot ${state}`;
+  txt.textContent=msg;
+  if(which==='3d'&&state==='done')rSetNavEnabled(true);
 }
-function rCalcDuration(which){const s=which===1?rMs1:rMs2,e=which===1?rMe1:rMe2;if(!s||!e)return;const diff=Math.abs(e-s)/1000;const h=Math.floor(diff/3600),m=Math.floor((diff%3600)/60),sec=Math.floor(diff%60);const dur=`${h?h+'h ':''}${m}m ${sec}s`;document.getElementById(`r-m${which}start`).textContent=(s<e?s:e).toLocaleTimeString();document.getElementById(`r-m${which}end`).textContent=(s<e?e:s).toLocaleTimeString();document.getElementById(`r-m${which}dur`).textContent=dur;}
-function rIsHL(t,which){const s=which===1?rMs1:rMs2,e=which===1?rMe1:rMe2;if(!s)return false;if(!e)return t.getTime()===s.getTime();const lo=s<e?s:e,hi=s<e?e:s;return t>=lo&&t<=hi;}
+function rMergeCache(newRows){
+  if(!newRows||!newRows.length)return;
+  const ex=new Set(rCachedData.map(r=>r[0].toString()));
+  for(const r of newRows){if(!ex.has(r[0].toString())){rCachedData.push(r);ex.add(r[0].toString());}}
+  rCachedData.sort((a,b)=>(parseTS(String(a[0]))||0)-(parseTS(String(b[0]))||0));
+  rCachedFrom=parseTS(String(rCachedData[0][0]));
+  rCachedTo=parseTS(String(rCachedData[rCachedData.length-1][0]));
+}
+function rSliceCache(s,e){return rCachedData.filter(r=>{const t=parseTS(String(r[0]));return t&&t>=s&&t<=e;});}
+function rCacheCovers(s,e){
+  if(!rCachedFrom||!rCachedTo)return false;
+  const now=new Date(),margin=2*60*1000;
+  const startOk=rCachedFrom<=new Date(s.getTime()+margin);
+  const liveEnd=(now-e)<R_LIVE_EDGE_MS;
+  const endOk=liveEnd?rCachedTo>=new Date(now.getTime()-R_LIVE_EDGE_MS):rCachedTo>=new Date(e.getTime()-margin);
+  return startOk&&endOk;
+}
+async function rRunBgQueue(){
+  if(rBgRunning||!rBgQueue.length)return;
+  rBgRunning=true;
+  while(rBgQueue.length){
+    const job=rBgQueue.shift();
+    try{
+      rSetCacheStatus(job.which,'loading',`${job.label} cache: loading…`);
+      // Use same fetch mechanism as rLoadRange — build date objects and call rFetchRows
+      const rows=await rFetchRowsForRange(job.startDT,job.endDT);
+      if(rows&&rows.length){rMergeCache(rows);rSetCacheStatus(job.which,'done',`${job.label} cache: ready ✓`);}
+      else rSetCacheStatus(job.which,'idle',`${job.label} cache: no data`);
+    }catch(e){rSetCacheStatus(job.which,'idle',`${job.label} cache: error`);}
+    if(rBgQueue.length)await new Promise(r=>setTimeout(r,800));
+  }
+  rBgRunning=false;
+}
+function rEnqueueBg(startDT,endDT,which,label){
+  if(rBgQueue.some(j=>j.which===which))return;
+  rBgQueue.push({startDT,endDT,which,label});
+  rRunBgQueue();
+}
+function rStartBgPrefetch(){
+  if(rBgStarted)return;rBgStarted=true;
+  const now=new Date();
+  rEnqueueBg(new Date(now-3*86400000),now,'3d','3-day');
+  rEnqueueBg(new Date(now-7*86400000),now,'7d','7-day');
+}
+
+// Low-level row fetcher shared between normal load and bg cache
+async function rFetchRowsForRange(startDT,endDT){
+  try{
+    const rows=await fetchFromGAS('resin',startDT,endDT);
+    if(!rCachedHeader&&rows&&rows.length)rCachedHeader=rows[0];
+    return rows&&rows.length>1?rows.slice(1):[];
+  }catch(e){return[];}
+}
+
+// ── Nav enable/disable ────────────────────────────────────────────────────────
+let rNavEnabled=false;
+function rSetNavEnabled(en){
+  rNavEnabled=en;
+  ['r-navLeft','r-navRight','r-navZoomIn','r-navZoomOut'].forEach(id=>{
+    const b=document.getElementById(id);if(b)b.disabled=!en;
+  });
+}
+
+// ── Toast ─────────────────────────────────────────────────────────────────────
+function rShowToast(msg,ms){
+  ms=ms||3000;
+  let el=document.getElementById('r-nav-toast');
+  if(!el){el=document.createElement('div');el.id='r-nav-toast';document.body.appendChild(el);}
+  el.textContent=msg;el.style.opacity='1';
+  clearTimeout(el._t);el._t=setTimeout(()=>{el.style.opacity='0';},ms);
+}
+
+// ── View window helpers ───────────────────────────────────────────────────────
+function rGetViewWindow(){
+  // Pull from flatpickr + time inputs
+  const dates=rFp?rFp.selectedDates:[];
+  if(dates.length<2)return null;
+  const st=document.getElementById('r-startTime').value||'00:00';
+  const et=document.getElementById('r-endTime').value||'23:59';
+  const [sh,sm]=st.split(':');const [eh,em]=et.split(':');
+  const s=new Date(dates[0]);s.setHours(+sh,+sm,0,0);
+  const e=new Date(dates[1]);e.setHours(+eh,+em,59,999);
+  return{startDT:s,endDT:e};
+}
+function rSetViewWindow(startDT,endDT){
+  if(rFp)fpSetRange(rFp,startDT,endDT);
+  document.getElementById('r-startTime').value=`${String(startDT.getHours()).padStart(2,'0')}:${String(startDT.getMinutes()).padStart(2,'0')}`;
+  document.getElementById('r-endTime').value=`${String(endDT.getHours()).padStart(2,'0')}:${String(endDT.getMinutes()).padStart(2,'0')}`;
+}
+function rGetLatestDataTime(){
+  if(rCachedTo)return rCachedTo;
+  if(rAllData.length>=2)return parseTS(String(rAllData[rAllData.length-1][0]));
+  return null;
+}
+
+// Apply view: always serve from cache — never show the loading screen
+function rApplyView(startDT,endDT){
+  rSetViewWindow(startDT,endDT);
+  const rows=rSliceCache(startDT,endDT);
+  if(rows.length>=2){
+    rAllData=rCachedHeader?[rCachedHeader,...rows]:[...rows];
+    rRender();
+  } else if(rChart){
+    // Nothing in cache yet — just pan the axis visually
+    rChart.options.scales.x.min=startDT.getTime();
+    rChart.options.scales.x.max=endDT.getTime();
+    rChart.update('none');
+  }
+}
+
+function rScrollChart(minutes){
+  const v=rGetViewWindow();if(!v)return;
+  const ms=minutes*60000;
+  let ns=new Date(v.startDT.getTime()+ms),ne=new Date(v.endDT.getTime()+ms);
+  if(minutes>0){
+    const latest=rGetLatestDataTime();
+    if(latest&&ns>=latest){rShowToast('⚠️ No more data ahead — reload for latest');return;}
+    if(latest&&ne>new Date(latest.getTime()+60000)){const span=v.endDT-v.startDT;ne=latest;ns=new Date(ne-span);}
+  }
+  rApplyView(ns,ne);
+}
+function rZoomChart(dir,stepMin){
+  const v=rGetViewWindow();if(!v)return;
+  const step=(stepMin||5)*60000,delta=dir*step;
+  const latest=rGetLatestDataTime();
+  const atEdge=latest&&(v.endDT>=new Date(latest.getTime()-2*60000));
+  let ns,ne;
+  if(atEdge){ne=v.endDT;ns=new Date(v.startDT.getTime()+delta);}
+  else{ns=new Date(v.startDT.getTime()+delta);ne=new Date(v.endDT.getTime()-delta);}
+  if(ne-ns<5*60000){rShowToast('⚠️ Cannot zoom in further');return;}
+  rApplyView(ns,ne);
+}
+
+// ── Hold-to-repeat nav buttons ────────────────────────────────────────────────
+(function rAttachHold(){
+  let _holdTimer=null,_holdStart=null,_activeId=null,_activeAction=null;
+  function _step(){const h=Date.now()-_holdStart;return h<3000?5:h<6000?10:30;}
+  function _interval(){const h=Date.now()-_holdStart;return h<600?200:h<1500?100:50;}
+  const actions={
+    'r-navLeft':    ()=>rScrollChart(-_step()),
+    'r-navRight':   ()=>rScrollChart( _step()),
+    'r-navZoomIn':  ()=>rZoomChart(1,  _step()),
+    'r-navZoomOut': ()=>rZoomChart(-1, _step()),
+  };
+  function _sched(){_holdTimer=setTimeout(()=>{if(_activeAction){_activeAction();_sched();}},_interval());}
+  function _start(id){_stop();_activeId=id;_activeAction=actions[id];_holdStart=Date.now();_activeAction();_sched();}
+  function _stop(){
+    if(_holdTimer){clearTimeout(_holdTimer);_holdTimer=null;}
+    _activeAction=null;_activeId=null;_holdStart=null;
+  }
+  document.addEventListener('DOMContentLoaded',()=>{
+    Object.keys(actions).forEach(id=>{
+      const b=document.getElementById(id);if(!b)return;
+      b.addEventListener('mousedown', e=>{if(b.disabled)return;e.preventDefault();_start(id);});
+      b.addEventListener('mouseup',   ()=>_stop());
+      b.addEventListener('mouseleave',()=>_stop());
+      b.addEventListener('touchstart',e=>{if(b.disabled)return;e.preventDefault();_start(id);},{passive:false});
+      b.addEventListener('touchend',  ()=>_stop());
+      b.addEventListener('touchcancel',()=>_stop());
+    });
+  });
+})();
+
+// ── Measurement: click / live-preview / touch ─────────────────────────────────
+function rHandleClick(t){
+  const m=rMeasure;
+  if(m===1){
+    if(rM1State===0){rMs1=t;rMe1=null;rM1State=1;rLivePreview=t;
+      document.getElementById('r-m1start').textContent=t.toLocaleString();
+      document.getElementById('r-m1end').textContent='…move cursor…';
+      document.getElementById('r-m1dur').textContent='…';
+    }else{
+      rMe1=t;rM1State=0;rLivePreview=null;rCalcDuration(1);
+      const canvas=document.getElementById('r-chart');if(canvas)canvas.style.cursor='default';
+    }
+  }else{
+    if(rM2State===0){rMs2=t;rMe2=null;rM2State=1;rLivePreview=t;
+      document.getElementById('r-m2start').textContent=t.toLocaleString();
+      document.getElementById('r-m2end').textContent='…move cursor…';
+      document.getElementById('r-m2dur').textContent='…';
+    }else{
+      rMe2=t;rM2State=0;rLivePreview=null;rCalcDuration(2);
+      const canvas=document.getElementById('r-chart');if(canvas)canvas.style.cursor='default';
+    }
+  }
+  rRender();rDrawOverlay();
+}
+function rCalcDuration(which){
+  const s=which===1?rMs1:rMs2,e=which===1?rMe1:rMe2;if(!s||!e)return;
+  const diff=Math.abs(e-s)/1000;const h=Math.floor(diff/3600),m=Math.floor((diff%3600)/60),sec=Math.floor(diff%60);
+  const dur=`${h?h+'h ':''}${m}m ${sec}s`;
+  const lo=s<e?s:e,hi=s<e?e:s;
+  document.getElementById(`r-m${which}start`).textContent=lo.toLocaleString();
+  document.getElementById(`r-m${which}end`).textContent=hi.toLocaleString();
+  document.getElementById(`r-m${which}dur`).textContent=dur;
+}
+function rIsHL(t,which){
+  const s=which===1?rMs1:rMs2,e=which===1?rMe1:rMe2;
+  if(!s)return false;if(!e)return t.getTime()===s.getTime();
+  const lo=s<e?s:e,hi=s<e?e:s;return t>=lo&&t<=hi;
+}
+function rIsMeasuring(){return rMeasure===1?rM1State===1:rM2State===1;}
+
+function rGetTimeFromX(clientX){
+  if(!rChart)return null;
+  const canvas=document.getElementById('r-chart');
+  const rect=canvas.getBoundingClientRect();
+  const val=rChart.scales.x.getValueForPixel(clientX-rect.left);
+  if(!val)return null;
+  let closest=null,minDiff=Infinity;
+  for(const row of (window._rDisplayRows||[])){
+    const ts=parseTS(String(row[0]));if(!ts)continue;
+    const diff=Math.abs(ts-val);if(diff<minDiff){minDiff=diff;closest=ts;}
+  }
+  return closest;
+}
+
+function rHandleMouseMove(e){
+  if(!rChart||!rIsMeasuring())return;
+  const t=rGetTimeFromX(e.clientX);if(!t)return;
+  rLivePreview=t;
+  const m=rMeasure,s=m===1?rMs1:rMs2;if(!s)return;
+  document.getElementById(`r-m${m}end`).textContent=t.toLocaleString();
+  const ms=Math.abs(t-s),mins=Math.round(ms/60000),h=Math.floor(mins/60),mn=mins%60;
+  document.getElementById(`r-m${m}dur`).textContent=h>0?`${h}h ${mn}m`:`${mn}m`;
+  rDrawOverlay();
+}
+function rHandleMouseOut(){
+  if(!rIsMeasuring())return;
+  const m=rMeasure;
+  document.getElementById(`r-m${m}end`).textContent='…move cursor…';
+  document.getElementById(`r-m${m}dur`).textContent='…';
+  rLivePreview=null;rDrawOverlay();
+}
+
+// Mobile touch: long-press → drag → release
+function rHandleTouchStart(e){
+  if(!rChart)return;rTouchStarted=false;clearTimeout(rTouchLongTimer);
+  const touch=e.touches[0];
+  rTouchLongTimer=setTimeout(()=>{
+    rTouchStarted=true;
+    if(navigator.vibrate)navigator.vibrate(40);
+    rHandleClick(rGetTimeFromX(touch.clientX)||new Date());
+    e.preventDefault();
+  },400);
+}
+function rHandleTouchMove(e){
+  if(!rTouchStarted||!rIsMeasuring())return;
+  clearTimeout(rTouchLongTimer);e.preventDefault();
+  rHandleMouseMove({clientX:e.touches[0].clientX});
+}
+function rHandleTouchEnd(e){
+  clearTimeout(rTouchLongTimer);
+  if(!rTouchStarted||!rIsMeasuring()){rTouchStarted=false;return;}
+  rTouchStarted=false;
+  const t=rGetTimeFromX(e.changedTouches[0].clientX);if(!t)return;
+  rLivePreview=null;
+  const m=rMeasure;
+  if(m===1){rMe1=t;rM1State=0;rCalcDuration(1);}
+  else{rMe2=t;rM2State=0;rCalcDuration(2);}
+  rRender();rDrawOverlay();
+}
+
+function rAttachCanvasInteraction(canvas){
+  canvas.removeEventListener('mousemove',rHandleMouseMove);
+  canvas.removeEventListener('mouseout', rHandleMouseOut);
+  canvas.removeEventListener('touchstart',rHandleTouchStart);
+  canvas.removeEventListener('touchmove', rHandleTouchMove);
+  canvas.removeEventListener('touchend',  rHandleTouchEnd);
+  canvas.addEventListener('mousemove',rHandleMouseMove);
+  canvas.addEventListener('mouseout', rHandleMouseOut);
+  canvas.addEventListener('touchstart',rHandleTouchStart,{passive:false});
+  canvas.addEventListener('touchmove', rHandleTouchMove, {passive:false});
+  canvas.addEventListener('touchend',  rHandleTouchEnd,  {passive:false});
+  canvas.style.cursor=rIsMeasuring()?'crosshair':'default';
+}
+
+// ── SVG measurement overlay ───────────────────────────────────────────────────
+function rDrawOverlay(){
+  const svg=document.getElementById('r-measure-svg');
+  if(!svg||!rChart){if(svg)svg.innerHTML='';return;}
+  const ca=rChart.chartArea;
+  const toPx=ts=>rChart.scales.x.getPixelForValue(ts instanceof Date?ts.getTime():ts);
+  const aT=ca.top,aB=ca.bottom;
+  const cfgs=[
+    {start:rMs1,end:rMe1||(rM1State===1&&rLivePreview?rLivePreview:null),color:'#8b5cf6',isLive:rM1State===1&&!rMe1},
+    {start:rMs2,end:rMe2||(rM2State===1&&rLivePreview?rLivePreview:null),color:'#f59e0b',isLive:rM2State===1&&!rMe2},
+  ];
+  let html='';
+  cfgs.forEach(cfg=>{
+    if(!cfg.start)return;
+    const x1=toPx(cfg.start),color=cfg.color;
+    html+=`<line x1="${x1}" y1="${aT}" x2="${x1}" y2="${aB}" stroke="${color}" stroke-width="2" stroke-dasharray="5,4" opacity="0.85"/>`;
+    html+=`<circle cx="${x1}" cy="${aB}" r="4" fill="${color}" opacity="0.9"/>`;
+    if(!cfg.end)return;
+    const x2=toPx(cfg.end),eo=cfg.isLive?'0.55':'0.85',ed=cfg.isLive?'4,4':'5,4';
+    html+=`<line x1="${x2}" y1="${aT}" x2="${x2}" y2="${aB}" stroke="${color}" stroke-width="2" stroke-dasharray="${ed}" opacity="${eo}"/>`;
+    html+=`<circle cx="${x2}" cy="${aB}" r="4" fill="${color}" opacity="${eo}"/>`;
+    if(cfg.isLive)html+=`<circle cx="${x2}" cy="${aB}" r="9" fill="none" stroke="${color}" stroke-width="1.5" opacity="0.35" stroke-dasharray="3,3"/>`;
+    // Double-sided arrow
+    const aY=aB+22,minX=Math.min(x1,x2),maxX=Math.max(x1,x2),midX=(x1+x2)/2;
+    const ms=Math.abs(cfg.end-cfg.start),mins=Math.round(ms/60000),h=Math.floor(mins/60),mn=mins%60;
+    const lbl=h>0?`${h}h ${mn}m`:`${mn}m`;
+    const ao=cfg.isLive?'0.7':'0.95',ad=cfg.isLive?'stroke-dasharray="6,3"':'';
+    const ah=7,aw=4;
+    html+=`<line x1="${minX+ah}" y1="${aY}" x2="${maxX-ah}" y2="${aY}" stroke="${color}" stroke-width="2" ${ad} opacity="${ao}"/>`;
+    html+=`<polyline points="${minX+ah},${aY-aw} ${minX},${aY} ${minX+ah},${aY+aw}" fill="none" stroke="${color}" stroke-width="2" stroke-linejoin="round" opacity="${ao}"/>`;
+    html+=`<polyline points="${maxX-ah},${aY-aw} ${maxX},${aY} ${maxX-ah},${aY+aw}" fill="none" stroke="${color}" stroke-width="2" stroke-linejoin="round" opacity="${ao}"/>`;
+    const lblW=lbl.length*9+16;
+    html+=`<rect x="${midX-lblW/2}" y="${aY-14}" width="${lblW}" height="20" rx="4" fill="${cfg.isLive?color:'white'}" stroke="${color}" stroke-width="1.5" opacity="${ao}"/>`;
+    html+=`<text x="${midX}" y="${aY+1}" text-anchor="middle" dominant-baseline="middle" font-size="12" font-weight="700" font-family="Space Grotesk,Arial,sans-serif" fill="${cfg.isLive?'white':color}">${lbl}</text>`;
+  });
+  svg.innerHTML=html;
+}
+window.addEventListener('resize',()=>requestAnimationFrame(rDrawOverlay));
 function rRender(){
   if(!rAllData.length)return;
   const rows=[...rAllData].sort((a,b)=>(parseTS(String(a[0]))||0)-(parseTS(String(b[0]))||0));
@@ -8523,9 +8895,15 @@ function rRender(){
   if(k3)datasets.push(mkDs('Kettle 3 ',d3,h3,'rgb(16,185,129)'));
   const rDs=rChartType==='bar'?datasets.map(ds=>({...ds,type:'bar',backgroundColor:ds.borderColor.replace('rgb(','rgba(').replace(')',',0.6)'),borderRadius:4,pointRadius:0})):datasets;
   let _rJustDragged = false;
-  rChart=new Chart(ctx,{type:rChartType,data:{labels:ts,datasets:rDs},options:{responsive:true,maintainAspectRatio:false,animation:{duration:300},interaction:{mode:'index',intersect:false},plugins:{legend:{display:true,position:'top',labels:{color:textColor,font:{size:11,family:'Space Grotesk'},usePointStyle:true}},tooltip:{callbacks:{title:c=>new Date(c[0].parsed.x).toLocaleString(),label:c=>c.dataset.label+': '+(c.parsed.y===null?'no data':c.parsed.y.toFixed(2)+'°C')}}},scales:{x:{type:'time',time:{unit:'hour',displayFormats:{hour:'MMM d, HH:mm'}},ticks:{color:textColor,maxRotation:30,font:{size:9},maxTicksLimit:12},grid:{color:gridColor}},y:{title:{display:true,text:'Temperature (°C)',color:textColor},ticks:{color:textColor,callback:v=>v+'°C',font:{size:10}},grid:{color:gridColor}}},onClick:(e,els)=>{if(_rJustDragged){_rJustDragged=false;return;}if(!els.length)return;const idx=els[0].index;const t=new Date(ts[idx]);if(isNaN(t))return;rHandleClick(t);}}});
+  rChart=new Chart(ctx,{type:rChartType,data:{labels:ts,datasets:rDs},options:{responsive:true,maintainAspectRatio:false,animation:false,interaction:{mode:'index',intersect:false},plugins:{legend:{display:true,position:'top',labels:{color:textColor,font:{size:11,family:'Space Grotesk'},usePointStyle:true,generateLabels:function(chart){return chart.data.datasets.map((ds,i)=>{const col=ds._origBorderColor||ds.borderColor;const solidColor=Array.isArray(col)?col[0]:col;return{text:ds.label,fillStyle:solidColor,strokeStyle:solidColor,lineWidth:2,pointStyle:'circle',hidden:!chart.isDatasetVisible(i),datasetIndex:i};});}}},tooltip:{callbacks:{title:c=>new Date(c[0].parsed.x).toLocaleString(),label:c=>c.dataset.label+': '+(c.parsed.y===null?'no data':c.parsed.y.toFixed(2)+'°C')}}},scales:{x:{type:'time',time:{unit:'hour',displayFormats:{hour:'MMM d, HH:mm'}},ticks:{color:textColor,maxRotation:30,font:{size:9},maxTicksLimit:12},grid:{color:gridColor}},y:{title:{display:true,text:'Temperature (°C)',color:textColor},ticks:{color:textColor,callback:v=>v+'°C',font:{size:10}},grid:{color:gridColor}}},onClick:(e,els)=>{if(_rJustDragged){_rJustDragged=false;return;}if(!els.length)return;const idx=els[0].index;const t=new Date(ts[idx]);if(isNaN(t))return;rHandleClick(t);}}});
   const _rTimeLabels=ts.map(t=>new Date(t).toLocaleString('en-GB',{month:'short',day:'2-digit',hour:'2-digit',minute:'2-digit'}));
   attachChartDragSelect('r-chart',()=>rChart,_rTimeLabels,rDs,{unit:'°C',floatId:'uds-float-r-chart',noCombined:true,noTotal:true,onDragEnd:()=>{_rJustDragged=true;},timeLabels:ts});
+  // Save rows for getTimeFromX lookup
+  window._rDisplayRows=rows;
+  // Wire mouse/touch interaction for live preview
+  rAttachCanvasInteraction(canvas);
+  // Draw measurement overlay after chart renders
+  requestAnimationFrame(rDrawOverlay);
 }
 function rSetTitle(t){document.getElementById('r-graphTitle').value=t;}
 function rResinChanged(){document.getElementById('r-resinOther').classList.toggle('show',document.getElementById('r-resinType').value==='Others');}
@@ -8716,7 +9094,10 @@ async function rFetchLive(silent){
     }).filter(Boolean);
     if(!rAllData.length){if(!silent)rShowError('No data for today yet.');if(!silent)hideLoader();return;}
     rAllData.sort((a,b)=>(parseTS(String(a[0]))||0)-(parseTS(String(b[0]))||0));
+    rMergeCache(rAllData);
+    rSetNavEnabled(true);
     rUpdateStatus();rRender();
+    setTimeout(()=>rStartBgPrefetch(),2500);
     const rLastTs=parseTS(String(rAllData[rAllData.length-1][0]));
     document.getElementById('r-lastUpdate').textContent=rLastTs?rLastTs.toLocaleString():new Date().toLocaleString();
     _setLiveBar('r',true,rLastTs?rLastTs.toLocaleTimeString():new Date().toLocaleTimeString());
@@ -9036,9 +9417,9 @@ function dQDLast3(){const n=new Date(),s=new Date(n);s.setDate(n.getDate()-3);s.
 function dQDLastWeek(){const n=new Date(),s=new Date(n);s.setDate(n.getDate()-7);s.setHours(0,0,0,0);const e=new Date(yesterday());e.setHours(23,59,59,999);fpSetRange(dFp,s,e);dLoadDataRange(s,e);}
 function dQDThisMonth(){const n=new Date(),s=new Date(n.getFullYear(),n.getMonth(),1,0,0,0,0);const e=new Date(yesterday());e.setHours(23,59,59,999);fpSetRange(dFp,s,e);dLoadDataRange(s,e);}
 function dQDLastMonth(){const n=new Date(),s=new Date(n.getFullYear(),n.getMonth()-1,1,0,0,0,0),e=new Date(n.getFullYear(),n.getMonth(),0,23,59,59,999);fpSetRange(dFp,s,e);dLoadDataRange(s,e);}
-function dGetCsvFilename(date){return `Dryer_Monitor_${date.getDate()} ${D_MONTH_NAMES[date.getMonth()]} ${date.getFullYear()}.csv`;}
+function dGetCsvFilename(date){const y=date.getFullYear(),m=String(date.getMonth()+1).padStart(2,'0'),d=String(date.getDate()).padStart(2,'0');return `${y}-${m}-${d}.csv`;}
 async function dFetchDriveCsv(filename,folderId){
-  const url=GAS_URL+'?action=getDriveCsv&filename='+encodeURIComponent(filename)+'&folderId='+encodeURIComponent(folderId);
+  const url=DRYER_GAS_URL+'?action=getDriveCsv&filename='+encodeURIComponent(filename)+'&folderId='+encodeURIComponent(folderId);
   try{const resp=await fetch(url);if(!resp.ok)return null;const json=await resp.json();if(json.error||!json.csv)return null;return json.csv;}catch(e){console.warn('dFetchDriveCsv failed for '+filename+':',e.message);return null;}
 }
 function dParseCsv(csvText){
@@ -9172,7 +9553,7 @@ function dCheckDryerStatus(lastTs){
     const dryerBtn=document.getElementById(`d-dryerBtn${d}`);
     if(!tag){tag=document.createElement('span');tag.id=tagId;tag.style.cssText='margin-left:6px;font-size:0.7rem;font-weight:700;padding:1px 5px;border-radius:5px;vertical-align:middle;';if(dryerBtn)dryerBtn.appendChild(tag);}
     if(tag){
-      if(allZero){tag.textContent='Offline';tag.style.background='rgba(239,68,68,0.2)';tag.style.color='#ef4444';}
+      const dryerOff=allZero&&(ageMs>5*60*1000);if(dryerOff){tag.textContent='Offline';tag.style.background='rgba(239,68,68,0.2)';tag.style.color='#ef4444';}
       else{tag.textContent='Online';tag.style.background='rgba(16,185,129,0.2)';tag.style.color='#10b981';}
     }
   }
@@ -9197,7 +9578,7 @@ function dRenderLiveChambers(){
   const last=dAllData[dAllData.length-1];
   const lastTs=parseTS(String(last.ts));
   const nowMs=Date.now();
-  const OFFLINE_MS=2*60*1000; // 2 minutes
+  const OFFLINE_MS=5*60*1000; // 5 minutes
 
   grid.innerHTML='';
   for(let c=1;c<=D_NUM_CHAMBERS;c++){
@@ -9213,7 +9594,7 @@ function dRenderLiveChambers(){
     tile.style.background=color+'18';
     tile.style.color=color;
     tile.innerHTML=`<div class="dlt-name">CH ${c}</div>`+
-      `<div class="dlt-val">${hasVal&&!isOff?v.toFixed(1):'—'}${hasVal&&!isOff?'<span style="font-size:0.7rem">°C</span>':''}</div>`+
+      `<div class="dlt-val">${hasVal?v.toFixed(1):'—'}${hasVal?'<span style="font-size:0.7rem">°C</span>':''}</div>`+
       `<div class="dlt-status">${isOff?'<span style="color:#ef4444;">● OFFLINE</span>':'<span style="color:#22c55e;">● LIVE</span>'}</div>`;
     grid.appendChild(tile);
   }
