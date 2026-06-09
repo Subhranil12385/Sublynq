@@ -9419,7 +9419,7 @@ function dQDThisMonth(){const n=new Date(),s=new Date(n.getFullYear(),n.getMonth
 function dQDLastMonth(){const n=new Date(),s=new Date(n.getFullYear(),n.getMonth()-1,1,0,0,0,0),e=new Date(n.getFullYear(),n.getMonth(),0,23,59,59,999);fpSetRange(dFp,s,e);dLoadDataRange(s,e);}
 function dGetCsvFilename(date){const y=date.getFullYear(),m=String(date.getMonth()+1).padStart(2,'0'),d=String(date.getDate()).padStart(2,'0');return `${y}-${m}-${d}.csv`;}
 async function dFetchDriveCsv(filename,folderId){
-  const url=DRYER_GAS_URL+'?action=getDriveCsv&filename='+encodeURIComponent(filename)+'&folderId='+encodeURIComponent(folderId);
+  const url=GAS_URL+'?action=getDriveCsv&filename='+encodeURIComponent(filename)+'&folderId='+encodeURIComponent(folderId);
   try{const resp=await fetch(url);if(!resp.ok)return null;const json=await resp.json();if(json.error||!json.csv)return null;return json.csv;}catch(e){console.warn('dFetchDriveCsv failed for '+filename+':',e.message);return null;}
 }
 function dParseCsv(csvText){
