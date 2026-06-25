@@ -50,6 +50,10 @@
   --ems: #0ea5e9; --ems2: #3b82f6; --ems3: #6366f1;
   --ems-grad: linear-gradient(135deg,#0ea5e9 0%,#3b82f6 55%,#6366f1 100%);
   --ems-glow: rgba(14,165,233,0.28);
+  /* VENEER — Emerald › Teal › Green */
+  --veneer: #059669; --veneer2: #10b981; --veneer3: #34d399;
+  --veneer-grad: linear-gradient(135deg,#059669 0%,#10b981 55%,#34d399 100%);
+  --veneer-glow: rgba(5,150,105,0.28);
   --success: #10b981; --warning: #f59e0b; --danger: #ef4444;
   --shadow-sm: 0 2px 8px rgba(13,22,48,0.06); --shadow: 0 4px 20px rgba(13,22,48,0.08);
   --shadow-md: 0 8px px rgba(13,22,48,0.12); --shadow-lg: 0 16px 64px rgba(13,22,48,0.16);
@@ -82,6 +86,10 @@ body.dark {
   --ems: #38bdf8; --ems2: #60a5fa; --ems3: #818cf8;
   --ems-grad: linear-gradient(135deg,#38bdf8 0%,#60a5fa 50%,#818cf8 100%);
   --ems-glow: rgba(56,189,248,0.22);
+  /* VENEER dark */
+  --veneer: #34d399; --veneer2: #6ee7b7; --veneer3: #10b981;
+  --veneer-grad: linear-gradient(135deg,#34d399 0%,#6ee7b7 50%,#10b981 100%);
+  --veneer-glow: rgba(52,211,153,0.22);
   --shadow-sm: 0 2px 8px rgba(0,0,0,0.3); --shadow: 0 4px 20px rgba(0,0,0,0.4);
   --shadow-md: 0 8px px rgba(0,0,0,0.5); --shadow-lg: 0 16px 64px rgba(0,0,0,0.6);
   --cursor-color: #38bdf8;
@@ -126,6 +134,9 @@ body.holo {
   --ems: #00bcd4; --ems2: #7a7cff; --ems3: #00eaff;
   --ems-grad: linear-gradient(135deg,#00bcd4,#7a7cff,#00eaff);
   --ems-glow: rgba(0,188,212,0.35);
+  --veneer: #00ff9f; --veneer2: #00eaff; --veneer3: #00bcd4;
+  --veneer-grad: linear-gradient(135deg,#00ff9f,#00eaff,#00bcd4);
+  --veneer-glow: rgba(0,255,159,0.35);
   --success: #00ff9f; --warning: #ffd700; --danger: #ff3b3b;
   --shadow-sm: 0 0 16px rgba(0,234,255,0.12);
   --shadow: 0 0 32px rgba(0,234,255,0.18);
@@ -1442,6 +1453,8 @@ body.dark .home-logo{box-shadow:0 0 60px rgba(56,189,248,0.4),0 0 120px rgba(56,
 .home-card.solar:hover .home-card-arrow{color:var(--solar);}
 .home-card.ems{--card-clr:var(--ems-grad);}
 .home-card.ems:hover .home-card-arrow{color:var(--ems);}
+.home-card.veneer{--card-clr:var(--veneer-grad);}
+.home-card.veneer:hover .home-card-arrow{color:var(--veneer);}
 .home-card-icon{font-size:2.2rem;margin-bottom:14px;display:block;}
 .home-card-title{font-family:'Syne',sans-serif;font-size:1.1rem;font-weight:700;margin-bottom:7px;}
 .home-card-desc{font-size:0.82rem;color:var(--text2);line-height:1.6;}
@@ -3601,11 +3614,11 @@ body.holo #page-veneer h4     { color: var(--accent) !important; }
         <div class="home-card-desc">6 dryers × 6 chambers. Chamberwise temperature trends, statistics and threshold violations.</div>
         <div class="home-card-arrow">→</div>
       </div>
-      <div class="home-card" style="--card-clr:linear-gradient(135deg,#00ffcc,#009977);" onclick="showPage('veneer')">
+      <div class="home-card veneer" onclick="showPage('veneer')">
         <span class="home-card-icon">🪵</span>
-        <div class="home-card-title" style="color:#00aa88;">Veneer Monitor</div>
+        <div class="home-card-title">Veneer Monitor</div>
         <div class="home-card-desc">Live moisture %, temperature & conveyor proximity. Historical trends with drive-archived data.</div>
-        <div class="home-card-arrow" style="color:#00aa88;">→</div>
+        <div class="home-card-arrow">→</div>
       </div>
       <div class="home-card solar" onclick="showPage('solar')">
         <span class="home-card-icon">☀️</span>
