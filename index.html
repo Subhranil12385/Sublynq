@@ -13161,6 +13161,32 @@ function sRenderAVOInvChart(){
 }
 
 /* ── Vikram Excel parsing ── */
+function sPickVikramSheet(wb){
+  // Don't blindly trust SheetNames[0] — Excel sometimes prepends a blank
+  // "Macro1"/chart/helper sheet, which shifts the real data sheet's index.
+  // 1) Prefer a sheet literally named "Sheet1".
+  if(wb.SheetNames.includes('Sheet1')) return wb.Sheets['Sheet1'];
+  // 2) Otherwise find the sheet whose A1 header looks like "Location"
+  //    (the known header of the Vikram data table).
+  for(const name of wb.SheetNames){
+    const sh=wb.Sheets[name];
+    const a1=sh && sh['A1'] ? String(sh['A1'].v||'').trim().toLowerCase() : '';
+    if(a1==='location') return sh;
+  }
+  // 3) Fallback: pick the sheet with the most cells (i.e. actual data),
+  //    skipping empty/near-empty sheets like a blank Macro1 sheet.
+  let best=null,bestScore=-1;
+  for(const name of wb.SheetNames){
+    const sh=wb.Sheets[name];
+    const ref=sh&&sh['!ref'];
+    if(!ref)continue;
+    const range=XLSX.utils.decode_range(ref);
+    const score=(range.e.r-range.s.r+1)*(range.e.c-range.s.c+1);
+    if(score>bestScore){bestScore=score;best=sh;}
+  }
+  return best||wb.Sheets[wb.SheetNames[0]];
+}
+
 function sLoadVikramFile(input){
   const file=input.files[0];if(!file)return;
   document.getElementById('s-vik-upload-status').textContent='Parsing Excel…';
@@ -13168,7 +13194,7 @@ function sLoadVikramFile(input){
   reader.onload=e=>{
     try{
       const wb=XLSX.read(new Uint8Array(e.target.result),{type:'array',cellDates:true});
-      const sh1=wb.Sheets[wb.SheetNames[0]];
+      const sh1=sPickVikramSheet(wb);
       const arr=XLSX.utils.sheet_to_json(sh1,{header:1,defval:0});
       sVikramData=sParseVikramData(arr);
       document.getElementById('s-vik-upload-status').textContent=`✅ Parsed ${sVikramData.dates.length} days · Phase1: ${VIK_PH1_NAMES.length} inv · Phase2: ${VIK_PH2_NAMES.length} inv`;
