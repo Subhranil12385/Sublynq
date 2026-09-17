@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no"/>
-<title>SUjdifisiss— Plant Intelligence Platform</title>
+<title>SUBLYNQ— Plant Intelligence Platform</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=Syne:wght@700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" media="print" onload="this.media='all'">
@@ -8821,6 +8821,10 @@ const EMS_INTERVAL_FOLDER = '158-trz20GGOzkst8jsxe13jvuMsFR43K';   // Same Drive
 const DRYER_LIVE_SHEET_ID    = '1yEFDyVVT45pkYLupQZR9bs4xzOawS_pxnqKB2qVYRBE';
 const RESIN_LIVE_SHEET_ID    = '13WUUutAMWqfKrRJuv63gmYlDHN805IZ14YpyCWxqppE';
 const PREPRESS_LIVE_SHEET_ID = '1zi2Uy03MUamV8RLK4u9mcHJH65Itfkxl3YiJ6FV2idk';
+// Dedicated Prepress Apps Script (same backend used by the standalone Prepress Time Monitor Dashboard).
+// It already merges archive + live data server-side and returns finished session records
+// (closedFrom/closedTo/duration) per press — this is the "correct" data source.
+const PP_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxb5BpMZyAG_DEhYYPOiFCbPtT5_FgPK89NkFqv_bt6cRnV4kUzm_TCoPKEE2LCtGzVbA/exec';
 
 const QUOTES = [
   "Data is the oil of the 21st century.",
@@ -10149,9 +10153,95 @@ async function rDownloadGraph(){if(!rAllData.length){alert('Load data first.');r
 async function rExportPDF(){if(!rAllData.length){alert('Load data first.');return;}const{jsPDF}=window.jspdf;const pdf=new jsPDF();pdf.setFontSize(18);pdf.setTextColor(124,58,237);pdf.text('SUBLYNQ — Resin Kettle Report',14,18);pdf.setFontSize(10);pdf.setTextColor(90,103,127);pdf.text(`Generated: ${new Date().toLocaleString()}`,14,28);const canvas=document.getElementById('r-chart');pdf.addImage(canvas.toDataURL('image/png'),'PNG',14,35,180,100);const hideZero=document.getElementById('r-hideZero').checked;const tableData=rAllData.map(r=>{const t=parseTS(String(r[0]));const v1=parseFloat(r[1]),v2=parseFloat(r[2]),v3=parseFloat(r[3]);const fmt=v=>(isNaN(v)||v===0&&hideZero)?'--':v.toFixed(2);return[t?t.toLocaleString():String(r[0]),fmt(v1),fmt(v2),fmt(v3)];});pdf.autoTable({startY:145,head:[['Timestamp','Kettle 1 (°C)','Kettle 2 (°C)','Kettle 3 (°C)']],body:tableData,styles:{fontSize:7},headStyles:{fillColor:[124,58,237]},didParseCell:function(data){if(data.section==='body'&&data.column.index>0){const val=parseFloat(data.cell.raw);if(!isNaN(val)&&val>0){if(val>100){data.cell.styles.fillColor=[255,220,220];data.cell.styles.textColor=[180,0,0];}else if(val>50){data.cell.styles.fillColor=[255,245,210];data.cell.styles.textColor=[140,80,0];}else{data.cell.styles.fillColor=[220,255,235];data.cell.styles.textColor=[0,100,60];}}}}});pdf.save(`SUBLYNQ_Resin_Report_${new Date().toLocaleDateString().replace(/\//g,'-')}.pdf`);}
 
 /* ══════════════════════════════════════════════════════
-   PREPRESS MODULE (unchanged)
+   PREPRESS MODULE — data pulled via PP_SCRIPT_URL (ported from the
+   standalone Prepress Time Monitor Dashboard's correct fetch/normalise logic)
 ══════════════════════════════════════════════════════ */
 let ppAllData={1:[],2:[],3:[],4:[],5:[]};let ppCurrentPress='all';let ppFilterEnabled=true;let ppMinDuration=5;let ppFp=null;
+
+// ── ppSrc*: ported 1:1 from the small dashboard's correct data-pulling logic ──
+function ppFmtYMD(d){return d.getFullYear()+'-'+pad2(d.getMonth()+1)+'-'+pad2(d.getDate());}
+function ppIsRangeToday(fromYMD,toYMD){const t=ppFmtYMD(new Date());return fromYMD===t&&toYMD===t;}
+function ppSrcToISODate(ddmmyyyy){if(!ddmmyyyy)return'';const p=ddmmyyyy.split('/');if(p.length!==3)return ddmmyyyy;return`${p[2]}-${p[1]}-${p[0]}`;}
+function ppSrcParseDateDMY(dateStr){if(!dateStr)return null;const parts=dateStr.split('/');if(parts.length!==3)return null;return new Date(parseInt(parts[2]),parseInt(parts[1])-1,parseInt(parts[0]));}
+function ppSrcIsNextDay(dateA,dateB){const a=ppSrcParseDateDMY(dateA),b=ppSrcParseDateDMY(dateB);if(!a||!b)return false;return(b.getTime()-a.getTime())===86400000;}
+function ppSrcIsNearMidnightEnd(timeStr){if(!timeStr||timeStr.trim()==='')return true;const lower=timeStr.toLowerCase();if(lower.includes('ongoing')||lower.includes('in progress')||lower.includes('pressing'))return true;const parts=timeStr.split(':');if(parts.length>=2){const h=parseInt(parts[0]),m=parseInt(parts[1]);return h===23&&m>=50;}return false;}
+function ppSrcIsNearMidnightStart(timeStr){if(!timeStr)return false;const parts=timeStr.split(':');if(parts.length>=2){const h=parseInt(parts[0]),m=parseInt(parts[1]);return h===0&&m<10;}return false;}
+function ppSrcComputeDurationSec(date1,time1,date2,time2){try{const toMs=(dateStr,timeStr)=>{const dp=(dateStr||'').split('/');const tp=(timeStr||'00:00:00').split(':').map(Number);if(dp.length!==3)return null;const d=new Date(parseInt(dp[2]),parseInt(dp[1])-1,parseInt(dp[0]));d.setHours(tp[0]||0,tp[1]||0,tp[2]||0,0);return isNaN(d.getTime())?null:d.getTime();};const startMs=toMs(date1,time1),endMs=toMs(date2,time2);if(startMs===null||endMs===null||endMs<=startMs)return null;return Math.floor((endMs-startMs)/1000);}catch(e){return null;}}
+function ppSrcParseDurationSec(str){if(!str||str==='Pressing'||str==='In Progress')return 0;if(/[hms]/i.test(str)){const hM=str.match(/(\d+)h/i),mM=str.match(/(\d+)m/i),sM=str.match(/(\d+)s/i);return(hM?parseInt(hM[1]):0)*3600+(mM?parseInt(mM[1]):0)*60+(sM?parseInt(sM[1]):0);}const parts=str.split(':');if(parts.length===2)return(parseInt(parts[0])||0)*60+(parseInt(parts[1])||0);if(parts.length===3)return(parseInt(parts[0])||0)*3600+(parseInt(parts[1])||0)*60+(parseInt(parts[2])||0);return 0;}
+function ppSrcMergeMidnight(records){
+  if(!records||records.length<2)return records;
+  const sorted=[...records].sort((a,b)=>{
+    const dateA=ppSrcParseDateDMY(a.date),dateB=ppSrcParseDateDMY(b.date);
+    const dd=(dateA?dateA.getTime():0)-(dateB?dateB.getTime():0);
+    if(dd!==0)return dd;
+    const tA=(a.startTime||'00:00:00').split(':').map(Number);
+    const tB=(b.startTime||'00:00:00').split(':').map(Number);
+    return(tA[0]*3600+tA[1]*60+(tA[2]||0))-(tB[0]*3600+tB[1]*60+(tB[2]||0));
+  });
+  const merged=[];let i=0;
+  while(i<sorted.length){
+    const curr=sorted[i],next=sorted[i+1];
+    if(next&&ppSrcIsNextDay(curr.date,next.date)&&ppSrcIsNearMidnightEnd(curr.endTime)&&ppSrcIsNearMidnightStart(next.startTime)){
+      const mergedSec=ppSrcComputeDurationSec(curr.date,curr.startTime,next.date,next.endTime);
+      merged.push({date:curr.date,startTime:curr.startTime,endTime:next.endTime,duration:mergedSec!==null?secToHMS(mergedSec):next.duration,ongoing:false});
+      i+=2;
+    }else{merged.push(curr);i++;}
+  }
+  return merged;
+}
+function ppSrcNormaliseRecord(raw){
+  const parseDT=(str)=>{
+    if(!str)return{date:'',time:''};
+    str=String(str).trim().replace(/\s*\(.*?\)\s*$/,'').trim();
+    let m=str.match(/^(\d{4}-\d{2}-\d{2})\s+(\d{2}:\d{2}:\d{2})$/);
+    if(m){const[y,mo,d]=m[1].split('-');return{date:`${d}/${mo}/${y}`,time:m[2]};}
+    m=str.match(/^(\d{2}\/\d{2}\/\d{4})\s+(\d{2}:\d{2}:\d{2})$/);
+    if(m)return{date:m[1],time:m[2]};
+    m=str.match(/^(\d{2}:\d{2}:\d{2})$/);
+    if(m)return{date:'',time:m[1]};
+    m=str.match(/^(\d{4}-\d{2}-\d{2})$/);
+    if(m){const[y,mo,d]=m[1].split('-');return{date:`${d}/${mo}/${y}`,time:''};}
+    return{date:'',time:str};
+  };
+  const from=parseDT(raw.closedFrom),to=parseDT(raw.closedTo);
+  const date=from.date||to.date||'';
+  const startTime=from.time;
+  const rawEndStr=String(raw.closedTo||'').trim().toLowerCase();
+  const isOngoing=rawEndStr===''||rawEndStr.includes('ongoing')||rawEndStr.includes('in progress')||rawEndStr.includes('pressing');
+  const endTime=isOngoing?'':(to.time||'');
+  return{date,startTime,endTime,duration:raw.duration||'',ongoing:isOngoing};
+}
+function ppSrcNormaliseRecords(rawArray){
+  if(!rawArray||!Array.isArray(rawArray))return[];
+  const normalised=rawArray.map(ppSrcNormaliseRecord).filter(r=>r.startTime);
+  return ppSrcMergeMidnight(normalised);
+}
+function ppSrcToSessions(records){
+  return records.map(r=>({
+    date:ppSrcToISODate(r.date),
+    startTime:r.startTime||'',
+    endTime:r.ongoing?'':(r.endTime||''),
+    duration:secToHMS(ppSrcParseDurationSec(r.duration)),
+    idleTime:'',
+    ongoing:!!r.ongoing
+  }));
+}
+async function ppSrcFetchForPress(press,fromYMD,toYMD){
+  try{
+    const col=press+1;
+    const todayOnly=ppIsRangeToday(fromYMD,toYMD);
+    const url=`${PP_SCRIPT_URL}?action=getData&fromDate=${fromYMD}&toDate=${toYMD}&prepress=${col}&todayOnly=${todayOnly}`;
+    const response=await fetch(url);
+    if(!response.ok)throw new Error(`HTTP ${response.status}`);
+    const result=await response.json();
+    if(result.error)throw new Error(result.error);
+    const raw=result.data||result.records||[];
+    return ppSrcNormaliseRecords(raw);
+  }catch(error){
+    console.warn(`Prepress fetch error press ${press}:`,error);
+    return[];
+  }
+}
 function ppQDYesterday(){const y=yesterday();const s=new Date(y);s.setHours(0,0,0,0);const e=new Date(y);e.setHours(23,59,59,999);fpSetRange(ppFp,y,y);ppLoadDataRange(s,e);}
 function ppQDLast3(){if(!ppFp)return;const n=new Date(),s=new Date(n);s.setDate(n.getDate()-3);s.setHours(0,0,0,0);const e=new Date(yesterday());e.setHours(23,59,59,999);fpSetRange(ppFp,s,e);ppLoadDataRange(s,e);}
 function ppQDLastWeek(){if(!ppFp)return;const n=new Date(),s=new Date(n);s.setDate(n.getDate()-7);s.setHours(0,0,0,0);const e=new Date(yesterday());e.setHours(23,59,59,999);fpSetRange(ppFp,s,e);ppLoadDataRange(s,e);}
@@ -10181,60 +10271,23 @@ async function ppLoadDataRange(startDt, endDt, bg){
   if(!bg)ppDeactivateLive(); // stop live when user loads archive data
   ppAllData={1:[],2:[],3:[],4:[],5:[]};
   if(!bg){document.getElementById('pp-allLoading').style.display='flex';document.getElementById('pp-allStats').style.display='none';document.getElementById('pp-allTables').style.display='none';}
-  if(!bg){document.getElementById('pp-bgBarWrap').style.display='block';document.getElementById('pp-bgBar').style.width='0%';document.getElementById('pp-bgStatus').textContent='Fetching Drive files…';}
+  if(!bg){document.getElementById('pp-bgBarWrap').style.display='block';document.getElementById('pp-bgBar').style.width='0%';document.getElementById('pp-bgStatus').textContent='Fetching prepress data…';}
   if(!bg)showLoader('🗜️ Loading Prepress Data…');
   try{
-    const todayIST=new Date();
-    const todayStart=new Date(todayIST.getFullYear(),todayIST.getMonth(),todayIST.getDate(),0,0,0,0);
-    const includesToday=endDt>=todayStart;
-
-    // Fetch archive data via GAS (past CSV files)
-    if(!bg)document.getElementById('loaderBar').style.width='30%';
-    try{
-      const matrix=await fetchFromGAS('prepress',startDt,endDt);document.getElementById('loaderBar').style.width='60%';
-      if(matrix&&matrix.length>1){const dataRows=matrix.slice(1);dataRows.forEach(r=>{const pressStr=String(r[1]||'');const pressNum=parseInt(pressStr.replace(/\D/g,''))||0;if(pressNum<1||pressNum>5)return;const startFull=String(r[2]||'');const endFull=String(r[3]||'');const idleMins=r[5];const startDate=startFull.split(' ')[0]||startFull.split('T')[0]||'';const startTime=startFull.includes(' ')?startFull.split(' ').slice(1).join(' '):(startFull.split('T')[1]||'');const endTime=endFull.includes(' ')?endFull.split(' ').slice(1).join(' '):(endFull.split('T')[1]||'');const ongoing=endFull.toLowerCase().includes('ongoing');
-      let durStr='00:00:00';
-      const startDtObj=new Date(`${startDate}T${startTime.substring(0,8)}`);
-      const endDtObj=new Date(`${(endFull.split(' ')[0]||endFull.split('T')[0]||startDate)}T${endTime.substring(0,8)}`);
-      if(!ongoing&&!isNaN(startDtObj)&&!isNaN(endDtObj)&&endDtObj>startDtObj){const totalSec=Math.round((endDtObj-startDtObj)/1000);const dh=Math.floor(totalSec/3600),dm=Math.floor((totalSec%3600)/60),ds=totalSec%60;durStr=String(dh).padStart(2,'0')+':'+String(dm).padStart(2,'0')+':'+String(ds).padStart(2,'0');}else{const durMins=parseInt(r[4])||0;const h=Math.floor(durMins/60),m=durMins%60;durStr=String(h).padStart(2,'0')+':'+String(m).padStart(2,'0')+':00';}
-      const idleStr=(idleMins==='--'||idleMins===undefined||idleMins==='')?'':(()=>{const im=parseFloat(idleMins);const totalISec=Math.round(im*60);const ih=Math.floor(totalISec/3600),im2=Math.floor((totalISec%3600)/60),is2=totalISec%60;return String(ih).padStart(2,'0')+':'+String(im2).padStart(2,'0')+':'+String(is2).padStart(2,'0');})();
-      ppAllData[pressNum].push({date:startDate,startTime:startTime.substring(0,8),endTime:ongoing?'':endTime.substring(0,8),duration:durStr,idleTime:idleStr});});}
-    }catch(archiveErr){console.warn('Prepress archive error:',archiveErr);}
-
-    // If range includes today, also pull live Sheet1 data
-    if(includesToday){
-      if(!bg)document.getElementById('loaderBar').style.width='80%';
-      try{
-        const rows=await fetchLiveGsheet(PREPRESS_LIVE_SHEET_ID,'Sheet1');
-        if(rows&&rows.length>1){
-          const hdr=rows[0];
-          const isHdr=typeof hdr[0]==='string'&&/date|timestamp/i.test(hdr[0]);
-          const dataRows=isHdr?rows.slice(1):rows;
-          const todayDateStr=todayIST.getFullYear()+'-'+pad2(todayIST.getMonth()+1)+'-'+pad2(todayIST.getDate());
-          const liveMatrix=[['Date','Time','Prepress 1','Prepress 2','Prepress 3','Prepress 4','Prepress 5']];
-          dataRows.forEach(r=>{
-            const dateTs=parseGASTimestamp(String(r[0]||'').trim());
-            const dateStr=dateTs&&!isNaN(dateTs)
-              ? dateTs.getFullYear()+'-'+pad2(dateTs.getMonth()+1)+'-'+pad2(dateTs.getDate())
-              : String(r[0]||'').trim();
-            if(dateStr<todayDateStr&&startDt<todayStart)return; // allow all dates in range
-            const timeParsed=parseGASTime(String(r[1]||'').trim());
-            const timeStr=timeParsed?pad2(timeParsed.h)+':'+pad2(timeParsed.m)+':'+pad2(timeParsed.s):String(r[1]||'').trim();
-            liveMatrix.push([dateStr,timeStr,String(r[2]||''),String(r[3]||''),String(r[4]||''),String(r[5]||''),String(r[6]||'')]);
-          });
-          if(liveMatrix.length>1){
-            // Process live rows using the same session builder
-            const tempAllData={1:[],2:[],3:[],4:[],5:[]};
-            ppProcessRawRowsInto(liveMatrix,tempAllData);
-            for(let p=1;p<=5;p++){ppAllData[p]=ppAllData[p].concat(tempAllData[p]);}
-          }
-        }
-      }catch(liveErr){console.warn('Prepress live error during range load:',liveErr);}
-    }
+    const fromYMD=ppFmtYMD(startDt), toYMD=ppFmtYMD(endDt);
+    let loaded=0;
+    await Promise.all([1,2,3,4,5].map(p=>
+      ppSrcFetchForPress(p,fromYMD,toYMD).then(records=>{
+        ppAllData[p]=ppSrcToSessions(records);
+        loaded++;
+        if(!bg){document.getElementById('pp-bgBar').style.width=`${loaded/5*100}%`;document.getElementById('pp-bgStatus').textContent=`${loaded}/5 presses loaded…`;}
+        if(loaded===1&&!bg){document.getElementById('pp-allLoading').style.display='none';document.getElementById('pp-allStats').style.display='grid';document.getElementById('pp-allTables').style.display='grid';}
+        if(ppCurrentPress==='all')ppDisplayAll();else if(ppCurrentPress===p)ppDisplaySingle(p);
+      }).catch(e=>{console.warn(`Prepress press ${p} error:`,e);ppAllData[p]=[];loaded++;})
+    ));
   }catch(e){console.error('Prepress error:',e);if(!bg&&document.getElementById('pp-bgStatus'))document.getElementById('pp-bgStatus').textContent='Error: '+e.message;}
   if(!bg)hideLoader();
-  if(!bg){for(let p=1;p<=5;p++){document.getElementById('pp-bgBar').style.width=`${p/5*100}%`;document.getElementById('pp-bgStatus').textContent=`${p}/5 presses processed`;}
-  document.getElementById('pp-bgBar').style.width='100%';document.getElementById('pp-bgStatus').textContent='All presses loaded ✓';
+  if(!bg){document.getElementById('pp-bgBar').style.width='100%';document.getElementById('pp-bgStatus').textContent='All presses loaded ✓';
   setTimeout(()=>document.getElementById('pp-bgBarWrap').style.display='none',2000);}
   document.getElementById('pp-allLoading').style.display='none';document.getElementById('pp-allStats').style.display='grid';document.getElementById('pp-allTables').style.display='grid';
   if(ppCurrentPress==='all')ppDisplayAll();else ppDisplaySingle(ppCurrentPress);
@@ -10392,36 +10445,15 @@ function ppDeactivateLive(){if(ppLiveActive){ppStopLive();}}
 async function ppFetchLive(silent){
   if(!silent)showLoader('🗜️ Loading Prepress Live Data…');
   try{
-    const rows=await fetchLiveGsheet(PREPRESS_LIVE_SHEET_ID,'Sheet1');
-    if(!rows||rows.length<2){if(!silent)hideLoader();return;}
-    const hdr=rows[0];
-    const isHdr=typeof hdr[0]==='string'&&/date|timestamp/i.test(hdr[0]);
-    const dataRows=isHdr?rows.slice(1):rows;
-    // Filter to today (IST) only
-    const todayIST=new Date();
-    const todayDateStr=todayIST.getFullYear()+'-'+pad2(todayIST.getMonth()+1)+'-'+pad2(todayIST.getDate());
-    const matrix=[['Date','Time','Prepress 1','Prepress 2','Prepress 3','Prepress 4','Prepress 5']];
-    dataRows.forEach(r=>{
-      // Date col: GAS returns Date object → ISO UTC string. Parse with IST correction.
-      const dateTs=parseGASTimestamp(String(r[0]||'').trim());
-      const dateStr=dateTs&&!isNaN(dateTs)
-        ? dateTs.getFullYear()+'-'+pad2(dateTs.getMonth()+1)+'-'+pad2(dateTs.getDate())
-        : String(r[0]||'').trim();
-      // Only include today's rows
-      if(dateStr!==todayDateStr)return;
-      // Time col: may be fractional day (0.xxx) or HH:MM:SS or ISO UTC
-      const timeParsed=parseGASTime(String(r[1]||'').trim());
-      const timeStr=timeParsed
-        ? pad2(timeParsed.h)+':'+pad2(timeParsed.m)+':'+pad2(timeParsed.s)
-        : String(r[1]||'').trim();
-      matrix.push([dateStr, timeStr,
-        String(r[2]||''),String(r[3]||''),String(r[4]||''),String(r[5]||''),String(r[6]||'')]);
-    });
-    ppProcessRawRows(matrix);
+    const todayYMD=ppFmtYMD(new Date());
+    const results=await Promise.all([1,2,3,4,5].map(p=>ppSrcFetchForPress(p,todayYMD,todayYMD)));
+    ppAllData={1:[],2:[],3:[],4:[],5:[]};
+    results.forEach((records,idx)=>{ppAllData[idx+1]=ppSrcToSessions(records);});
     document.getElementById('pp-allLoading').style.display='none';
     document.getElementById('pp-allStats').style.display='grid';
     document.getElementById('pp-allTables').style.display='grid';
-    ppDisplayAll();ppUpdateAllStats();ppUpdatePressDots();
+    if(ppCurrentPress==='all')ppDisplayAll();else ppDisplaySingle(ppCurrentPress);
+    ppUpdateAllStats();ppUpdatePressDots();
     const now=new Date().toLocaleTimeString();
     _setLiveBar('pp',true,now);
   }catch(e){console.error('Prepress live error:',e);}
