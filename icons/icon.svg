@@ -1,0 +1,19 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+<defs>
+<radialGradient id="bg" cx="50%" cy="38%" r="78%"><stop offset="0" stop-color="#12306b"/><stop offset="0.55" stop-color="#0a1a3d"/><stop offset="1" stop-color="#050b18"/></radialGradient>
+<linearGradient id="rib" x1="0.05" y1="1" x2="0.95" y2="0"><stop offset="0" stop-color="#22d3ee"/><stop offset="0.5" stop-color="#3b82f6"/><stop offset="1" stop-color="#818cf8"/></linearGradient>
+<linearGradient id="bar" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#67e8f9"/><stop offset="1" stop-color="#2563eb"/></linearGradient>
+<linearGradient id="cloud" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#3b82f6" stop-opacity="0.42"/><stop offset="1" stop-color="#3b82f6" stop-opacity="0.06"/></linearGradient>
+<filter id="glow" x="-30%" y="-30%" width="160%" height="160%"><feGaussianBlur stdDeviation="11" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+</defs>
+<rect x="0" y="0" width="512" height="512" rx="116" fill="url(#bg)"/>
+<g transform="translate(0.0 0.0) scale(1.0)">
+<path d="M118 378c-30 0-54-22-54-50 0-24 17-44 41-49 3-44 40-78 86-78 28 0 52 13 67 33 9-5 20-8 31-8 38 0 69 29 72 66 25 4 44 25 44 50 0 29-24 52-54 52z" fill="url(#cloud)" stroke="#60a5fa" stroke-opacity="0.55" stroke-width="4"/>
+<circle cx="96" cy="150" r="4" fill="#93c5fd" opacity="0.8"/><circle cx="428" cy="262" r="3.5" fill="#a5f3fc" opacity="0.8"/><circle cx="412" cy="392" r="2.5" fill="#93c5fd" opacity="0.7"/><circle cx="84" cy="300" r="2.5" fill="#a5f3fc" opacity="0.6"/>
+<g filter="url(#glow)">
+<path d="M138 386 C222 426 392 408 388 322 C384 252 128 282 136 196 C140 116 300 118 352 104" fill="none" stroke="url(#rib)" stroke-width="46" stroke-linecap="round" stroke-linejoin="round"/>
+<g transform="translate(352 104) rotate(-21.1)"><path d="M-6 -44 L62 0 L-6 44 L10 0 Z" fill="#a5f3fc" stroke="#a5f3fc" stroke-width="10" stroke-linejoin="round"/></g>
+</g>
+<path d="M138 386 C222 426 392 408 388 322 C384 252 128 282 136 196 C140 116 300 118 352 104" fill="none" stroke="#ffffff" stroke-opacity="0.45" stroke-width="7" stroke-linecap="round" transform="translate(-4 -6)"/>
+<circle cx="138" cy="386" r="9" fill="#e0f2fe"/>
+</g></svg>
